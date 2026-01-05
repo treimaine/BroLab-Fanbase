@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "project": "BroLab Fanbase",
+    "date": "2025-12-30",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "BroLab Fanbase is a mobile-first platform that empowers artists to create personalized public hubs to connect directly with their fans, manage their content and sales, and engage with their audience without being subject to algorithmic constraints. Fans can follow artists, access exclusive content, manage purchases, and enjoy personalized feeds.",
+  "core_goals": [
+    "Enable artists to create and manage their personalized public hubs including profile, content, events, and digital products.",
+    "Allow fans to follow favorite artists, consume personalized content feeds, and manage purchases and billing.",
+    "Provide seamless, secure authentication with role-based onboarding and route protection.",
+    "Deliver a responsive, accessible, and performant user experience optimized for both mobile and desktop.",
+    "Offer robust content and data management with digital product sales, event ticket management, and revenue tracking for artists."
+  ],
+  "key_features": [
+    "Complete Clerk-based Authentication System with sign-in, sign-up, and role-based onboarding.",
+    "Role-based route protection middleware ensuring appropriate access for artists and fans.",
+    "Responsive layout system featuring a desktop sidebar and mobile top bar with bottom navigation.",
+    "Light and dark theme support using next-themes with a custom theme provider and toggle.",
+    "UI component library built with shadcn/ui and Tailwind CSS integrating animations with Framer Motion.",
+    "Artist dashboard with comprehensive management pages: profile, links, events, products, and billing.",
+    "Fan dashboard with personalized feed, purchase history, and billing management.",
+    "Public artist hubs accessible by artist slug showcasing profile, latest drops, and tour dates.",
+    "Landing marketing page with hero, features, waitlist signup, and animation.",
+    "Robust form validation strategy using React Hook Form and Zod with inline feedback and toast notifications.",
+    "File upload validations for digital products enforcing size and format restrictions.",
+    "Accessibility compliance with WCAG 2.1 AA standards ensuring keyboard navigation, screen readers, and visual contrast.",
+    "Performance optimizations targeting fast content paint, low layout shifts, and quick interactivity."
+  ],
+  "user_flow_summary": [
+    "New users arrive at the landing page and can sign up or sign in via Clerk authentication.",
+    "Upon sign-up, users select their role as Artist or Fan during onboarding, which configures the app behavior and available routes.",
+    "Artists access a protected dashboard with sidebar navigation to manage profile, links, events, products, and billing.",
+    "Fans access a protected dashboard with a personalized feed, purchase history, and billing tabs.",
+    "Users can view public artist hubs by navigating to artist-specific slugs without authentication.",
+    "Artists can upload and manage digital content, events, and monitor their earnings with payout statuses.",
+    "Fans can follow artists, listen to featured tracks, purchase digital content/tickets, and download owned items.",
+    "Authentication middleware redirects users according to authentication state and role, preventing unauthorized access and ensuring role-specific experiences.",
+    "Theme toggle allows users to switch between light and dark modes seamlessly on all pages."
+  ],
+  "validation_criteria": [
+    "All protected routes enforce authentication and proper role-based access control as per the middleware configuration.",
+    "Forms must validate inputs client-side using Zod schemas with inline error messages and success toasts.",
+    "File uploads for digital products strictly enforce allowed MIME types and size limits as defined.",
+    "Landing page email waitlist form correctly validates input and shows success toast upon submission.",
+    "UI components comply with WCAG 2.1 AA accessibility standards, including keyboard navigation, focus indicators, and contrast ratios.",
+    "Performance metrics must satisfy targets: First Contentful Paint under 1.5 seconds, Largest Contentful Paint under 2.5 seconds, Cumulative Layout Shift under 0.1, and Time to Interactive under 3 seconds.",
+    "Theme toggle functions correctly and persists user preference across sessions.",
+    "Reserved slugs are protected and cannot be registered or accessed as artist slugs.",
+    "Middleware correctly redirects unauthenticated visitors to sign-in and users without assigned roles to onboarding.",
+    "User flows complete successfully, including redirection post sign-in/sign-up and onboarding role selection."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "Next.js 14 (App Router)",
+      "React 18",
+      "Tailwind CSS",
+      "shadcn/ui",
+      "Clerk Authentication",
+      "Framer Motion",
+      "Lucide React",
+      "React Hook Form",
+      "Zod",
+      "Sonner",
+      "next-themes"
+    ],
+    "features": [
+      {
+        "name": "Authentication System",
+        "description": "Complete Clerk authentication with sign-in, sign-up, and role-based onboarding flow",
+        "files": [
+          "src/app/(auth)/sign-in/[[...sign-in]]/page.tsx",
+          "src/app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+          "src/app/(auth)/onboarding/page.tsx",
+          "src/app/api/onboarding/set-role/route.ts"
+        ]
+      },
+      {
+        "name": "Route Protection Middleware",
+        "description": "Clerk-based middleware protecting routes by authentication status and user roles (artist/fan)",
+        "files": [
+          "src/middleware.ts"
+        ]
+      },
+      {
+        "name": "Responsive Layout System",
+        "description": "Mobile-first layout with AppShell, Sidebar (desktop), TopBar + BottomNav (mobile)",
+        "files": [
+          "src/components/layout/app-shell.tsx",
+          "src/components/layout/sidebar.tsx",
+          "src/components/layout/top-bar.tsx",
+          "src/components/layout/bottom-nav.tsx",
+          "src/components/layout/mobile-drawer.tsx",
+          "src/components/layout/index.ts"
+        ]
+      },
+      {
+        "name": "Theme System",
+        "description": "Light/dark theme support with next-themes and custom theme provider",
+        "files": [
+          "src/components/layout/theme-provider.tsx",
+          "src/components/layout/theme-toggle.tsx"
+        ]
+      },
+      {
+        "name": "UI Component Library",
+        "description": "shadcn/ui based components with custom styling and Tailwind integration",
+        "files": [
+          "src/components/ui/avatar.tsx",
+          "src/components/ui/badge.tsx",
+          "src/components/ui/button.tsx",
+          "src/components/ui/card.tsx",
+          "src/components/ui/dialog.tsx",
+          "src/components/ui/dropdown-menu.tsx",
+          "src/components/ui/form.tsx",
+          "src/components/ui/input.tsx",
+          "src/components/ui/label.tsx",
+          "src/components/ui/separator.tsx",
+          "src/components/ui/sheet.tsx",
+          "src/components/ui/skeleton.tsx",
+          "src/components/ui/sonner.tsx",
+          "src/components/ui/switch.tsx",
+          "src/components/ui/tabs.tsx"
+        ]
+      },
+      {
+        "name": "Root Application Layout",
+        "description": "Main app layout with Clerk provider, theme provider, and global styling",
+        "files": [
+          "src/app/layout.tsx",
+          "src/app/globals.css"
+        ]
+      },
+      {
+        "name": "Landing Page",
+        "description": "Marketing landing page with hero section and call-to-action",
+        "files": [
+          "src/app/page.tsx"
+        ]
+      },
+      {
+        "name": "Artist Dashboard Routes",
+        "description": "Protected dashboard routes for artist role users",
+        "files": [
+          "src/app/(artist)/dashboard/"
+        ]
+      },
+      {
+        "name": "Fan Dashboard Routes",
+        "description": "Protected dashboard routes for fan role users with username-based routing",
+        "files": [
+          "src/app/(fan)/me/"
+        ]
+      },
+      {
+        "name": "Public Artist Hub Routes",
+        "description": "Public artist profile pages accessible via artist slug",
+        "files": [
+          "src/app/(public)/[artistSlug]/"
+        ]
+      },
+      {
+        "name": "Marketing Routes",
+        "description": "Public marketing and landing page routes",
+        "files": [
+          "src/app/(marketing)/"
+        ]
+      },
+      {
+        "name": "API Routes",
+        "description": "Next.js API routes for backend functionality including role setting and Stripe integration",
+        "files": [
+          "src/app/api/onboarding/set-role/route.ts",
+          "src/app/api/stripe/"
+        ]
+      },
+      {
+        "name": "Utility Functions",
+        "description": "Helper functions for styling (cn), constants, and form validation",
+        "files": [
+          "src/lib/utils.ts",
+          "src/lib/constants.ts",
+          "src/lib/validations.ts"
+        ]
+      },
+      {
+        "name": "Type Definitions",
+        "description": "TypeScript type definitions and interfaces for the application",
+        "files": [
+          "src/types/index.ts"
+        ]
+      },
+      {
+        "name": "Dashboard Components (Scaffolded)",
+        "description": "Placeholder structure for artist dashboard components",
+        "files": [
+          "src/components/dashboard/"
+        ]
+      },
+      {
+        "name": "Feed Components (Scaffolded)",
+        "description": "Placeholder structure for fan feed components",
+        "files": [
+          "src/components/feed/"
+        ]
+      },
+      {
+        "name": "Form Components (Scaffolded)",
+        "description": "Placeholder structure for form components",
+        "files": [
+          "src/components/forms/"
+        ]
+      },
+      {
+        "name": "Hub Components (Scaffolded)",
+        "description": "Placeholder structure for public artist hub components",
+        "files": [
+          "src/components/hub/"
+        ]
+      },
+      {
+        "name": "Marketing Components (Scaffolded)",
+        "description": "Placeholder structure for marketing page components",
+        "files": [
+          "src/components/marketing/"
+        ]
+      }
+    ]
+  }
+}

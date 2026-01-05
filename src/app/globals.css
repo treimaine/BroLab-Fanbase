@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* SuperDesign Light Theme - Lavender accent, soft aesthetic */
+    --background: 0 0% 99%;           /* Very light background (#FCFCFC) */
+    --foreground: 240 10% 15%;        /* Soft black foreground */
+    --card: 0 0% 100%;                /* Pure white cards */
+    --card-foreground: 240 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 15%;
+    
+    /* Primary - Lavender/Purple accent */
+    --primary: 262 83% 58%;           /* Lavender purple (#8B5CF6) */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Soft gray */
+    --secondary: 240 5% 96%;          /* Very light gray */
+    --secondary-foreground: 240 10% 15%;
+    
+    /* Muted - Subtle backgrounds */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+    
+    /* Accent - Lavender highlight */
+    --accent: 262 83% 95%;            /* Light lavender tint */
+    --accent-foreground: 262 83% 40%;
+    
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders - Subtle */
+    --border: 240 6% 90%;             /* Subtle border */
+    --input: 240 6% 90%;
+    --ring: 262 83% 58%;              /* Lavender ring for focus */
+    
+    /* Charts */
+    --chart-1: 262 83% 58%;           /* Lavender */
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    
+    /* Generous radius for rounded-2xl aesthetic */
+    --radius: 1rem;
+
+    /* Font families */
+    --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  }
+
+  .dark {
+    /* SuperDesign Dark Theme - Matching lavender accent */
+    --background: 240 10% 6%;         /* Deep dark background */
+    --foreground: 0 0% 95%;           /* Soft white foreground */
+    --card: 240 10% 9%;               /* Slightly lighter cards */
+    --card-foreground: 0 0% 95%;
+    --popover: 240 10% 9%;
+    --popover-foreground: 0 0% 95%;
+    
+    /* Primary - Lavender (slightly brighter for dark mode) */
+    --primary: 262 83% 65%;           /* Brighter lavender */
+    --primary-foreground: 240 10% 6%;
+    
+    /* Secondary */
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 95%;
+    
+    /* Muted */
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 4% 65%;
+    
+    /* Accent - Dark lavender tint */
+    --accent: 262 50% 20%;
+    --accent-foreground: 262 83% 80%;
+    
+    /* Destructive */
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders - Subtle dark */
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 262 83% 65%;
+    
+    /* Charts */
+    --chart-1: 262 83% 65%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  /* Typography - Serif headings */
+  h1, h2, h3 {
+    @apply font-serif;
+  }
+  
+  /* Smooth transitions for theme toggle */
+  html {
+    @apply scroll-smooth;
+  }
+  
+  /* Focus visible styles with lavender ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}

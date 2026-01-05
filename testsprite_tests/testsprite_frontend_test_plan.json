@@ -1,0 +1,514 @@
+[
+  {
+    "id": "TC001",
+    "title": "Authentication - Successful sign-up as Artist",
+    "description": "Verify that a new user can successfully sign up, select the Artist role during onboarding, and access the Artist dashboard with appropriate route access.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the sign-up page."
+      },
+      {
+        "type": "action",
+        "description": "Provide valid email and password and submit the sign-up form."
+      },
+      {
+        "type": "action",
+        "description": "On onboarding page, select 'Artist' role and complete onboarding."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to the Artist dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify sidebar navigation and all Artist management pages are accessible."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Authentication - Successful sign-up as Fan",
+    "description": "Verify that a new user can successfully sign up, select the Fan role during onboarding, and access the Fan dashboard with appropriate route access.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the sign-up page."
+      },
+      {
+        "type": "action",
+        "description": "Provide valid email and password and submit the sign-up form."
+      },
+      {
+        "type": "action",
+        "description": "On onboarding page, select 'Fan' role and complete onboarding."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to the Fan dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify personalized feed, purchase history, and billing tabs are accessible."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Authentication - Sign-in with valid credentials",
+    "description": "Verify that existing users can sign in with valid credentials and are redirected based on their role to correct dashboards.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the sign-in page."
+      },
+      {
+        "type": "action",
+        "description": "Input existing valid email and password."
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to the appropriate dashboard based on role."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Authentication - Sign-in with invalid credentials",
+    "description": "Verify that users attempting to sign in with invalid credentials receive appropriate error messages and are not authenticated.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the sign-in page."
+      },
+      {
+        "type": "action",
+        "description": "Input invalid or non-existent email and/or password."
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message is shown indicating invalid credentials."
+      },
+      {
+        "type": "assertion",
+        "description": "User remains on sign-in page without access."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Role-Based Middleware - Block access without authentication",
+    "description": "Verify that unauthenticated users attempting to access protected Artist or Fan areas are redirected to the sign-in page.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Try to navigate directly to an Artist dashboard route while not authenticated."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to sign-in page."
+      },
+      {
+        "type": "action",
+        "description": "Try to navigate directly to a Fan dashboard route while not authenticated."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to sign-in page."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Role-Based Middleware - Prevent cross-role access",
+    "description": "Verify that users cannot access the dashboards or routes of the opposite role (Artist cannot access Fan dashboard; Fan cannot access Artist dashboard).",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in as Artist user."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to navigate to Fan dashboard route."
+      },
+      {
+        "type": "assertion",
+        "description": "Access is denied or redirected away from Fan dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Sign in as Fan user."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to navigate to Artist dashboard route."
+      },
+      {
+        "type": "assertion",
+        "description": "Access is denied or redirected away from Artist dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Role-Based Middleware - Redirect users without role to onboarding",
+    "description": "Verify that users who have authenticated but have not selected a role are redirected to the onboarding page.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in as user without assigned role."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access any protected route."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to onboarding page to select role."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Landing Page - Email waitlist form validation success",
+    "description": "Verify that the landing page email waitlist form validates input and shows a success toast upon valid submission.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the landing page."
+      },
+      {
+        "type": "action",
+        "description": "Input a valid email into the waitlist signup form."
+      },
+      {
+        "type": "action",
+        "description": "Submit the form."
+      },
+      {
+        "type": "assertion",
+        "description": "Form submits successfully and a toast notification confirms submission."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Landing Page - Email waitlist form validation error",
+    "description": "Verify that invalid emails in waitlist signup show inline validation errors and prevent submission.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the landing page."
+      },
+      {
+        "type": "action",
+        "description": "Input an invalid email format into the waitlist signup form."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit the form."
+      },
+      {
+        "type": "assertion",
+        "description": "Inline validation error message is displayed next to the email field."
+      },
+      {
+        "type": "assertion",
+        "description": "Form is not submitted."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Artist Dashboard - Profile management",
+    "description": "Verify that artist can update their profile information with form validation, displaying inline errors and success notifications.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in as Artist user and navigate to the profile management page."
+      },
+      {
+        "type": "action",
+        "description": "Input valid updates to profile fields and submit."
+      },
+      {
+        "type": "assertion",
+        "description": "Updates are saved successfully and a success toast is shown."
+      },
+      {
+        "type": "action",
+        "description": "Input invalid/missing mandatory fields and attempt to submit."
+      },
+      {
+        "type": "assertion",
+        "description": "Inline validation errors appear and submission is blocked."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Artist Dashboard - Digital product upload with validation",
+    "description": "Verify that digital product uploads enforce file size and format restrictions with proper validation and error feedback.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in as Artist and navigate to product upload page."
+      },
+      {
+        "type": "action",
+        "description": "Upload file within allowed size and MIME types."
+      },
+      {
+        "type": "assertion",
+        "description": "Upload is accepted and product can be saved."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to upload file exceeding size limit."
+      },
+      {
+        "type": "assertion",
+        "description": "Inline error indicates file size limit exceeded and upload is rejected."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to upload file of disallowed MIME type."
+      },
+      {
+        "type": "assertion",
+        "description": "Inline error indicates invalid file type and upload is rejected."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Fan Dashboard - Purchase history display",
+    "description": "Verify that fan users can view their correct purchase history with accurate details and filtering options.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in as Fan user and navigate to purchase history page."
+      },
+      {
+        "type": "assertion",
+        "description": "Purchase history is displayed with all relevant details including date, amount, and items."
+      },
+      {
+        "type": "action",
+        "description": "Use filtering options to filter purchase history."
+      },
+      {
+        "type": "assertion",
+        "description": "Filtering updates purchase list accordingly."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Public Artist Hub - Access by valid artist slug",
+    "description": "Verify that public artist hubs are accessible via valid artist slugs without authentication and display correct artist profile, latest drops, and tour dates.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to a valid artist’s public hub URL."
+      },
+      {
+        "type": "assertion",
+        "description": "Artist profile information and content load properly."
+      },
+      {
+        "type": "assertion",
+        "description": "Latest drops and tour dates are displayed."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Public Artist Hub - Access by reserved or invalid slug",
+    "description": "Verify that reserved or unregistered artist slugs are not accessible and show appropriate error or redirect.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to a reserved slug or invalid artist slug URL."
+      },
+      {
+        "type": "assertion",
+        "description": "User is shown an error message or redirected to landing page."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Theme Toggle - Switch between light and dark mode",
+    "description": "Verify that the theme toggle correctly changes the UI between light and dark themes and persists user preference across sessions.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in and navigate to any page with theme toggle."
+      },
+      {
+        "type": "action",
+        "description": "Toggle theme from light to dark."
+      },
+      {
+        "type": "assertion",
+        "description": "UI updates theme accordingly."
+      },
+      {
+        "type": "action",
+        "description": "Logout and sign back in."
+      },
+      {
+        "type": "assertion",
+        "description": "Previously selected theme preference is applied."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Forms - Inline validation using Zod schemas",
+    "description": "Verify that all forms in onboarding, profile, products, and billing show client-side inline validation errors and success toasts on submission.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to various forms (onboarding, profile, product creation)."
+      },
+      {
+        "type": "action",
+        "description": "Input invalid data and attempt to submit forms."
+      },
+      {
+        "type": "assertion",
+        "description": "Inline validation errors display next to invalid fields."
+      },
+      {
+        "type": "action",
+        "description": "Correct inputs with valid data and resubmit forms."
+      },
+      {
+        "type": "assertion",
+        "description": "Forms submit successfully and success toast notifications appear."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Accessibility - Keyboard navigation and focus indicators",
+    "description": "Verify that the application UI components comply with WCAG 2.1 AA standards including keyboard navigability and visible focus states.",
+    "category": "ui",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Use only keyboard to navigate through key pages: landing page, dashboards, forms."
+      },
+      {
+        "type": "assertion",
+        "description": "Focus moves logically and all interactive elements show visible focus states."
+      },
+      {
+        "type": "assertion",
+        "description": "No keyboard traps exist."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Accessibility - Screen reader support and contrast ratios",
+    "description": "Verify that UI elements are accessible with screen readers and meet color contrast standards.",
+    "category": "ui",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Use a screen reader to navigate landing page and dashboards."
+      },
+      {
+        "type": "assertion",
+        "description": "All UI elements have appropriate ARIA labels and semantic roles."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify color contrast ratios meet WCAG 2.1 AA standards for all text and UI elements in both light and dark themes."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Performance - Verify page load and interactivity metrics",
+    "description": "Verify performance metrics meet targets: First Contentful Paint < 1.5s, Largest Contentful Paint < 2.5s, Cumulative Layout Shift < 0.1, Time to Interactive < 3s.",
+    "category": "performance",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load landing page, artist dashboard, and fan dashboard on mobile and desktop devices."
+      },
+      {
+        "type": "assertion",
+        "description": "Performance metrics recorded meet the defined performance criteria."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Authentication - Sign-in attempt for user without assigned role",
+    "description": "Verify that users who sign in but have no assigned role are redirected to onboarding to select role.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign up or create a user with no assigned role."
+      },
+      {
+        "type": "action",
+        "description": "Sign in as this user."
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to onboarding page to select Artist or Fan role before accessing app."
+      }
+    ]
+  }
+]
