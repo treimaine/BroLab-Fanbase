@@ -313,12 +313,19 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - ✅ Landing page renders correctly
   - ✅ Light/dark toggle works
   - ✅ Public Hub /djnova displays artist profile, products, events
+  - ✅ Public Hub /treigua (logged-in artist) displays correctly
   - ✅ Tabs "Latest Drops" / "Tour Dates" functional
+  - ✅ Follow button works with toast notification
   - ✅ Sign-in page renders with Clerk components
+  - ✅ Sign-in flow works (email + password + 2FA code)
   - ✅ Middleware protects /dashboard (redirects to sign-in)
-  - ✅ Artist layout created with AppShell integration
-  - ✅ Dashboard components: StatsCard, SetupChecklist, CreateContentCard
-  - Note: Full dashboard test requires authentication
+  - ✅ Dashboard Overview: Welcome message, View Public Hub link
+  - ✅ 3 StatsCards: Followers, Revenue, Upcoming Events
+  - ✅ SetupChecklist: 4/5 complete with progress bar
+  - ✅ CreateContentCard: Add Link, Add Event, Add Product buttons
+  - ✅ Sidebar navigation: Overview, Profile, Links, Events, Products, Billing
+  - ✅ User section: Avatar, name, role, Sign out button
+  - Note: Profile/Links/Events/Products/Billing pages return 404 (Phase 3E-3I not implemented yet)
 
 - [ ] 10. Phase 3E — Artist Profile Page
   - [ ] 10.1 Créer le composant ProfileForm

@@ -14,47 +14,55 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
-import {
-    Globe,
-    Music2,
-    type LucideIcon,
-} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import type { ComponentType } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
+import {
+    AppleMusicIcon,
+    FacebookIcon,
+    InstagramIcon,
+    SoundCloudIcon,
+    SpotifyIcon,
+    TikTokIcon,
+    TwitchIcon,
+    WebsiteIcon,
+    XTwitterIcon,
+    YouTubeIcon,
+} from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
  * Social platform configuration
- * Maps platform names to their icons
- * Using generic icons to avoid deprecated lucide-react social icons
+ * Maps platform names to their custom SVG icons
  */
-const SOCIAL_ICONS: Record<string, LucideIcon> = {
-  instagram: Globe,
-  twitter: Globe,
-  x: Globe,
-  youtube: Globe,
-  spotify: Music2,
-  soundcloud: Music2,
-  applemusic: Music2,
-  website: Globe,
-  facebook: Globe,
-  twitch: Globe,
-  tiktok: Music2,
+const SOCIAL_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  instagram: InstagramIcon,
+  twitter: XTwitterIcon,
+  x: XTwitterIcon,
+  youtube: YouTubeIcon,
+  spotify: SpotifyIcon,
+  soundcloud: SoundCloudIcon,
+  applemusic: AppleMusicIcon,
+  apple_music: AppleMusicIcon,
+  website: WebsiteIcon,
+  facebook: FacebookIcon,
+  twitch: TwitchIcon,
+  tiktok: TikTokIcon,
 };
 
 /**
  * Get the icon component for a social platform
  */
-function getSocialIcon(platform: string): LucideIcon {
+function getSocialIcon(platform: string): ComponentType<{ className?: string }> {
   const normalizedPlatform = platform.toLowerCase().replaceAll(/\s+/g, "");
-  return SOCIAL_ICONS[normalizedPlatform] ?? Globe;
+  return SOCIAL_ICONS[normalizedPlatform] ?? WebsiteIcon;
 }
 
 /**
