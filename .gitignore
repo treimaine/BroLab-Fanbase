@@ -43,3 +43,6 @@ testsprite_tests/tmp/
 
 # Accidental Windows path copy
 c/
+
+# byterover 3.0
+/.brv/
