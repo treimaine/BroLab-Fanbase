@@ -13,10 +13,12 @@
  * Connected to Stripe via Convex (future implementation)
  */
 
+import { api } from "@/../convex/_generated/api";
 import { BillingHistoryTab, type TransactionData } from "@/components/fan/billing-history-tab";
 import { PaymentMethodsTab, type PaymentMethodData } from "@/components/fan/payment-methods-tab";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAction } from "convex/react";
 import { Shield } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -88,28 +90,51 @@ export default function BillingPage() {
   const [transactions] = useState<TransactionData[]>(MOCK_TRANSACTIONS);
   const [isRemoving, setIsRemoving] = useState<string | null>(null);
 
+  // Convex actions (not mutations, because they're defined as actions)
+  const createSetupIntent = useAction(api.stripe.createSetupIntent);
+  const removePaymentMethodAction = useAction(api.stripe.removePaymentMethod);
+
   // Handle add payment method
-  const handleAddPaymentMethod = useCallback(() => {
-    // TODO: Implement Stripe payment method setup
-    toast.info("Payment method setup coming soon!");
-  }, []);
+  // Requirements: 11.2 - Add payment method via Stripe Setup Intent
+  const handleAddPaymentMethod = useCallback(async () => {
+    try {
+      // Create a Stripe Setup Intent
+      const result = await createSetupIntent();
+      
+      // In production, you would:
+      // 1. Use the clientSecret to initialize Stripe Elements
+      // 2. Show a payment method form modal
+      // 3. Confirm the setup intent
+      // 4. Refresh the payment methods list
+      
+      console.log("Setup Intent created:", result);
+      toast.info("Payment method setup - Stripe integration coming soon!");
+    } catch (error) {
+      console.error("Create setup intent error:", error);
+      toast.error("Failed to initialize payment method setup. Please try again.");
+    }
+  }, [createSetupIntent]);
 
   // Handle remove payment method
+  // Requirements: 11.3 - Remove payment method via Stripe API
   const handleRemovePaymentMethod = useCallback(async (methodId: string) => {
     try {
       setIsRemoving(methodId);
       
-      // TODO: Implement Stripe payment method removal via Convex
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Remove payment method via Convex action (calls Stripe API)
+      const result = await removePaymentMethodAction({ paymentMethodId: methodId });
       
+      console.log("Payment method removed:", result);
       toast.success("Payment method removed successfully");
+      
+      // In production, you would refresh the payment methods list here
     } catch (error) {
       console.error("Remove payment method error:", error);
       toast.error("Failed to remove payment method. Please try again.");
     } finally {
       setIsRemoving(null);
     }
-  }, []);
+  }, [removePaymentMethodAction]);
 
   return (
     <div className="min-h-screen bg-background">

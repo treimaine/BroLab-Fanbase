@@ -62,7 +62,17 @@ export default function EventsPage() {
   }
 
   // Transform Convex data to EventItemData format
-  const eventItems: EventItemData[] = (events ?? []).map((event) => ({
+  const eventItems: EventItemData[] = (events ?? []).map((event: {
+    _id: string;
+    title: string;
+    date: number;
+    venue: string;
+    city: string;
+    imageUrl?: string;
+    ticketsSold: number;
+    revenue: number;
+    status: "upcoming" | "sold-out" | "past";
+  }) => ({
     id: event._id,
     title: event.title,
     date: event.date,

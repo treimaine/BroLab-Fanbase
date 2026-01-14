@@ -8,6 +8,7 @@
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
 /**
@@ -25,12 +26,15 @@ import { action } from "./_generated/server";
  * 
  * Optionally logs download in downloads table
  */
-// @ts-ignore - Convex action type inference issue with internal API calls
 export const getDownloadUrl = action({
   args: {
     productId: v.id("products"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    url: string;
+    productTitle: string;
+    contentType?: string;
+  }> => {
     // 1. Verify authentication
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -57,7 +61,12 @@ export const getDownloadUrl = action({
     }
 
     // 4. Get product to retrieve fileStorageId
-    const product = await ctx.runQuery(internal.downloads_helpers.getProductById, {
+    const product: {
+      _id: string;
+      title: string;
+      fileStorageId?: Id<"_storage">;
+      contentType?: string;
+    } | null = await ctx.runQuery(internal.downloads_helpers.getProductById, {
       productId: args.productId,
     });
 

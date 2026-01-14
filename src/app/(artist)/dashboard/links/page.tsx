@@ -67,7 +67,13 @@ export default function LinksPage() {
   }
 
   // Transform Convex data to LinkItemData format
-  const linkItems: LinkItemData[] = (links ?? []).map((link) => ({
+  const linkItems: LinkItemData[] = (links ?? []).map((link: {
+    _id: string;
+    title: string;
+    url: string;
+    type: string;
+    active: boolean;
+  }) => ({
     id: link._id,
     title: link.title,
     url: link.url,

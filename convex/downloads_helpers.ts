@@ -4,12 +4,12 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 
 /**
  * Helper query: Get user by Clerk ID
  */
-export const getUserByClerkId = query({
+export const getUserByClerkId = internalQuery({
   args: {
     clerkUserId: v.string(),
   },
@@ -25,7 +25,7 @@ export const getUserByClerkId = query({
  * Helper query: Check ownership of a product
  * Requirements: 17.3, 17.4 - Ownership verification
  */
-export const checkOwnership = query({
+export const checkOwnership = internalQuery({
   args: {
     fanUserId: v.id("users"),
     productId: v.id("products"),
@@ -58,7 +58,7 @@ export const checkOwnership = query({
 /**
  * Helper query: Get product by ID
  */
-export const getProductById = query({
+export const getProductById = internalQuery({
   args: {
     productId: v.id("products"),
   },
@@ -71,7 +71,7 @@ export const getProductById = query({
  * Helper query: Get storage URL
  * Requirements: 17.4 - Return file URL generated from fileStorageId
  */
-export const getStorageUrl = query({
+export const getStorageUrl = internalQuery({
   args: {
     storageId: v.id("_storage"),
   },
@@ -84,7 +84,7 @@ export const getStorageUrl = query({
  * Helper mutation: Log download attempt
  * Requirements: 17.6 - Optionally log download attempts
  */
-export const logDownloadAttempt = mutation({
+export const logDownloadAttempt = internalMutation({
   args: {
     fanUserId: v.id("users"),
     productId: v.id("products"),

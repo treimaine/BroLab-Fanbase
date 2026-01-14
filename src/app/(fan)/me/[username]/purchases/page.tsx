@@ -85,7 +85,7 @@ export default function PurchasesPage() {
 
     try {
       // Call Convex action to get download URL
-      const result = await getDownloadUrl({ productId });
+      const result = await getDownloadUrl({ productId: productId as Id<"products"> });
 
       // Open URL in new tab to trigger download
       if (result?.url) {

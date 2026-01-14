@@ -14,6 +14,7 @@
  */
 
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { DropsList, EventsList, HubHeader } from "@/components/hub";
 import type { Drop } from "@/components/hub/drops-list";
 import type { Event } from "@/components/hub/events-list";
@@ -215,7 +216,7 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
       
       // Fetch playable URL from Convex storage using the files.getPlayableUrl query
       const url = await convexClient.query(api.files.getPlayableUrl, {
-        storageId: track.fileStorageId,
+        storageId: track.fileStorageId as Id<"_storage">,
       });
 
       return url;

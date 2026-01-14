@@ -14,21 +14,21 @@
  */
 
 import {
-    ProductItem,
-    ProductItemSkeleton,
-    type ProductItemData,
-    type ProductVisibility,
+  ProductItem,
+  ProductItemSkeleton,
+  type ProductItemData,
+  type ProductVisibility,
 } from "@/components/dashboard/product-item";
 import {
-    AddProductDialog,
-    type AddProductData,
+  AddProductDialog,
+  type AddProductData,
 } from "@/components/forms/add-product-dialog";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFileUpload } from "@/lib/hooks/use-file-upload";
@@ -130,7 +130,14 @@ export default function ProductsPage() {
   }
 
   // Transform Convex data to ProductItemData format
-  const productItems: ProductItemData[] = (products ?? []).map((product) => ({
+  const productItems: ProductItemData[] = (products ?? []).map((product: {
+    _id: string;
+    title: string;
+    type: "music" | "video";
+    priceUSD: number;
+    coverImageUrl?: string;
+    visibility: ProductVisibility;
+  }) => ({
     id: product._id,
     title: product.title,
     type: product.type,

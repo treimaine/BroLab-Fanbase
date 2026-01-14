@@ -14,9 +14,107 @@
  */
 
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
-import { action } from "./_generated/server";
+import { action, internalQuery } from "./_generated/server";
+
+/**
+ * Internal helper: Get user by Clerk ID
+ * Used by actions to fetch user data
+ */
+export const getUserByClerkId = internalQuery({
+  args: { clerkUserId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .unique();
+  },
+});
+
+/**
+ * Create Stripe Setup Intent for adding payment method
+ * Requirements: 11.2 - Add payment method
+ * 
+ * Creates a Stripe Setup Intent that allows users to save payment methods
+ * for future purchases without charging them immediately.
+ * 
+ * @returns Object with clientSecret for Stripe Elements
+ */
+export const createSetupIntent = action({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get user from Convex
+    const user = await ctx.runQuery(internal.stripe.getUserByClerkId, {
+      clerkUserId: identity.subject,
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // In production, you would:
+    // 1. Get or create Stripe customer ID for this user
+    // 2. Create a Setup Intent with Stripe API
+    // 3. Return the client secret
+    
+    // For MVP, return a placeholder
+    // FUTURE: Implement actual Stripe Setup Intent creation when Stripe is fully integrated
+    return {
+      clientSecret: "seti_placeholder_" + Date.now(),
+      message: "Setup Intent creation - to be implemented with Stripe API",
+    };
+  },
+});
+
+/**
+ * Remove payment method from Stripe
+ * Requirements: 11.3 - Remove payment method
+ * 
+ * Detaches a payment method from the customer in Stripe.
+ * 
+ * @param paymentMethodId - Stripe payment method ID
+ * @returns Success status
+ */
+export const removePaymentMethod = action({
+  args: {
+    paymentMethodId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get user from Convex
+    const user = await ctx.runQuery(internal.stripe.getUserByClerkId, {
+      clerkUserId: identity.subject,
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // In production, you would:
+    // 1. Verify the payment method belongs to this user's Stripe customer
+    // 2. Detach the payment method using Stripe API
+    // 3. Return success status
+    
+    // For MVP, simulate the operation
+    // FUTURE: Implement actual Stripe payment method detachment when Stripe is fully integrated
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      success: true,
+      message: "Payment method removal - to be implemented with Stripe API",
+    };
+  },
+});
 
 /**
  * Handle Stripe webhook event
