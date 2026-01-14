@@ -17,13 +17,19 @@
 import { api } from "@/../convex/_generated/api";
 import type { PurchaseItemData } from "@/components/fan/purchase-item";
 import { PurchaseItem, PurchaseItemSkeleton } from "@/components/fan/purchase-item";
-import { useQuery } from "convex/react";
-import { useCallback, useMemo } from "react";
+import { useAction, useQuery } from "convex/react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export default function PurchasesPage() {
   // Fetch purchases from Convex
   const purchases = useQuery(api.orders.getMyPurchases);
+
+  // Download action
+  const getDownloadUrl = useAction(api.downloads.getDownloadUrl);
+
+  // Track downloading state per product
+  const [downloadingProducts, setDownloadingProducts] = useState<Set<string>>(new Set());
 
   // Loading state
   const isLoading = purchases === undefined;
@@ -34,8 +40,8 @@ export default function PurchasesPage() {
 
     const items: PurchaseItemData[] = [];
 
-    purchases.forEach((purchase) => {
-      purchase.items.forEach((item) => {
+    purchases.forEach((purchase: { order: any; items: any[] }) => {
+      purchase.items.forEach((item: any) => {
         if (!item) return;
 
         items.push({
@@ -61,16 +67,44 @@ export default function PurchasesPage() {
 
   // Handle download
   const handleDownload = useCallback(async (purchaseId: string, productId: string) => {
+    // Mark product as downloading
+    setDownloadingProducts((prev: Set<string>) => new Set(prev).add(productId));
+
     try {
-      // TODO: Implement download via Convex downloads.getDownloadUrl
-      // For MVP, show toast notification
-      toast.info("Download functionality coming soon!");
-      console.log("Download:", { purchaseId, productId });
+      // Call Convex action to get download URL
+      const result = await getDownloadUrl({ productId });
+
+      // Open URL in new tab to trigger download
+      if (result?.url) {
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement("a");
+        link.href = result.url;
+        link.download = result.productTitle || "download";
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        // Show success toast
+        toast.success(`Downloading ${result.productTitle || "file"}...`);
+      } else {
+        throw new Error("No download URL received");
+      }
     } catch (error) {
       console.error("Download error:", error);
-      toast.error("Failed to download. Please try again.");
+      
+      // Show error toast with specific message
+      const errorMessage = error instanceof Error ? error.message : "Failed to download";
+      toast.error(errorMessage);
+    } finally {
+      // Remove product from downloading state
+      setDownloadingProducts((prev: Set<string>) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
     }
-  }, []);
+  }, [getDownloadUrl]);
 
   // Handle view details
   const handleViewDetails = useCallback((purchaseId: string) => {
@@ -163,6 +197,7 @@ export default function PurchasesPage() {
               purchase={purchase}
               onDownload={handleDownload}
               onViewDetails={handleViewDetails}
+              isDownloading={purchase.productId ? downloadingProducts.has(purchase.productId) : false}
             />
           ))}
         </div>

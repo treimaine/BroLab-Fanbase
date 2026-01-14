@@ -77,7 +77,7 @@ export default function FanFeedPage() {
     // MVP: Generate mock feed posts from followed artists
     const posts: FeedPost[] = [];
     
-    followedArtists.forEach((artist, index) => {
+    followedArtists.forEach((artist: any, index: number) => {
       // Skip null artists
       if (!artist) return;
       

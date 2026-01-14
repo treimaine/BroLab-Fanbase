@@ -3,11 +3,11 @@
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -98,10 +98,10 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 py-16 md:px-6 md:py-24">
-      {/* Background gradient decoration */}
+    <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center overflow-hidden px-4 py-20 md:px-6 md:py-32">
+      {/* Background gradient decoration - subtle lavender glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/10 via-primary/5 to-transparent blur-3xl" />
+        <div className="absolute -top-1/2 left-1/2 h-[1000px] w-[1000px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/8 via-primary/4 to-transparent blur-3xl" />
       </div>
 
       <motion.div
@@ -112,7 +112,7 @@ export function HeroSection() {
       >
         {/* Main headline */}
         <motion.h1
-          className="font-serif text-4xl font-bold leading-tight tracking-tight md:text-5xl lg:text-6xl"
+          className="font-serif text-4xl font-bold leading-tight tracking-tight md:text-5xl lg:text-6xl xl:text-7xl"
           variants={itemVariants}
         >
           Your career isn&apos;t an{" "}
@@ -123,7 +123,7 @@ export function HeroSection() {
 
         {/* Sub-headline */}
         <motion.p
-          className="mt-4 max-w-xl text-lg text-muted-foreground md:mt-6 md:text-xl"
+          className="mt-6 max-w-xl text-lg text-muted-foreground md:mt-8 md:text-xl"
           variants={itemVariants}
         >
           Build your hub. Connect with fans. Own your revenue.
@@ -131,7 +131,7 @@ export function HeroSection() {
 
         {/* Email form */}
         <motion.div
-          className="mt-8 w-full max-w-md md:mt-10"
+          className="mt-10 w-full max-w-md md:mt-12"
           variants={itemVariants}
         >
           <Form {...form}>
@@ -182,7 +182,7 @@ export function HeroSection() {
 
         {/* Secondary info line */}
         <motion.div
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground"
+          className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground"
           variants={itemVariants}
         >
           <button

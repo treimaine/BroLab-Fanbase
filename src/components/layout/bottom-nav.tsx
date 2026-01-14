@@ -49,11 +49,13 @@ export function BottomNav({ role, username = "" }: Readonly<BottomNavProps>) {
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" &&
-              item.href !== `/me/${username}` &&
-              pathname.startsWith(item.href));
+          // For fan feed route, only match exact path
+          // For other routes, allow startsWith matching
+          const isFanFeedRoute = role === "fan" && item.href === `/me/${username}`;
+          const isActive = isFanFeedRoute
+            ? pathname === item.href
+            : pathname === item.href ||
+              (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
           return (
             <Link

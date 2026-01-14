@@ -618,25 +618,25 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Ask user if questions arise
 
 - [ ] 20. Phase 4 — Stripe Integration (Checkout + Webhooks)
-  - [ ] 20.1 Installer Stripe
+  - [x] 20.1 Installer Stripe
     - `npm install stripe @stripe/stripe-js`
     - Configurer env variables (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET)
     - _Requirements: 14.1, 18.1_
 
-  - [ ] 20.2 Créer le route handler checkout
+  - [x] 20.2 Créer le route handler checkout
     - src/app/api/stripe/checkout/route.ts
     - Créer Stripe Checkout session pour product purchase
     - Include metadata: fanUserId, productId
     - _Requirements: 18.1_
 
-  - [ ] 20.3 Créer la Convex action stripe.handleWebhook
+  - [x] 20.3 Créer la Convex action stripe.handleWebhook
     - convex/stripe.ts: handleWebhook action
     - Idempotency check: query processedEvents by eventId
     - If not processed: create order + orderItems
     - Mark event as processed
     - _Requirements: 18.2, 18.3, 18.4, 18.5_
 
-  - [ ] 20.4 Créer le route handler webhook
+  - [x] 20.4 Créer le route handler webhook
     - src/app/api/stripe/webhook/route.ts
     - Verify Stripe signature (stripe.webhooks.constructEvent)
     - Forward to Convex action stripe.handleWebhook
@@ -648,7 +648,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - **Validates: Requirements 18.5**
 
 - [ ] 21. Phase 5 — Downloads (Ownership-gated)
-  - [ ] 21.1 Créer les fonctions download (Convex)
+  - [x] 21.1 Créer les fonctions download (Convex)
     - convex/downloads.ts: getDownloadUrl action
     - Verify ownership: fan authenticated + orderItem exists + order status paid
     - Generate file URL from fileStorageId
@@ -656,7 +656,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Optionally log download in downloads table
     - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5_
 
-  - [ ] 21.2 Connecter Download button dans PurchaseItem
+  - [x] 21.2 Connecter Download button dans PurchaseItem
     - Call Convex downloads.getDownloadUrl
     - Open URL on success
     - Show error toast on failure
@@ -666,7 +666,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - **Property 14: Download Ownership Verification**
     - **Validates: Requirements 17.3, 17.4, 17.5**
 
-- [ ] 22. Checkpoint 4 — Vérifier intégrations complètes
+- [x] 22. Checkpoint 4 — Vérifier intégrations complètes
   - Ensure Clerk auth works (sign-in, sign-up, role selection)
   - Verify Convex queries/mutations work end-to-end
   - Test Stripe checkout flow (test mode)
@@ -675,24 +675,24 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Ask user if questions arise
 
 - [ ] 23. Phase 6 — Qualité / Fidélité Design
-  - [ ] 23.1 Audit UI Landing page
+  - [x] 23.1 Audit UI Landing page
     - Vérifier fidélité avec screenshots SuperDesign
     - Ajuster spacing, radius, colors si nécessaire
     - _Requirements: UI Fidelity Contract_
 
-  - [ ] 23.2 Audit UI Public Hub
+  - [x] 23.2 Audit UI Public Hub
     - Vérifier fidélité avec screenshots SuperDesign
     - _Requirements: UI Fidelity Contract_
 
-  - [ ] 23.3 Audit UI Artist Dashboard
+  - [x] 23.3 Audit UI Artist Dashboard
     - Vérifier fidélité avec screenshots SuperDesign
     - _Requirements: UI Fidelity Contract_
 
-  - [ ] 23.4 Audit UI Fan Dashboard
+  - [x] 23.4 Audit UI Fan Dashboard
     - Vérifier fidélité avec screenshots SuperDesign
     - _Requirements: UI Fidelity Contract_
 
-  - [ ] 23.5 Vérifier responsive (mobile + desktop)
+  - [x] 23.5 Vérifier responsive (mobile + desktop)
     - Tester tous les breakpoints
     - Vérifier bottom nav mobile, sidebar desktop
     - _Requirements: 12.1-12.5_

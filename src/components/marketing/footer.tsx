@@ -5,8 +5,8 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border/50 bg-background">
-      <div className="container mx-auto px-4 py-8 md:px-6">
-        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+      <div className="container mx-auto px-4 py-10 md:px-6 md:py-12">
+        <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           {/* Brand */}
           <div className="flex items-center">
             <span className="font-serif text-lg font-semibold text-foreground">
@@ -15,7 +15,7 @@ export function Footer() {
           </div>
 
           {/* Links */}
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-8">
             <Link
               href="/terms"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"

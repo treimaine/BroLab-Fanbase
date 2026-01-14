@@ -169,7 +169,7 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
   }
 
   // Convert products to drops
-  const drops: Drop[] = (products ?? []).map((product) =>
+  const drops: Drop[] = (products ?? []).map((product: any) =>
     productToDrop(
       {
         _id: product._id,
@@ -186,7 +186,7 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
   );
 
   // Convert events
-  const eventsList: Event[] = (events ?? []).map((event) =>
+  const eventsList: Event[] = (events ?? []).map((event: any) =>
     convexEventToEvent({
       _id: event._id,
       title: event.title,

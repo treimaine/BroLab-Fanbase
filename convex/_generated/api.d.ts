@@ -9,6 +9,8 @@
  */
 
 import type * as artists from "../artists.js";
+import type * as downloads from "../downloads.js";
+import type * as downloads_helpers from "../downloads_helpers.js";
 import type * as events from "../events.js";
 import type * as files from "../files.js";
 import type * as follows from "../follows.js";
@@ -16,6 +18,7 @@ import type * as links from "../links.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as seed from "../seed.js";
+import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
 
@@ -27,6 +30,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   artists: typeof artists;
+  downloads: typeof downloads;
+  downloads_helpers: typeof downloads_helpers;
   events: typeof events;
   files: typeof files;
   follows: typeof follows;
@@ -34,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   orders: typeof orders;
   products: typeof products;
   seed: typeof seed;
+  stripe: typeof stripe;
   users: typeof users;
   waitlist: typeof waitlist;
 }>;

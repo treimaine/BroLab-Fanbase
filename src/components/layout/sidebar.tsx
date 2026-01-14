@@ -83,9 +83,13 @@ export function Sidebar({ role, user, onSignOut }: Readonly<SidebarProps>) {
       <nav className="flex-1 overflow-y-auto px-4 py-6">
         <ul className="space-y-1">
           {navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            // For fan feed route, only match exact path
+            // For other routes, allow startsWith matching
+            const isFanFeedRoute = role === "fan" && item.href === `/me/${user.username}`;
+            const isActive = isFanFeedRoute
+              ? pathname === item.href
+              : pathname === item.href ||
+                (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
             return (
               <li key={item.href}>

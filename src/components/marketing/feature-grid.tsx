@@ -56,38 +56,39 @@ export function FeatureGrid() {
   };
 
   return (
-    <section className="relative px-4 py-16 md:px-6 md:py-24">
+    <section className="relative px-4 py-20 md:px-6 md:py-32">
       <motion.div
-        className="mx-auto max-w-5xl"
+        className="mx-auto max-w-6xl"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
       >
-        <div className="grid gap-6 md:grid-cols-3 md:gap-8">
+        <div className="grid gap-8 md:grid-cols-3 md:gap-10">
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={itemVariants}
               className={cn(
-                "group relative rounded-2xl border border-border/50 bg-card p-6 md:p-8",
-                "transition-all duration-300",
-                "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                "group relative rounded-2xl border border-border/50 bg-card p-8 md:p-10",
+                "transition-all duration-300 ease-out",
+                "hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5",
+                "hover:-translate-y-1"
               )}
             >
               {/* Icon container */}
               <div
                 className={cn(
-                  "mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl",
+                  "mb-5 inline-flex h-14 w-14 items-center justify-center rounded-xl",
                   "bg-primary/10 text-primary",
-                  "transition-colors duration-300 group-hover:bg-primary/15"
+                  "transition-all duration-300 group-hover:bg-primary/15 group-hover:scale-110"
                 )}
               >
-                <feature.icon className="h-6 w-6" />
+                <feature.icon className="h-7 w-7" />
               </div>
 
               {/* Title */}
-              <h3 className="mb-2 font-serif text-xl font-semibold tracking-tight">
+              <h3 className="mb-3 font-serif text-xl font-semibold tracking-tight md:text-2xl">
                 {feature.title}
               </h3>
 
