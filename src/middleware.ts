@@ -63,10 +63,9 @@ async function getUsername(userId: string): Promise<string> {
 }
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
   const url = req.nextUrl;
 
-  // Allow public routes
+  // Allow public routes FIRST (before calling auth())
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
@@ -76,6 +75,9 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
+  // Now check auth for protected routes
+  const { userId } = await auth();
+
   // Redirect unauthenticated users to sign-in
   if (!userId) {
     const signInUrl = new URL("/sign-in", req.url);
@@ -83,7 +85,7 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Get user's role
+  // Get user's role (only for protected routes)
   const role = await getUserRole(userId);
 
   // If user has no role, redirect to onboarding (unless already there)

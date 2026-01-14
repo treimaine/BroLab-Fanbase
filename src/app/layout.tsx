@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { GlobalPlayerProvider } from "@/components/player";
 import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
+import { UserSyncProvider } from "@/components/providers/user-sync-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
@@ -33,9 +34,11 @@ export default function RootLayout({
         <body className={`${inter.variable} ${playfair.variable} font-sans`}>
           <ConvexClientProvider>
             <ThemeProvider>
-              <GlobalPlayerProvider>
-                {children}
-              </GlobalPlayerProvider>
+              <UserSyncProvider>
+                <GlobalPlayerProvider>
+                  {children}
+                </GlobalPlayerProvider>
+              </UserSyncProvider>
               <Toaster />
             </ThemeProvider>
           </ConvexClientProvider>

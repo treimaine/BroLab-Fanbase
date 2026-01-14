@@ -12,6 +12,7 @@ import type * as artists from "../artists.js";
 import type * as events from "../events.js";
 import type * as files from "../files.js";
 import type * as follows from "../follows.js";
+import type * as links from "../links.js";
 import type * as products from "../products.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   files: typeof files;
   follows: typeof follows;
+  links: typeof links;
   products: typeof products;
   seed: typeof seed;
   users: typeof users;

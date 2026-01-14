@@ -33,6 +33,7 @@ This prevents architecture drift and avoids fighting RSC boundaries during MVP.
 │  │  (marketing)│  │   (auth)    │  │  (public)   │             │
 │  │  Landing    │  │  Sign-in    │  │ [artistSlug]│             │
 │  └─────────────┘  │  Sign-up    │  └─────────────┘             │
+│                   │  Onboarding │                               │
 │                   └─────────────┘                               │
 │  ┌─────────────────────────┐  ┌─────────────────────────┐      │
 │  │        (fan)            │  │       (artist)          │      │
@@ -43,6 +44,7 @@ This prevents architecture drift and avoids fighting RSC boundaries during MVP.
 │                      MIDDLEWARE (Clerk)                         │
 │  - Route protection based on auth + role                        │
 │  - Redirect logic for /me → /me/[username]                      │
+│  - Role-based access control (artist vs fan)                    │
 ├─────────────────────────────────────────────────────────────────┤
 │                         SERVICES                                │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐                      │
@@ -53,259 +55,170 @@ This prevents architecture drift and avoids fighting RSC boundaries during MVP.
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Route Groups Structure
+### Route Groups Structure (Implemented)
 
 ```
 src/app/
 ├── (marketing)/
 │   ├── layout.tsx          # Minimal navbar layout
-│   └── page.tsx            # Landing page
+│   └── page.tsx            # Landing page with waitlist
 ├── (auth)/
-│   ├── layout.tsx          # Centered auth layout
 │   ├── sign-in/[[...sign-in]]/page.tsx
 │   ├── sign-up/[[...sign-up]]/page.tsx
-│   └── onboarding/page.tsx # Role selection
+│   └── onboarding/page.tsx # Role selection (Artist/Fan)
 ├── (fan)/
-│   ├── layout.tsx          # AppShell with fan nav
 │   └── me/
-│       ├── page.tsx        # Redirect to /me/[username]
 │       └── [username]/
-│           ├── page.tsx    # Feed
-│           ├── purchases/page.tsx
-│           └── billing/page.tsx
+│           ├── page.tsx    # Feed (placeholder)
+│           ├── purchases/  # (planned)
+│           └── billing/    # (planned)
 ├── (artist)/
 │   ├── layout.tsx          # AppShell with artist nav
 │   └── dashboard/
-│       ├── page.tsx        # Overview
-│       ├── profile/page.tsx
-│       ├── links/page.tsx
-│       ├── events/page.tsx
-│       ├── products/page.tsx
-│       └── billing/page.tsx
+│       ├── page.tsx        # Overview with stats
+│       ├── profile/page.tsx # Profile & Bio management
+│       └── links/page.tsx  # Custom Links management
 ├── (public)/
 │   └── [artistSlug]/page.tsx  # Public hub
 ├── api/
+│   ├── onboarding/
+│   │   └── set-role/route.ts  # Role assignment API
 │   └── stripe/
-│       ├── checkout/route.ts
-│       └── webhook/route.ts
+│       ├── checkout/route.ts  # (planned)
+│       └── webhook/route.ts   # (planned)
 ├── layout.tsx              # Root layout (providers)
+├── page.tsx                # Redirect to (marketing)
 └── globals.css             # Theme tokens
 ```
 
-## Components and Interfaces
+## Components (Implemented)
 
-### Core Layout Components
+### Layout Components
 
-```typescript
-// src/components/layout/app-shell.tsx
-interface AppShellProps {
-  children: React.ReactNode;
-  role: "fan" | "artist";
-}
-
-// Renders:
-// - Desktop (>= lg): Sidebar + main content
-// - Mobile (< lg): TopBar + main content + BottomNav
+```
+src/components/layout/
+├── app-shell.tsx       # Main layout (sidebar desktop / topbar+bottomnav mobile)
+├── sidebar.tsx         # Desktop navigation sidebar
+├── top-bar.tsx         # Mobile top bar with burger menu
+├── bottom-nav.tsx      # Mobile bottom navigation
+├── mobile-drawer.tsx   # Sheet drawer for mobile navigation
+├── theme-provider.tsx  # next-themes provider
+└── theme-toggle.tsx    # Light/dark mode toggle
 ```
 
-```typescript
-// src/components/layout/sidebar.tsx
-interface SidebarProps {
-  role: "fan" | "artist";
-  user: {
-    name: string;
-    avatar?: string;
-    username: string;
-  };
-  currentPath: string;
-}
+### Marketing Components
 
-// Navigation items based on role
-const fanNavItems = [
-  { href: "/me/{username}", icon: Home, label: "Feed" },
-  { href: "/me/{username}/purchases", icon: ShoppingBag, label: "Purchases" },
-  { href: "/me/{username}/billing", icon: CreditCard, label: "Billing" },
-];
-
-const artistNavItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
-  { href: "/dashboard/profile", icon: User, label: "Profile & Bio" },
-  { href: "/dashboard/links", icon: Link, label: "Links" },
-  { href: "/dashboard/events", icon: Calendar, label: "Events" },
-  { href: "/dashboard/products", icon: Music, label: "Products" },
-  { href: "/dashboard/billing", icon: Wallet, label: "Billing" },
-];
+```
+src/components/marketing/
+├── hero-section.tsx      # Landing hero with waitlist form
+├── feature-grid.tsx      # 3-column feature showcase
+├── footer.tsx            # Site footer
+└── marketing-navbar.tsx  # Landing page navbar
 ```
 
-```typescript
-// src/components/layout/bottom-nav.tsx
-interface BottomNavProps {
-  role: "fan" | "artist";
-  currentPath: string;
-}
+### Hub Components (Public Artist Page)
 
-// Fixed bottom navigation for mobile
-// **Icons + short labels** (app-like, iOS/Android)
-// Max 4-5 items
+```
+src/components/hub/
+├── hub-header.tsx        # Cover, avatar, bio, follow button, social icons
+├── drops-list.tsx        # Latest Drops tab content
+├── events-list.tsx       # Tour Dates tab content
+└── artist-links-list.tsx # (DEPRECATED - not displayed on public hub)
 ```
 
-```typescript
-// src/components/layout/top-bar.tsx
-interface TopBarProps {
-  title?: string;
-  showBurger?: boolean;
-  onBurgerClick?: () => void;
-  actions?: React.ReactNode;
-}
+### Dashboard Components
 
-// Mobile top bar with brand, burger menu, optional actions
 ```
-
-### Page-Specific Components
-
-```typescript
-// Landing Page
-// src/components/marketing/hero-section.tsx
-interface HeroSectionProps {
-  onJoinBeta: (email: string) => Promise<void>;
-}
-
-// src/components/marketing/feature-grid.tsx
-interface Feature {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}
-```
-
-```typescript
-// Public Hub
-// src/components/hub/hub-header.tsx
-interface HubHeaderProps {
-  artist: {
-    name: string;
-    bio: string;
-    avatarUrl: string;
-    coverUrl: string;
-    socials: Social[];
-  };
-  isFollowing: boolean;
-  onFollowToggle: () => void;
-}
-
-// src/components/hub/drops-list.tsx
-interface Drop {
-  id: string;
-  title: string;
-  type: "music" | "video" | "merch";
-  imageUrl: string;
-  price?: number;
-  releaseDate: string;
-}
-
-// src/components/hub/events-list.tsx
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  venue: string;
-  city: string;
-  ticketUrl: string;
-  imageUrl?: string;
-  status: "upcoming" | "sold-out" | "past";
-}
-```
-
-```typescript
-// Artist Dashboard
-// src/components/dashboard/stats-card.tsx
-interface StatsCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  icon: LucideIcon;
-}
-
-// src/components/dashboard/setup-checklist.tsx
-interface ChecklistItem {
-  id: string;
-  label: string;
-  completed: boolean;
-  href: string;
-}
-
-// src/components/dashboard/balance-card.tsx
-interface BalanceCardProps {
-  available: number;
-  pending: number;
-  lastPayout: number;
-  currency: string;
-}
-```
-
-```typescript
-// Fan Dashboard
-// src/components/feed/feed-card.tsx
-interface FeedCardProps {
-  post: {
-    id: string;
-    artist: { name: string; avatarUrl: string; slug: string };
-    content: string;
-    imageUrl?: string;
-    type: "release" | "event" | "merch" | "update";
-    createdAt: string;
-    likes: number;
-    comments: number;
-  };
-  onLike: () => void;
-  onComment: () => void;
-  onShare: () => void;
-}
-
-// src/components/feed/community-widget.tsx
-interface CommunityWidgetProps {
-  followingCount: number;
-  eventsCount: number;
-}
+src/components/dashboard/
+├── stats-card.tsx         # Metric display card
+├── setup-checklist.tsx    # Onboarding progress checklist
+├── create-content-card.tsx # Quick actions card
+└── link-item.tsx          # Link row in links management
 ```
 
 ### Form Components
 
-```typescript
-// src/components/forms/profile-form.tsx
-interface ProfileFormData {
-  displayName: string;
-  slug: string;
-  bio: string;
-  avatarUrl: string;
-  socials: {
-    platform: string;
-    url: string;
-    active: boolean;
-  }[];
-}
-
-// src/components/forms/product-form.tsx
-interface ProductFormData {
-  title: string;
-  description: string;
-  type: "music" | "video";
-  priceUSD: number;
-  visibility: "public" | "private";
-  coverImageUrl: string;
-  file?: File;
-}
-
-// src/components/forms/event-form.tsx
-interface EventFormData {
-  title: string;
-  date: string;
-  venue: string;
-  city: string;
-  ticketUrl: string;
-  imageUrl?: string;
-}
 ```
+src/components/forms/
+├── profile-form.tsx       # Artist profile editing
+├── social-links-list.tsx  # Social links toggle list
+└── add-link-dialog.tsx    # Dialog for adding custom links
+```
+
+### Player Components (Media Playback)
+
+```
+src/components/player/
+├── global-player-provider.tsx  # Audio element manager (singleton)
+├── featured-track-card.tsx     # Featured track with controls (DO NOT RENAME)
+├── media-card-overlay.tsx      # Play/pause overlay for cards
+├── video-modal.tsx             # Video playback modal
+└── player-demo.tsx             # Demo/test component
+```
+
+### UI Components (shadcn/ui)
+
+```
+src/components/ui/
+├── avatar.tsx      ├── badge.tsx       ├── button.tsx
+├── card.tsx        ├── dialog.tsx      ├── dropdown-menu.tsx
+├── form.tsx        ├── input.tsx       ├── label.tsx
+├── select.tsx      ├── separator.tsx   ├── sheet.tsx
+├── skeleton.tsx    ├── sonner.tsx      ├── switch.tsx
+└── tabs.tsx
+```
+
+### Providers
+
+```
+src/components/providers/
+└── convex-client-provider.tsx  # ConvexProviderWithClerk wrapper
+```
+
+## Public Hub — Layout (UPDATED)
+
+> **IMPORTANT**: Linktree-style links display has been REMOVED from Public Hub.
+
+### Placement in page hierarchy
+Public Hub layout order:
+1. HubHeader (cover/avatar/follow/social icon pills from `artists.socials[]`)
+2. Tabs: Latest Drops / Tour Dates
+3. Tab content
+
+### Social Icons
+- Social icon pills are driven by `artists.socials[]` (managed in Profile & Bio → Social Links)
+- NO separate links list is displayed on the Public Hub
+
+## Dashboard — Custom Links
+
+### Purpose
+The `/dashboard/links` page manages "Custom Links" for merch, booking, press kit, newsletter, etc.
+These links are NOT displayed on the Public Hub (reserved for future use).
+
+### UI Copy
+- Page title: "Custom Links"
+- Helper text: "Use this for merch, booking, press kit, newsletter, etc. Social platforms are managed in Profile & Bio → Social Links."
+
+### URL Domain Validation (Anti-Duplicate)
+The system SHALL reject URLs pointing to social/streaming platforms already managed in Social Links.
+
+**Blocked domains (defined in `src/lib/constants.ts`):**
+- instagram.com
+- x.com, twitter.com
+- youtube.com, youtu.be
+- spotify.com, open.spotify.com
+- tiktok.com
+- soundcloud.com
+- music.apple.com
+- facebook.com
+- twitch.tv
+
+**Error message:** "Manage social links in Profile & Bio → Social Links."
+
+### Validation Flow
+1. **UI (client-side)**: `isSocialPlatformUrl()` from constants.ts
+2. **Backend (Convex mutation)**: Re-validate URL domain before insert/update
+3. **Feedback**: Toast error with redirect suggestion
 
 ## UI Fidelity Contract (SuperDesign)
 
@@ -334,7 +247,7 @@ The MVP UI MUST match the provided SuperDesign screenshots as closely as possibl
 
 ## Data Models
 
-### Convex Schema
+### Convex Schema (Implemented)
 
 ```typescript
 // convex/schema.ts
@@ -381,12 +294,12 @@ export default defineSchema({
     .index("by_owner", ["ownerUserId"])
     .index("by_slug", ["artistSlug"]),
 
-  // Artist links (Linktree-style)
+  // Artist custom links (NOT displayed on Public Hub)
   links: defineTable({
     artistId: v.id("artists"),
     title: v.string(),
     url: v.string(),
-    type: v.string(), // "latest-release", "instagram", "youtube", etc.
+    type: v.string(),
     active: v.boolean(),
     order: v.number(),
     createdAt: v.number(),
@@ -396,7 +309,7 @@ export default defineSchema({
   events: defineTable({
     artistId: v.id("artists"),
     title: v.string(),
-    date: v.number(), // timestamp
+    date: v.number(),
     venue: v.string(),
     city: v.string(),
     ticketUrl: v.optional(v.string()),
@@ -460,7 +373,7 @@ export default defineSchema({
     productId: v.id("products"),
     type: v.union(v.literal("music"), v.literal("video")),
     priceUSD: v.number(),
-    fileStorageId: v.optional(v.id("_storage")), // snapshot at purchase time
+    fileStorageId: v.optional(v.id("_storage")),
     createdAt: v.number(),
   }).index("by_order", ["orderId"]),
 
@@ -471,7 +384,7 @@ export default defineSchema({
     processedAt: v.number(),
   }).index("by_event", ["provider", "eventId"]),
 
-  // Download logs (optional)
+  // Download logs
   downloads: defineTable({
     fanUserId: v.id("users"),
     productId: v.id("products"),
@@ -481,585 +394,257 @@ export default defineSchema({
 });
 ```
 
-### Reserved Slugs
+### Convex Functions (Implemented)
+
+| File | Functions | Status |
+|------|-----------|--------|
+| `users.ts` | upsertFromClerk, getByClerkId, getCurrentUser | ✅ |
+| `waitlist.ts` | add, getAll | ✅ |
+| `artists.ts` | getBySlug, getByOwner, getCurrentArtist, create, update, checkSlugAvailability | ✅ |
+| `links.ts` | getByArtist, getActiveByArtist, getCurrentArtistLinks, create, update, remove, reorder, toggleActive | ✅ |
+| `events.ts` | getByArtist, getUpcomingByArtist | ✅ |
+| `products.ts` | getByArtist, getPublicByArtist | ✅ |
+| `follows.ts` | toggle, isFollowing, getFollowedArtists, getFollowerCount, getFollowingCount | ✅ |
+| `files.ts` | generateUploadUrl, getPlayableUrl | ✅ |
+| `seed.ts` | seedDemoData | ✅ (dev only) |
+
+### Reserved Slugs (Implemented)
 
 ```typescript
 // src/lib/constants.ts
 export const RESERVED_SLUGS = [
-  "me",
-  "dashboard",
-  "sign-in",
-  "sign-up",
-  "api",
-  "admin",
-  "settings",
-  "help",
-  "support",
-  "about",
-  "terms",
-  "privacy",
-  "contact",
+  "me", "dashboard", "sign-in", "sign-up",
+  "api", "admin", "settings", "help",
+  "support", "about", "terms", "privacy", "contact",
 ] as const;
-
-export function isReservedSlug(slug: string): boolean {
-  return RESERVED_SLUGS.includes(slug.toLowerCase() as any);
-}
 ```
-
-### TypeScript Types
-
-```typescript
-// src/types/index.ts
-export type UserRole = "artist" | "fan";
-
-export interface User {
-  id: string;
-  clerkUserId: string;
-  role: UserRole;
-  displayName: string;
-  usernameSlug: string;
-  avatarUrl?: string;
-}
-
-export interface Artist {
-  id: string;
-  ownerUserId: string;
-  artistSlug: string;
-  displayName: string;
-  bio?: string;
-  avatarUrl?: string;
-  coverUrl?: string;
-  socials: Social[];
-}
-
-export interface Social {
-  platform: string;
-  url: string;
-  active: boolean;
-}
-
-export interface Product {
-  id: string;
-  artistId: string;
-  title: string;
-  description?: string;
-  type: "music" | "video";
-  priceUSD: number;
-  coverImageUrl?: string;
-  visibility: "public" | "private";
-  fileStorageId?: string;
-}
-
-export interface Order {
-  id: string;
-  fanUserId: string;
-  totalUSD: number;
-  status: "pending" | "paid" | "failed" | "refunded";
-  items: OrderItem[];
-}
-
-export interface OrderItem {
-  id: string;
-  productId: string;
-  type: "music" | "video";
-  priceUSD: number;
-  fileStorageId?: string;
-}
-```
-
-## File Upload & Download Flow (Convex Storage) — MVP
-
-### Artist Upload Flow (Products)
-
-MVP stores uploaded audio/video directly in **Convex File Storage**.
-
-**Steps**
-1. Artist creates a Product draft (title, type, price, visibility, coverImageUrl).
-2. System requests an upload URL from Convex (upload URL flow is required for large files).
-3. Client uploads the file to the returned upload URL.
-4. Convex returns a `storageId` (`Id<"_storage">`).
-5. System updates the product record with:
-   - `fileStorageId = storageId`
-   - `contentType`, `fileSize` (from file metadata or `_storage` lookup)
-
-**Notes**
-- Use upload URL flow to avoid request-size limits and support larger files.
-- For MVP, allow only 1 file per product (no variants).
-
-### Fan Download Flow (Ownership-gated)
-
-Downloads MUST be protected by ownership verification.
-
-**Steps**
-1. Fan clicks "Download" on a purchased item.
-2. System verifies:
-   - fan is authenticated
-   - order status = `paid`
-   - an orderItem exists for (fanUserId, productId)
-3. System generates a download URL from Convex File Storage using the stored `fileStorageId`.
-4. System returns the URL to the client.
-5. Client opens the URL to start the download.
-
-**Security Rule**
-- If verification fails, return 403 and DO NOT return any file URL.
-
-### Stripe Connect / Payouts (MVP Scope)
-
-**MVP Note:** Stripe Connect / payouts are out-of-scope for MVP. Billing pages show placeholders and future hooks only.
-
-MVP implementation is limited to:
-- showing subscription status (via Clerk Billing)
-- showing transaction placeholders
-- "Connect payouts" is a disabled CTA / Coming soon
 
 ## Auth, Role & Identity Rules (MVP)
 
-### Clerk Integration (App Router - Current Best Practices)
+### Clerk Integration (Implemented)
 
-**CRITICAL**: Always use the latest Clerk patterns for Next.js App Router.
+**Middleware** (`src/middleware.ts`):
+- Uses `clerkMiddleware()` from `@clerk/nextjs/server`
+- Route matchers for public, artist, and fan routes
+- Role-based redirects
+- `/me` → `/me/[username]` redirect
 
-#### Required Setup
-
-1. **Middleware** (`middleware.ts` in `src/` or root):
-   - Use `clerkMiddleware()` from `@clerk/nextjs/server`
-   - **NEVER** use deprecated `authMiddleware()`
-
-```typescript
-// src/middleware.ts
-import { clerkMiddleware } from "@clerk/nextjs/server";
-
-export default clerkMiddleware();
-
-export const config = {
-  matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
-  ],
-};
-```
-
-2. **ClerkProvider** (wrap app in `app/layout.tsx`):
-```typescript
-import { ClerkProvider } from "@clerk/nextjs";
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
-  );
-}
-```
-
-3. **Clerk Components** (from `@clerk/nextjs`):
-   - `<SignInButton>`, `<SignUpButton>`, `<UserButton>`
-   - `<SignedIn>`, `<SignedOut>`
-   - `<SignIn />`, `<SignUp />` for custom pages
-
-4. **Server Functions** (from `@clerk/nextjs/server`):
-   - `auth()` - get current user in Server Components/Route Handlers
-   - `currentUser()` - get full user object
-
-#### Environment Variables (Minimal)
-
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
-CLERK_SECRET_KEY=sk_test_xxx
+**Provider Setup** (`src/app/layout.tsx`):
+```tsx
+<ClerkProvider>
+  <ConvexClientProvider>
+    <ThemeProvider>
+      <GlobalPlayerProvider>
+        {children}
+      </GlobalPlayerProvider>
+    </ThemeProvider>
+  </ConvexClientProvider>
+</ClerkProvider>
 ```
 
 ### Source of Truth
 
-- Clerk is the source of truth for authentication and role:
-  - role stored in `Clerk publicMetadata.role` ("fan" | "artist")
-- Convex `users.role` is a synchronized mirror for querying and joins.
-
-### Role Sync (MVP)
-
-- On first sign-in or after onboarding, the system SHALL upsert a Convex `users` record:
-  - clerkUserId
-  - role (from Clerk publicMetadata.role)
-  - displayName / usernameSlug / avatarUrl
-- If role changes in Clerk, Convex SHALL be updated accordingly.
-
-### Fan URL Identity Safety (Prevent IDOR)
-
-- Even though routes include `/me/[username]`, the dashboard data MUST always be loaded using the authenticated Clerk userId.
-- IF `[username]` in the URL does not match the authenticated user's usernameSlug:
-  - THEN the system SHALL redirect to `/me/[authUsername]`.
-- The `[username]` segment is for user-friendly URLs only and SHALL NOT authorize data access.
-
-## Stripe Webhook Security (MVP)
-
-- Webhook endpoint MUST verify Stripe signature before processing any event.
-- Minimum supported event:
-  - `checkout.session.completed` → create paid order + orderItems
-- Idempotency MUST occur after signature verification and before order creation.
-- No webhook payload data SHALL be trusted without verification.
-
-## Secure Download URL Rules (MVP)
-
-- Download URLs MUST be generated server-side (Convex action) after ownership verification.
-- URLs MUST be short-lived and MUST NOT be stored in database.
-- System SHALL NEVER return a file URL if ownership checks fail.
-
-## Upload Limits (MVP)
-
-To keep Convex storage/bandwidth under control during MVP:
-
-- Accept only:
-  - audio: mp3, wav
-  - video: mp4
-- Enforce max sizes:
-  - audio <= 50MB
-  - video <= 200MB
-- If file exceeds limit, reject with a clear error message.
-- Note: migrate large video storage to Cloudflare R2 later.
-
-
-
-## Correctness Properties
-
-*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
-
-### Property 1: Email Validation Rejects Invalid Formats
-
-*For any* string that does not match a valid email format (missing @, invalid domain, etc.), submitting it to the waitlist form SHALL be rejected and no record SHALL be created in the database.
-
-**Validates: Requirements 1.4**
-
-### Property 2: Waitlist Email Round-Trip
-
-*For any* valid email address, submitting it to the waitlist and then querying the waitlist SHALL return a record containing that exact email.
-
-**Validates: Requirements 1.3**
-
-### Property 3: Route Protection by Authentication and Role
-
-*For any* protected route and user state combination:
-- Unauthenticated users accessing /dashboard/* or /me/* SHALL be redirected to /sign-in
-- Authenticated fans accessing /dashboard/* SHALL be redirected away
-- Authenticated artists accessing /me/* (except public routes) SHALL be redirected away
-
-**Validates: Requirements 2.5, 2.6, 2.8**
-
-### Property 4: Role Selection Persistence
-
-*For any* role selection ("artist" or "fan"), after a user selects a role, querying their Clerk publicMetadata SHALL return that exact role value.
-
-**Validates: Requirements 2.4**
-
-### Property 5: Artist Slug Resolution
-
-*For any* valid artistSlug in the database, accessing /[artistSlug] SHALL return the corresponding artist's hub data. *For any* slug not in the database, accessing /[artistSlug] SHALL return a 404 response.
-
-**Validates: Requirements 3.1, 3.7**
-
-### Property 6: Follow Toggle Round-Trip
-
-*For any* authenticated fan and artist pair, toggling follow status twice SHALL return to the original follow state (following → not following → following, or vice versa).
-
-**Validates: Requirements 3.5**
-
-### Property 7: Profile Data Round-Trip
-
-*For any* valid profile data (displayName, slug, bio, socials), saving the profile and then fetching it SHALL return equivalent data.
-
-**Validates: Requirements 5.4**
-
-### Property 8: Slug Uniqueness Enforcement
-
-*For any* artistSlug that already exists in the database, attempting to create or update another artist with the same slug SHALL fail with an error.
-
-**Validates: Requirements 5.5**
-
-### Property 9: Reserved Slug Rejection
-
-*For any* slug in the reserved keywords list (me, dashboard, sign-in, sign-up, api, admin, settings), attempting to create an artist with that slug SHALL fail with an error.
-
-**Validates: Requirements 15.7**
-
-### Property 10: Fan Dashboard URL Contains Username
-
-*For any* authenticated fan accessing /me, the redirect destination SHALL be /me/[username] where username matches the fan's usernameSlug.
-
-**Validates: Requirements 9.1**
-
-### Property 11: Theme Toggle Persistence
-
-*For any* theme preference (light or dark), after toggling the theme, the preference SHALL be persisted and subsequent page loads SHALL apply that theme.
-
-**Validates: Requirements 13.3**
-
-### Property 12: File Upload Round-Trip
-
-*For any* valid file uploaded via Convex File Storage, retrieving the file using the returned fileStorageId SHALL return the exact same file content.
-
-**Validates: Requirements 16.4**
-
-### Property 13: Product Record Contains FileStorageId After Upload
-
-*For any* successful file upload, the associated product record SHALL contain a valid fileStorageId that can be used to retrieve the file.
-
-**Validates: Requirements 16.5**
-
-### Property 14: Download Ownership Verification
-
-*For any* fan attempting to download a product:
-- IF an orderItem exists linking the fan to the product with status "paid", THEN a valid file URL SHALL be returned
-- IF no such orderItem exists, THEN no file URL SHALL be returned and a 403 error SHALL be shown
-
-**Validates: Requirements 17.3, 17.4, 17.5**
-
-### Property 15: Order Creation on Payment Success
-
-*For any* Stripe webhook event with type "checkout.session.completed", an order record SHALL be created with status "paid" and corresponding orderItems.
-
-**Validates: Requirements 18.2**
-
-### Property 16: Webhook Idempotency
-
-*For any* Stripe webhook event, processing the same eventId twice SHALL NOT create duplicate orders. The second processing SHALL be a no-op.
-
-**Validates: Requirements 18.5**
-
-## Error Handling
-
-### Client-Side Errors
-
-| Error Type | Handling Strategy | User Feedback |
-|------------|-------------------|---------------|
-| Form validation | Zod schema validation | Inline field errors via shadcn Form |
-| Network timeout | Convex hooks + manual retry | Toast with retry button |
-| 401 Unauthorized | Redirect to /sign-in | - |
-| 403 Forbidden | Show error page | "You don't have access to this resource" |
-| 404 Not Found | Show 404 page | "Page not found" |
-| 500 Server Error | Show error boundary | "Something went wrong. Please try again." |
-
-**Note (MVP):** No React Query for MVP. Convex hooks are the default data layer.
-
-### Server-Side Errors
-
-| Error Type | Handling Strategy | Logging |
-|------------|-------------------|---------|
-| Convex mutation failure | Return error object | Log to Convex dashboard |
-| Stripe API error | Catch and return user-friendly message | Log with Stripe error code |
-| Clerk auth error | Redirect to sign-in | Log auth failure reason |
-| File upload failure | Return error with retry suggestion | Log file size and type |
-
-### Webhook Error Handling
+- **Clerk**: Authentication + role (`publicMetadata.role`)
+- **Convex**: Synchronized mirror for queries and joins
+
+### Role Sync Flow
+
+1. User signs up via Clerk
+2. Onboarding page → select role (Artist/Fan)
+3. API route `/api/onboarding/set-role` updates Clerk metadata
+4. Convex `users.upsertFromClerk` syncs user record
+
+### Fan URL Identity Safety (IDOR Prevention)
+
+- Dashboard data loaded using authenticated Clerk userId
+- URL `[username]` is cosmetic only
+- Mismatch redirects to correct `/me/[authUsername]`
+
+## Media Player System (Audio/Video) — MVP
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  GlobalPlayerProvider                    │
+│  - Singleton <audio> element                            │
+│  - Event listeners → Zustand store                      │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│                    player-store.ts                       │
+│  - currentTrack, status, currentTime, duration          │
+│  - volume, isMuted, queue, queueIndex                   │
+│  - Actions: loadAndPlay, togglePlayPause, seek, etc.    │
+└─────────────────────────────────────────────────────────┘
+                           │
+           ┌───────────────┼───────────────┐
+           ▼               ▼               ▼
+    FeaturedTrackCard  MediaCardOverlay  VideoModal
+```
+
+### Player State (Zustand Store)
 
 ```typescript
-// Stripe webhook error handling pattern
-export async function POST(req: Request) {
-  try {
-    const event = await verifyStripeWebhook(req);
-    
-    // Check idempotency
-    const processed = await ctx.db.query("processedEvents")
-      .withIndex("by_event", q => q.eq("provider", "stripe").eq("eventId", event.id))
-      .first();
-    
-    if (processed) {
-      return new Response("Already processed", { status: 200 });
-    }
-    
-    // Process event
-    await handleStripeEvent(event);
-    
-    // Mark as processed
-    await ctx.db.insert("processedEvents", {
-      provider: "stripe",
-      eventId: event.id,
-      processedAt: Date.now(),
-    });
-    
-    return new Response("OK", { status: 200 });
-  } catch (error) {
-    console.error("Webhook error:", error);
-    return new Response("Webhook error", { status: 400 });
-  }
+interface PlayerState {
+  currentTrack: Track | null;
+  status: "idle" | "loading" | "playing" | "paused" | "error";
+  currentTime: number;
+  duration: number;
+  volume: number;
+  isMuted: boolean;
+  queue: Track[];
+  queueIndex: number;
+  error: string | null;
 }
 ```
 
+### Key Components
+
+| Component | Purpose | Requirements |
+|-----------|---------|--------------|
+| `GlobalPlayerProvider` | Audio element manager, event wiring | 19.1 |
+| `FeaturedTrackCard` | Featured track with controls (DO NOT RENAME) | 19.3 |
+| `MediaCardOverlay` | Play/pause overlay for cards | 19.3 |
+| `VideoModal` | Video playback modal | 19.4 |
+
+### URL Resolution
+
+- `files.getPlayableUrl({ storageId })` → ephemeral URL
+- Public products: streamable
+- Purchased content: ownership-gated via `downloads.getDownloadUrl`
+
+### Accessibility (19.6)
+
+- Keyboard: Space toggles play/pause when focused
+- Error handling: Toast + reset state on failed URLs
+
+## File Upload & Download Flow
+
+### Artist Upload Flow
+
+1. Artist creates Product draft
+2. Request upload URL from Convex (`files.generateUploadUrl`)
+3. Client uploads file to URL
+4. Convex returns `storageId`
+5. Update product with `fileStorageId`, `contentType`, `fileSize`
+
+### Fan Download Flow (Ownership-gated)
+
+1. Fan clicks "Download"
+2. Verify: authenticated + order paid + orderItem exists
+3. Generate download URL from `fileStorageId`
+4. Return URL (or 403 if verification fails)
+
+### Upload Limits
+
+- Audio: mp3, wav (≤ 50MB)
+- Video: mp4 (≤ 200MB)
+
+## Stripe Integration (Planned)
+
+### Webhook Security
+
+- Verify signature before processing
+- Idempotency via `processedEvents` table
+- Supported event: `checkout.session.completed`
+
+### MVP Scope
+
+- Stripe Connect / payouts: OUT OF SCOPE
+- Billing pages show placeholders only
+
+## Error Handling
+
+### Client-Side
+
+| Error Type | Strategy | Feedback |
+|------------|----------|----------|
+| Form validation | Zod schema | Inline FormMessage |
+| Network timeout | Convex hooks + retry | Toast with retry |
+| 401 Unauthorized | Redirect to /sign-in | - |
+| 403 Forbidden | Error page | "Access denied" |
+| 404 Not Found | 404 page | "Page not found" |
+| 500 Server Error | Error boundary | "Something went wrong" |
+
+### Server-Side
+
+| Error Type | Strategy | Logging |
+|------------|----------|---------|
+| Convex mutation failure | Return error object | Convex dashboard |
+| Stripe API error | User-friendly message | Stripe error code |
+| File upload failure | Retry suggestion | File size/type |
+
+## Correctness Properties
+
+### Core Properties
+
+| # | Property | Validates |
+|---|----------|-----------|
+| 1 | Email validation rejects invalid formats | Req 1.4 |
+| 2 | Waitlist email round-trip | Req 1.3 |
+| 3 | Route protection by auth + role | Req 2.5, 2.6, 2.8 |
+| 4 | Role selection persistence | Req 2.4 |
+| 5 | Artist slug resolution | Req 3.1, 3.7 |
+| 6 | Follow toggle round-trip | Req 3.5 |
+| 7 | Profile data round-trip | Req 5.4 |
+| 8 | Slug uniqueness enforcement | Req 5.5 |
+| 9 | Reserved slug rejection | Req 15.7 |
+| 10 | Fan dashboard URL contains username | Req 9.1 |
+| 11 | Theme toggle persistence | Req 13.3 |
+| 12 | File upload round-trip | Req 16.4 |
+| 13 | Product record contains fileStorageId | Req 16.5 |
+| 14 | Download ownership verification | Req 17.3-17.5 |
+| 15 | Order creation on payment success | Req 18.2 |
+| 16 | Webhook idempotency | Req 18.5 |
+
+### Media Player Properties
+
+| # | Property | Validates |
+|---|----------|-----------|
+| MP1 | Single active playback | Req 19.1 |
+| MP2 | FeaturedTrackCard reflects global state | Req 19.3 |
+| MP3 | Overlay control reflects state | Req 19.3 |
+
 ## Testing Strategy
 
-### Dual Testing Approach
+### Framework
 
-This project uses both unit tests and property-based tests for comprehensive coverage:
+- Unit/Integration: Vitest + React Testing Library
+- Property-Based: fast-check
+- E2E: Playwright (optional)
 
-- **Unit tests**: Verify specific examples, edge cases, and error conditions
-- **Property tests**: Verify universal properties across all valid inputs
+### MVP Test Scope (Critical Paths Only)
 
-### Testing Framework
-
-- **Unit/Integration Tests**: Vitest + React Testing Library
-- **Property-Based Tests**: fast-check (JavaScript PBT library)
-- **E2E Tests**: Playwright (optional, for critical flows)
-
-### Property-Based Testing Configuration
-
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
-  },
-});
-
-// Property test example
-import { fc } from "fast-check";
-
-describe("Email Validation", () => {
-  // Feature: brolab-fanbase, Property 1: Email Validation Rejects Invalid Formats
-  it("should reject all invalid email formats", () => {
-    fc.assert(
-      fc.property(
-        fc.string().filter(s => !isValidEmailFormat(s)),
-        (invalidEmail) => {
-          const result = validateEmail(invalidEmail);
-          expect(result.success).toBe(false);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-});
-```
-
-### Test Organization
-
-```
-src/
-├── test/
-│   ├── setup.ts              # Test setup and mocks
-│   ├── utils.ts              # Test utilities
-│   └── generators.ts         # fast-check generators
-├── components/
-│   └── __tests__/
-│       ├── feed-card.test.tsx
-│       └── stats-card.test.tsx
-├── lib/
-│   └── __tests__/
-│       ├── slugify.test.ts
-│       ├── slugify.property.test.ts
-│       └── validation.property.test.ts
-convex/
-└── __tests__/
-    ├── users.test.ts
-    ├── artists.test.ts
-    └── orders.property.test.ts
-```
-
-### Test Coverage Requirements
-
-| Area | Unit Tests | Property Tests |
-|------|------------|----------------|
-| Slug validation | Edge cases (empty, special chars) | All reserved slugs rejected |
-| Email validation | Common invalid formats | All invalid formats rejected |
-| Follow toggle | Specific user/artist pairs | Round-trip for any pair |
-| Profile save | Specific profile data | Round-trip for any valid data |
-| Webhook idempotency | Duplicate event scenario | Any event processed once |
-| Download auth | Owned/not-owned scenarios | Ownership verification for any pair |
-
-### Minimum Test Iterations
-
-- Property-based tests: **100 iterations minimum** per property
-- Each property test must reference its design document property number
-- Tag format: `Feature: brolab-fanbase, Property {number}: {property_text}`
-
-### MVP Test Scope (Pragmatic)
-
-For MVP, implement tests only for critical correctness:
 - Reserved slug rejection (Property 9)
 - /me → /me/[username] redirect (Property 10)
 - Download ownership verification (Property 14)
 - Webhook idempotency (Property 16)
 
-Property-based tests are limited to these critical paths to keep velocity high.
+## Implementation Status
 
+### ✅ Completed
 
-## Media Player System (Audio/Video) — MVP
+- Landing page with waitlist
+- Authentication (Clerk) + role selection
+- Middleware with role-based routing
+- Public Artist Hub (header, tabs, drops, events)
+- Artist Dashboard (overview, profile, links)
+- Follow/unfollow functionality
+- Theme system (light/dark)
+- Global audio player
+- FeaturedTrackCard component
 
-### Goals
-- Provide a global, persistent audio player across routes (fan/artist/public).
-- Match SuperDesign interactions (hover play overlay, featured track card).
-- Keep implementation compatible with Next.js App Router + Clerk + Convex hooks.
+### 🚧 In Progress
 
-### High-Level Architecture
-- Client-only player state store (single source of truth).
-- One <audio> element controlled by the store.
-- Convex functions provide ephemeral playable URLs from fileStorageId.
+- Products management page
+- Events management page
 
-### Key Components (DO NOT RENAME)
-- `FeaturedTrackCard` (functional; controls global player)
-- `MediaCardOverlayButton` (Play/Pause overlay used on drops/feed cards)
-- `MiniPlayerBar` (optional MVP; persistent bottom bar on dashboards)
-- `VideoModal` (MVP viewer for video products)
+### 📋 Planned
 
-### Player State (Concept)
-State fields:
-- `currentTrack: { id, title, artistName, artworkUrl?, fileStorageId?, mediaType: "audio" | "video" } | null`
-- `status: "idle" | "loading" | "playing" | "paused" | "error"`
-- `currentTime`, `duration`
-- `volume`, `muted`
-- `queue: track[]` + `queueIndex`
-
-Actions:
-- `loadAndPlay(track)`
-- `togglePlayPause()`
-- `seek(timeSeconds)`
-- `next()`, `prev()`
-- `setVolume(v)`
-
-### URL Resolution (Convex)
-- Convex server function: `files.getPlayableUrl({ storageId }) -> string`
-- For gated content:
-  - `downloads.getDownloadUrl(...)` remains ownership-protected
-- Public streaming uses `getPlayableUrl` only when visibility="public".
-
-### UI Behavior Details
-
-#### 1) Hover Play/Pause Overlay (Cards)
-- Media cards (drops/feed/products) use `group` hover:
-  - Overlay fades in on hover (desktop) and appears on tap (mobile)
-  - If track is current and playing => show Pause icon
-  - Else => show Play icon
-- Overlay button is centered, rounded-full, slightly blurred background.
-
-#### 2) FeaturedTrackCard (Functional)
-- Must:
-  - Display title + artist
-  - Play/Pause button controls global player
-  - Progress bar reflects current playback and supports seeking (MVP: clickable bar)
-- Visual style: match SuperDesign gradient card; use theme tokens; keep typography contract.
-
-#### 3) Video Playback
-- Video items:
-  - Open `VideoModal` with <video controls>
-  - On open: pause global audio (MVP default)
-  - On close: keep audio paused (simple rule)
-
-### MVP Tradeoffs
-- No waveform required for MVP (progress bar only).
-- Queue can be 1-item initially, but API should support future expansion.
-
-### Correctness Properties (Media Player)
-
-#### Property MP1: Single Active Playback
-*For any* two media items A and B, starting playback for item B SHALL automatically pause item A. Only one media item SHALL play at a time.
-
-**Validates: Requirements 19.1**
-
-#### Property MP2: FeaturedTrackCard Reflects Global State
-*For any* track displayed in FeaturedTrackCard, IF that track is the current track AND status is "playing", THEN FeaturedTrackCard SHALL show Pause button. IF status is "paused" or track is not current, THEN it SHALL show Play button.
-
-**Validates: Requirements 19.3**
-
-#### Property MP3: Overlay Control Reflects State
-*For any* media card with overlay controls, the overlay SHALL show Play when the item is not currently playing, and Pause when the item is currently playing.
-
-**Validates: Requirements 19.3**
+- Fan Dashboard (feed, purchases, billing)
+- Artist Billing page
+- Stripe checkout integration
+- Stripe webhooks
+- Download system with ownership verification

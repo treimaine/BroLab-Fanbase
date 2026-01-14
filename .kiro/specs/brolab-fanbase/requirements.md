@@ -70,6 +70,43 @@ MVP stores uploaded audio/video in Convex File Storage; for larger scale and hea
 6. WHEN a visitor clicks "Follow" while unauthenticated, THE System SHALL redirect to sign-in
 7. WHEN an invalid artistSlug is accessed, THE System SHALL display a 404 page
 
+### Public Hub — Artist Links (DEPRECATED)
+
+> **DEPRECATED**: Linktree-style links display on Public Hub has been removed.
+> The Public Hub now only displays: HubHeader (with social icons) → Tabs (Latest Drops / Tour Dates).
+> Custom links are managed via /dashboard/links but NOT displayed on the Public Hub.
+
+### Dashboard — Custom Links
+
+### R-CL-1: Custom Links Management
+THE Dashboard Links page (`/dashboard/links`) SHALL manage "custom" links (merch, booking, press kit, newsletter, etc.).
+
+### R-CL-2: Social/Streaming Platform URL Rejection
+THE System SHALL reject any link URL whose domain matches a social or streaming platform already managed in Profile & Bio → Social Links.
+
+**Blocked domains:**
+- instagram.com
+- x.com, twitter.com
+- youtube.com, youtu.be
+- spotify.com, open.spotify.com
+- tiktok.com
+- soundcloud.com
+- music.apple.com
+- facebook.com
+- twitch.tv
+
+### R-CL-3: User-Friendly Error Message
+WHEN a user attempts to add a link with a blocked domain, THE System SHALL display the error message:
+"Manage social links in Profile & Bio → Social Links."
+
+### R-CL-4: Link Ordering and Toggle
+THE Dashboard Links page SHALL:
+- Sort links by `order` field ascending
+- Allow toggling `active` status for each link (for future display use)
+
+### R-CL-5: Auto-Detection (Optional)
+THE System MAY auto-detect link type as "custom" and suggest appropriate labels based on URL patterns.
+
 ### Requirement 4: Artist Dashboard
 
 **User Story:** As an artist, I want a dashboard to manage my hub and view my stats, so that I can grow my fanbase and revenue.

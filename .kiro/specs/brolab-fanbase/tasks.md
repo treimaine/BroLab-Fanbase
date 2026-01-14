@@ -275,13 +275,45 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - 404 si slug invalide
     - _Requirements: 3.1-3.7_
 
-- [x] 8.8 Checkpoint Phase 3C — Vérifier Public Artist Hub (via Playwright)
+- [x] 8.8 Checkpoint Phase 3C — Vérifier Public Artist Hub (manuel via Playwright MCP)
   - ✅ Public Hub /djnova accessible sans authentification
   - ✅ HubHeader: cover, avatar, nom, bio, bouton Follow, social icons
   - ✅ DropsList: 3 produits avec images, badges, prix
   - ✅ EventsList: 3 événements avec dates, venues, statuts
   - ✅ Tabs navigation fonctionnelle
   - ✅ 404 state pour slugs invalides
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot_
+
+- [x] 8.9 Dashboard — Custom Links (Refactored from Linktree)
+  - [x] 8.9.1 Remove ArtistLinksList from Public Hub page
+    - Remove import and rendering of ArtistLinksList from `src/app/(public)/[artistSlug]/page.tsx`
+    - Component can be deleted or kept unused for future reference
+    - _Requirements: R-CL-1 (Custom Links only in dashboard)_
+
+  - [x] 8.9.2 Update /dashboard/links UI copy → "Custom Links"
+    - Change page title from "Links" to "Custom Links"
+    - Add helper text: "Use this for merch, booking, press kit, newsletter, etc. Social platforms are managed in Profile & Bio → Social Links."
+    - _Requirements: R-CL-1_
+
+  - [x] 8.9.3 Add URL domain validation (UI - client-side)
+    - Create `BLOCKED_SOCIAL_DOMAINS` constant in `src/lib/constants.ts`
+    - Add `isSocialPlatformUrl()` validation function
+    - Update AddLinkDialog form schema to reject blocked domains
+    - Display error: "Manage social links in Profile & Bio → Social Links."
+    - _Requirements: R-CL-2, R-CL-3_
+
+  - [x] 8.9.4 Add URL domain validation (Convex backend guard)
+    - Update `convex/links.ts` create mutation to validate URL domain
+    - Update `convex/links.ts` update mutation to validate URL domain
+    - Reject with clear error message if domain is blocked
+    - _Requirements: R-CL-2, R-CL-3_
+
+  - [x] 8.9.5 QA checkpoint
+    - Social links managed ONLY via Profile & Bio → Social Links
+    - Custom links page rejects social/streaming platform URLs
+    - Public Hub no longer displays Linktree-style links list
+    - Public Hub still shows: HubHeader (with social icons) → Tabs (Latest Drops / Tour Dates)
+    - _Requirements: R-CL-1..5_
 
 - [x] 9. Phase 3D — Artist Dashboard
   - [x] 9.1 Créer le layout artist avec AppShell
@@ -309,7 +341,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - "View Public Hub" link
     - _Requirements: 4.1-4.4_
 
-- [x] 9.6 Checkpoint Phase 3D — Vérifier Artist Dashboard (via Playwright)
+- [x] 9.6 Checkpoint Phase 3D — Vérifier Artist Dashboard (manuel via Playwright MCP)
   - ✅ Landing page renders correctly
   - ✅ Light/dark toggle works
   - ✅ Public Hub /djnova displays artist profile, products, events
@@ -326,163 +358,169 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - ✅ Sidebar navigation: Overview, Profile, Links, Events, Products, Billing
   - ✅ User section: Avatar, name, role, Sign out button
   - Note: Profile/Links/Events/Products/Billing pages return 404 (Phase 3E-3I not implemented yet)
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot_
 
 - [ ] 10. Phase 3E — Artist Profile Page
-  - [ ] 10.1 Créer le composant ProfileForm
+  - [x] 10.1 Créer le composant ProfileForm
     - Image URL input + Display Name + Unique Slug + Bio
     - Prefix "fan.brolab/" avant le slug
     - Validation inline avec FormMessage
     - _Requirements: 5.2, 5.6_
 
-  - [ ] 10.2 Créer le composant SocialLinksList
+  - [x] 10.2 Créer le composant SocialLinksList
     - Liste des plateformes avec Switch toggle (on/off)
     - _Requirements: 5.3_
 
-  - [ ] 10.3 Assembler la page Profile
+  - [x] 10.3 Assembler la page Profile
     - src/app/(artist)/dashboard/profile/page.tsx
     - ProfileForm + SocialLinksList + Save button
     - Connecté à Convex artists.update
     - Toast success avec sonner
     - _Requirements: 5.1-5.6_
 
-- [ ] 10.4 Checkpoint Phase 3E — Vérifier Artist Profile Page (via Playwright)
+- [x] 10.4 Checkpoint Phase 3E — Vérifier Artist Profile Page (manuel via Playwright MCP)
   - Verify profile form renders with all fields
   - Test slug validation (format, reserved, uniqueness)
   - Test social links toggle on/off
   - Verify save mutation works
   - Test toast notifications
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type_
 
 - [ ] 11. Phase 3F — Artist Links Page
-  - [ ] 11.1 Créer le composant LinkItem
+  - [x] 11.1 Créer le composant LinkItem
     - Title, URL preview, type badge, active toggle
     - _Requirements: 6.5_
 
-  - [ ] 11.2 Créer le composant AddLinkDialog
+  - [x] 11.2 Créer le composant AddLinkDialog
     - Form: title, URL, type selector
     - Validation inline avec FormMessage
     - _Requirements: 6.3_
 
-  - [ ] 11.3 Créer les fonctions links (Convex)
+  - [x] 11.3 Créer les fonctions links (Convex)
     - convex/links.ts: create, update, delete, getByArtist, reorder
     - _Requirements: 6.1-6.5_
 
-  - [ ] 11.4 Assembler la page Links
+  - [x] 11.4 Assembler la page Links
     - src/app/(artist)/dashboard/links/page.tsx
     - Liste de LinkItems + "Add New Link" button
     - Connecté à Convex
     - _Requirements: 6.1-6.5_
 
-- [ ] 11.5 Checkpoint Phase 3F — Vérifier Artist Links Page (via Playwright)
+- [x] 11.5 Checkpoint Phase 3F — Vérifier Artist Links Page (manuel via Playwright MCP)
   - Verify links list renders
   - Test add link dialog and form validation
   - Test link toggle active/inactive
   - Verify CRUD operations work
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type_
 
 - [ ] 12. Phase 3G — Artist Events Page
-  - [ ] 12.1 Créer le composant EventStatsRow
+  - [x] 12.1 Créer le composant EventStatsRow
     - Total Tickets Sold, Gross Revenue, Upcoming Shows
     - _Requirements: 7.1_
 
-  - [ ] 12.2 Créer le composant EventItem
+  - [x] 12.2 Créer le composant EventItem
     - Image, title, date, venue, tickets sold, revenue, status badge, "Manage" button
     - _Requirements: 7.2_
 
-  - [ ] 12.3 Créer le composant CreateEventDialog
+  - [x] 12.3 Créer le composant CreateEventDialog
     - Form: title, date, city, venue, ticket URL, image URL
     - Validation inline avec FormMessage
     - _Requirements: 7.4_
 
-  - [ ] 12.4 Créer les fonctions events (Convex)
+  - [x] 12.4 Créer les fonctions events (Convex)
     - convex/events.ts: create, update, delete, getByArtist
     - _Requirements: 7.1-7.5_
 
-  - [ ] 12.5 Assembler la page Events
+  - [x] 12.5 Assembler la page Events
     - src/app/(artist)/dashboard/events/page.tsx
     - EventStatsRow + liste EventItems + "Create Event" button
     - Connecté à Convex
     - _Requirements: 7.1-7.5_
 
-- [ ] 12.6 Checkpoint Phase 3G — Vérifier Artist Events Page (via Playwright)
+- [x] 12.6 Checkpoint Phase 3G — Vérifier Artist Events Page (manuel via Playwright MCP)
   - Verify events stats row renders
   - Verify events list renders with all data
   - Test create event dialog and form validation
   - Verify CRUD operations work
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type_
 
 - [ ] 13. Phase 3H — Artist Products Page (Upload Flow)
-  - [ ] 13.1 Créer les fonctions files (Convex)
+  - [x] 13.1 Créer les fonctions files (Convex)
     - convex/files.ts: generateUploadUrl action
     - _Requirements: 16.4, 16.5_
 
-  - [ ] 13.2 Créer les fonctions products (Convex)
+  - [x] 13.2 Créer les fonctions products (Convex)
     - convex/products.ts: create, update, delete, getByArtist
     - Store metadata: title, description, type, priceUSD, visibility, fileStorageId, contentType, fileSize
     - _Requirements: 16.1, 16.2, 16.3_
 
-  - [ ] 13.3 Créer la validation fichiers (client-side)
+  - [x] 13.3 Créer la validation fichiers (client-side)
     - src/lib/validations.ts: validateFileUpload()
     - Types autorisés: mp3, wav (audio), mp4 (video)
     - Tailles max: audio <= 50MB, video <= 200MB
     - Retourner erreur claire si invalide
     - _Requirements: 16.4, Upload Limits (MVP)_
 
-  - [ ] 13.4 Créer le composant ProductItem
+  - [x] 13.4 Créer le composant ProductItem
     - Cover image, title, type badge, price, visibility toggle
     - _Requirements: 16.1_
 
-  - [ ] 13.5 Créer le composant AddProductDialog
+  - [x] 13.5 Créer le composant AddProductDialog
     - Form: title, description, type (music/video), price, visibility, cover URL
     - File upload input avec validation client-side
     - Progress indicator pendant upload
     - Validation inline avec FormMessage
     - _Requirements: 16.2, 16.3_
 
-  - [ ] 13.6 Créer le hook useFileUpload
+  - [x] 13.6 Créer le hook useFileUpload
     - Request upload URL from Convex
     - Upload file to URL
     - Return storageId on success
     - Handle errors with toast
     - _Requirements: 16.4, 16.5_
 
-  - [ ] 13.7 Assembler la page Products
+  - [x] 13.7 Assembler la page Products
     - src/app/(artist)/dashboard/products/page.tsx
     - Liste ProductItems + "Add Product" button
     - Full upload flow: validate → upload → store metadata
     - _Requirements: 16.1-16.7_
 
-- [ ] 13.8 Checkpoint Phase 3H — Vérifier Artist Products Page (via Playwright)
+- [x] 13.8 Checkpoint Phase 3H — Vérifier Artist Products Page (manuel via Playwright MCP)
   - Verify products list renders
   - Test add product dialog and form validation
   - Test file upload with progress indicator
   - Verify file type/size validation
   - Test visibility toggle
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type/file_upload_
 
 - [ ] 14. Phase 3I — Artist Billing Page (Placeholder)
-  - [ ] 14.1 Créer le composant BalanceCard
+  - [x] 14.1 Créer le composant BalanceCard
     - Available balance, pending, last payout (gradient background)
     - _Requirements: 8.1_
 
-  - [ ] 14.2 Créer le composant PayoutMethodCard
+  - [x] 14.2 Créer le composant PayoutMethodCard
     - Stripe Connect status (placeholder "Coming soon")
     - "Add Payout Method" disabled
     - _Requirements: 8.2, 8.3_
 
-  - [ ] 14.3 Créer le composant TransactionsList
+  - [x] 14.3 Créer le composant TransactionsList
     - Liste placeholder de transactions
     - _Requirements: 8.4_
 
-  - [ ] 14.4 Assembler la page Billing
+  - [x] 14.4 Assembler la page Billing
     - src/app/(artist)/dashboard/billing/page.tsx
     - BalanceCard + PayoutMethodCard + TransactionsList
     - "Withdraw Funds" button disabled
     - _Requirements: 8.1-8.5_
 
-- [ ] 14.5 Checkpoint Phase 3I — Vérifier Artist Billing Page (via Playwright)
+- [x] 14.5 Checkpoint Phase 3I — Vérifier Artist Billing Page (manuel via Playwright MCP)
   - Verify balance card renders with placeholder data
   - Verify payout method card shows "Coming soon"
   - Verify transactions list renders
   - Verify disabled buttons are properly disabled
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot_
 
-- [ ] 15. Checkpoint 2 — Vérifier Artist Dashboard complet
+- [x] 15. Checkpoint 2 — Vérifier Artist Dashboard complet
   - Ensure all artist pages render correctly
   - Verify navigation between pages
   - Test responsive layout
@@ -491,13 +529,13 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Ask user if questions arise
 
 - [ ] 16. Phase 3J — Fan Dashboard
-  - [ ] 16.1 Créer le layout fan avec AppShell
+  - [x] 16.1 Créer le layout fan avec AppShell
     - src/app/(fan)/layout.tsx
     - AppShell avec role="fan"
     - Protected by middleware (fan role required)
     - _Requirements: 9.1_
 
-  - [ ] 16.2 Créer la page /me redirect
+  - [x] 16.2 Créer la page /me redirect
     - src/app/(fan)/me/page.tsx
     - Redirect vers /me/[username] basé sur Clerk user (pas mock!)
     - _Requirements: 9.1_
@@ -506,25 +544,25 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - **Property 10: Fan Dashboard URL Contains Username**
     - **Validates: Requirements 9.1**
 
-  - [ ] 16.4 Créer le composant FeedCard
+  - [x] 16.4 Créer le composant FeedCard
     - Artist avatar, name, timestamp, content, image
     - Action buttons (like, comment, share)
     - CTA buttons (Listen, Get Tickets, Shop Now)
     - _Requirements: 9.3, 9.4_
 
-  - [ ] 16.5 Créer le composant CommunityWidget
+  - [x] 16.5 Créer le composant CommunityWidget
     - Following count, Events count
     - _Requirements: 9.5_
 
-  - [ ] 16.6 Créer le composant SuggestedArtistsWidget
+  - [x] 16.6 Créer le composant SuggestedArtistsWidget
     - Liste d'artistes suggérés
     - _Requirements: 9.5_
 
-  - [ ] 16.7 Créer le composant FeaturedTrackCard
+  - [x] 16.7 Créer le composant FeaturedTrackCard
     - Mini player card avec cover, titre, artiste
     - _Requirements: 9.5_
 
-  - [ ] 16.8 Assembler la page Feed
+  - [x] 16.8 Assembler la page Feed
     - src/app/(fan)/me/[username]/page.tsx
     - Desktop: Feed + sidebar widgets
     - Mobile: single column feed
@@ -544,10 +582,11 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Connecté à Convex orders/orderItems
     - _Requirements: 10.1-10.5_
 
-- [ ] 17.3 Checkpoint Phase 3K — Vérifier Fan Purchases Page (via Playwright)
+- [ ] 17.3 Checkpoint Phase 3K — Vérifier Fan Purchases Page (manuel via Playwright MCP)
   - Verify purchases list renders
   - Test download button functionality
   - Verify status badges display correctly
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
 
 - [ ] 18. Phase 3L — Fan Billing Page
   - [ ] 18.1 Créer le composant PaymentMethodsTab
@@ -564,11 +603,12 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Security notice
     - _Requirements: 11.1-11.5_
 
-- [ ] 18.4 Checkpoint Phase 3L — Vérifier Fan Billing Page (via Playwright)
+- [ ] 18.4 Checkpoint Phase 3L — Vérifier Fan Billing Page (manuel via Playwright MCP)
   - Verify tabs navigation works
   - Verify payment methods tab renders
   - Verify billing history tab renders
   - Verify security notice displays
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
 
 - [ ] 19. Checkpoint 3 — Vérifier Fan Dashboard complet
   - Ensure all fan pages render correctly

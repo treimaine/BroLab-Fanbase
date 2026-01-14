@@ -457,3 +457,61 @@ export const checkSlugAvailability = query({
     };
   },
 });
+
+/**
+ * Get suggested artists for the current user
+ * Requirements: 9.5 - Display "Suggested Artists" in fan dashboard sidebar
+ *
+ * Returns a list of artists that the current user is not following.
+ * For MVP, returns up to 5 random artists.
+ * Future enhancement: implement recommendation algorithm based on genres, popularity, etc.
+ *
+ * @param limit - Maximum number of artists to return (default: 5)
+ * @returns Array of artist documents that the user is not following
+ */
+export const getSuggestedArtists = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 5;
+
+    // Get authentication identity
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      // Not authenticated, return empty array
+      return [];
+    }
+
+    // Get the user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", identity.subject))
+      .unique();
+
+    if (!user) {
+      return [];
+    }
+
+    // Get all artists the user is following
+    const follows = await ctx.db
+      .query("follows")
+      .withIndex("by_fan", (q) => q.eq("fanUserId", user._id))
+      .collect();
+
+    const followedArtistIds = new Set(follows.map((f) => f.artistId));
+
+    // Get all artists
+    const allArtists = await ctx.db.query("artists").collect();
+
+    // Filter out followed artists and the user's own artist profile (if they have one)
+    const unfollowedArtists = allArtists.filter(
+      (artist) =>
+        !followedArtistIds.has(artist._id) && artist.ownerUserId !== user._id
+    );
+
+    // For MVP, return a simple slice of unfollowed artists
+    // Future: implement recommendation algorithm (genre matching, popularity, etc.)
+    return unfollowedArtists.slice(0, limit);
+  },
+});

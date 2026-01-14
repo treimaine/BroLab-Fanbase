@@ -222,3 +222,56 @@ export const getFollowingCount = query({
     return follows.length;
   },
 });
+
+/**
+ * Get upcoming events count for followed artists
+ * Requirements: 9.5 - Display events count in CommunityWidget
+ *
+ * Returns the total count of upcoming events from all artists the current user follows.
+ * Used for the fan dashboard CommunityWidget.
+ *
+ * @returns Number of upcoming events from followed artists
+ */
+export const getFollowedArtistsUpcomingEventsCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return 0;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", identity.subject))
+      .unique();
+
+    if (!user) {
+      return 0;
+    }
+
+    // Get all follow records for this user
+    const follows = await ctx.db
+      .query("follows")
+      .withIndex("by_fan", (q) => q.eq("fanUserId", user._id))
+      .collect();
+
+    // Get all upcoming events for each followed artist
+    let totalUpcomingEvents = 0;
+
+    for (const follow of follows) {
+      const events = await ctx.db
+        .query("events")
+        .withIndex("by_artist", (q) => q.eq("artistId", follow.artistId))
+        .collect();
+
+      // Count only upcoming events
+      const upcomingCount = events.filter(
+        (event) => event.status === "upcoming"
+      ).length;
+
+      totalUpcomingEvents += upcomingCount;
+    }
+
+    return totalUpcomingEvents;
+  },
+});
