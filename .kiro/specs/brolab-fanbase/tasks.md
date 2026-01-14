@@ -570,47 +570,47 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - _Requirements: 9.1-9.6_
 
 - [ ] 17. Phase 3K — Fan Purchases Page
-  - [ ] 17.1 Créer le composant PurchaseItem
+  - [x] 17.1 Créer le composant PurchaseItem
     - Image, type badge, title, artist, date, price
     - Download button (si downloadable)
     - Status badge (Upcoming/Shipped)
     - _Requirements: 10.2, 10.3, 10.4_
 
-  - [ ] 17.2 Assembler la page Purchases
+  - [x] 17.2 Assembler la page Purchases
     - src/app/(fan)/me/[username]/purchases/page.tsx
     - Liste de PurchaseItems
     - Connecté à Convex orders/orderItems
     - _Requirements: 10.1-10.5_
 
-- [ ] 17.3 Checkpoint Phase 3K — Vérifier Fan Purchases Page (manuel via Playwright MCP)
+- [x] 17.3 Checkpoint Phase 3K — Vérifier Fan Purchases Page (manuel via Playwright MCP)
   - Verify purchases list renders
   - Test download button functionality
   - Verify status badges display correctly
   - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
 
 - [ ] 18. Phase 3L — Fan Billing Page
-  - [ ] 18.1 Créer le composant PaymentMethodsTab
+  - [x] 18.1 Créer le composant PaymentMethodsTab
     - Saved cards list + "Add Payment Method" button
     - _Requirements: 11.2, 11.3_
 
-  - [ ] 18.2 Créer le composant BillingHistoryTab
+  - [x] 18.2 Créer le composant BillingHistoryTab
     - Transactions list avec date, description, amount
     - _Requirements: 11.4_
 
-  - [ ] 18.3 Assembler la page Billing
+  - [x] 18.3 Assembler la page Billing
     - src/app/(fan)/me/[username]/billing/page.tsx
     - Tabs: Payment Methods / Billing History
     - Security notice
     - _Requirements: 11.1-11.5_
 
-- [ ] 18.4 Checkpoint Phase 3L — Vérifier Fan Billing Page (manuel via Playwright MCP)
+- [x] 18.4 Checkpoint Phase 3L — Vérifier Fan Billing Page (manuel via Playwright MCP)
   - Verify tabs navigation works
   - Verify payment methods tab renders
   - Verify billing history tab renders
   - Verify security notice displays
   - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
 
-- [ ] 19. Checkpoint 3 — Vérifier Fan Dashboard complet
+- [x] 19. Checkpoint 3 — Vérifier Fan Dashboard complet
   - Ensure all fan pages render correctly
   - Verify navigation between pages
   - Test responsive layout

@@ -691,6 +691,209 @@ Si `useConvexAuth()` retourne `isAuthenticated: false` après login Clerk réuss
 - Idempotency pour éviter doublons
 - Mode test vs production
 
+### ByteRover 3.0 (Context Management)
+
+- **Documentation**: https://docs.byterover.dev
+- **Curate Context**: https://docs.byterover.dev/common-workflows/curate-context
+
+**Points critiques à vérifier:**
+- ByteRover 3.0 utilise une architecture CLI-first (plus MCP-based comme 2.0)
+- Toujours s'assurer que ByteRover 2.0 MCP est complètement désinstallé pour éviter les conflits
+- Utiliser le CLI ByteRover via les coding agents (Cursor, Claude, etc.)
+
+#### Curation de Contexte
+
+ByteRover permet de curer du contexte dans un "context tree" pour référence future.
+
+**Deux modes de curation:**
+
+1. **Mode Interactif** (contrôle manuel):
+   - Naviguer manuellement dans le context tree
+   - Sélectionner le domaine et topic
+   - Ajouter le contenu
+
+2. **Mode Autonome** (recommandé - intelligent):
+   - Détection automatique des domaines
+   - Recherche de duplications
+   - Organisation hiérarchique automatique
+   - Prévention des doublons via traitement intelligent
+
+**Workflow recommandé avec coding agent:**
+
+```bash
+# Dans le chat de votre coding agent (Cursor, Claude, etc.)
+> curate the following context about [sujet]
+> [Votre contenu ici]
+```
+
+**Personnalisation de l'intention:**
+
+```bash
+# Diviser en petits morceaux
+> curate the following context, break it into small focused pieces
+> [Contenu]
+
+# Garder ensemble
+> curate the following context, keep it together as one topic
+> [Contenu]
+
+# Résumer avant stockage
+> curate the following context, summarize it before adding
+> [Contenu]
+```
+
+**Référencer des fichiers:**
+
+```bash
+# Syntaxe @ ou --files (max 5 fichiers)
+> curate "API documentation" @src/api.ts @README.md
+> curate --files src/components/Button.tsx src/styles/button.css
+```
+
+**Comment fonctionne le mode autonome:**
+
+1. **Détection de domaine**: Analyse sémantique (pas keyword matching)
+2. **Recherche de connaissance existante**: Évite les duplications
+3. **Décision créer/mettre à jour**: Nouveau topic ou update existant
+4. **Organisation hiérarchique**: domain → topic → (optional) subtopic
+5. **Ajout de relations**: Crée des liens `@domain/topic` pour navigation
+
+**Mise à jour de contexte existant:**
+
+```bash
+# ByteRover détecte automatiquement le contexte existant et le met à jour
+> update the context tree so that [modification]
+```
+
+**Exemple complet:**
+
+```bash
+# Votre coding agent exécutera automatiquement:
+brv curate "Task: Add health check endpoint
+Steps:
+1. Create Express server - src/server.ts
+2. Create route - src/routes/health.ts
+3. Add types - src/types/health.ts
+4. Create tests - tests/health.test.ts
+Success Criteria:
+- GET /health returns 200
+- Response includes status, timestamp, uptime"
+```
+
+**Avantages:**
+- Contexte organisé et facilement récupérable
+- Évite les duplications
+- Navigation via relations entre topics
+- Adapté au workflow de l'équipe
+
+#### Structure du Context Tree Local
+
+Le context tree est stocké dans `.brv/context-tree/` et organise la connaissance en hiérarchie à 3 niveaux.
+
+**1. Domaines (top-level):**
+
+Domaines par défaut qui groupent la connaissance:
+- `code_style/` - Standards de code, patterns, conventions
+- `testing/` - Stratégies et patterns de test
+- `structure/` - Architecture et organisation du projet
+- `design/` - Patterns UI/UX et design visuel
+- `compliance/` - Sécurité, légal, exigences réglementaires
+- `bug_fixes/` - Solutions aux problèmes connus
+
+**2. Topics (sujets spécifiques):**
+
+```
+.brv/context-tree/
+├── code_style/
+│   ├── error-handling/
+│   ├── naming-conventions/
+│   └── api-design/
+├── testing/
+│   ├── integration-tests/
+│   └── unit-tests/
+└── structure/
+    ├── api-endpoints/
+    └── database-schema/
+```
+
+**3. Subtopics (optionnel - max 1 niveau):**
+
+```
+.brv/context-tree/
+└── testing/
+    └── integration-tests/
+        ├── context.md          # Vue d'ensemble
+        └── api-tests/          # Subtopic
+            └── context.md      # Spécifique aux tests API
+```
+
+**4. Fichiers Context:**
+
+Chaque topic/subtopic contient un `context.md` avec:
+- **Contenu**: Connaissance en markdown (explications, exemples de code)
+- **Relations**: Liens vers topics reliés (section `## Relations` optionnelle)
+
+**Exemple de context.md:**
+
+```markdown
+Always use custom error classes for better error handling in the Express API:
+
+\`\`\`typescript
+// Custom error class pattern
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ValidationError'
+  }
+}
+\`\`\`
+
+Use try-catch blocks at route level and pass errors to middleware.
+
+## Relations
+@code_style/naming-conventions
+@testing/integration-tests/api-tests
+```
+
+**Relations: Le Knowledge Graph**
+
+Les relations créent des connexions explicites entre topics via la notation `@domain/topic/subtopic`.
+
+**Pourquoi les relations sont importantes:**
+- Navigation graph-like entre connaissances reliées
+- Liens explicites et intentionnels (pas basés sur similarité)
+- Aide à trouver du contexte complet en suivant les connexions
+- Prévient les silos de connaissance
+
+**Exemple de relations:**
+
+```markdown
+## Relations
+@code_style/error-handling
+@testing/integration-tests
+@structure/api-endpoints/validation
+```
+
+Quand vous interrogez sur error handling, ByteRover suit intelligemment ces relations pour rassembler le contexte complet.
+
+**Avantages de cette structure:**
+
+- **Human-readable et git-friendly**:
+  - Parcourir le context tree dans l'explorateur de fichiers
+  - Éditer les `context.md` avec n'importe quel éditeur
+  - Tracker les changements avec git
+  - Review dans les pull requests
+
+- **Organisation hiérarchique** (évite le "context soup"):
+  - Connaissance catégorisée par domaine et topic
+  - Facile à trouver ce dont vous avez besoin
+  - Structure claire vs stockage plat
+
+- **Relations explicites** (navigation précise):
+  - ByteRover suit les connexions entre topics
+  - Plus fiable que la recherche par similarité
+  - Knowledge graph intentionnel vs clustering automatique
+
 ## Workflow
 
 1. **Avant d'implémenter**: Consulter la doc officielle du service concerné
