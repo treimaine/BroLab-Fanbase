@@ -21,7 +21,8 @@ import { api } from "../../../../convex/_generated/api";
  */
 export default function DashboardPage() {
   const artist = useQuery(api.artists.getCurrentArtist);
-  const isLoading = artist === undefined;
+  const products = useQuery(api.products.getCurrentArtistProducts);
+  const isLoading = artist === undefined || products === undefined;
 
   // Calculate setup checklist items based on artist data
   const checklistItems = [
@@ -52,7 +53,7 @@ export default function DashboardPage() {
     {
       id: "product",
       label: "Upload your first product",
-      completed: false, // TODO: Check products count
+      completed: Boolean(products && products.length > 0),
       href: "/dashboard/products",
     },
   ];

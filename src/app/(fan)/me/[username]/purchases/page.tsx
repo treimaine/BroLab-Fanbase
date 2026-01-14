@@ -15,6 +15,8 @@
  */
 
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { OrderDetailsDialog, type OrderDetailsData } from "@/components/fan/order-details-dialog";
 import type { PurchaseItemData } from "@/components/fan/purchase-item";
 import { PurchaseItem, PurchaseItemSkeleton } from "@/components/fan/purchase-item";
 import { useAction, useQuery } from "convex/react";
@@ -31,14 +33,24 @@ export default function PurchasesPage() {
   // Track downloading state per product
   const [downloadingProducts, setDownloadingProducts] = useState<Set<string>>(new Set());
 
+  // Order details modal state
+  const [selectedOrderId, setSelectedOrderId] = useState<Id<"orders"> | null>(null);
+  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
+
+  // Fetch order details when modal is opened
+  const orderDetails = useQuery(
+    api.orders.getOrderById,
+    selectedOrderId ? { orderId: selectedOrderId } : "skip"
+  );
+
   // Loading state
   const isLoading = purchases === undefined;
 
-  // Transform Convex data to PurchaseItemData format
-  const purchaseItems = useMemo<PurchaseItemData[]>(() => {
+  // Transform Convex data to PurchaseItemData format with orderId
+  const purchaseItems = useMemo<Array<PurchaseItemData & { orderId: Id<"orders"> }>>(() => {
     if (!purchases) return [];
 
-    const items: PurchaseItemData[] = [];
+    const items: Array<PurchaseItemData & { orderId: Id<"orders"> }> = [];
 
     purchases.forEach((purchase: { order: any; items: any[] }) => {
       purchase.items.forEach((item: any) => {
@@ -46,6 +58,7 @@ export default function PurchasesPage() {
 
         items.push({
           id: item._id,
+          orderId: purchase.order._id,
           title: item.product.title,
           type: item.product.type, // "music" or "video"
           artistName: item.artist.displayName,
@@ -108,10 +121,15 @@ export default function PurchasesPage() {
 
   // Handle view details
   const handleViewDetails = useCallback((purchaseId: string) => {
-    // TODO: Implement order details modal or page
-    toast.info("Order details coming soon!");
-    console.log("View details:", purchaseId);
-  }, []);
+    // Find the order ID for this purchase item
+    const purchase = purchaseItems.find((p) => p.id === purchaseId);
+    if (purchase?.orderId) {
+      setSelectedOrderId(purchase.orderId);
+      setIsOrderDetailsOpen(true);
+    } else {
+      toast.error("Unable to load order details");
+    }
+  }, [purchaseItems]);
 
   // Loading skeleton
   if (isLoading) {
@@ -210,6 +228,14 @@ export default function PurchasesPage() {
           </p>
         </div>
       </div>
+
+      {/* Order Details Modal */}
+      <OrderDetailsDialog
+        open={isOrderDetailsOpen}
+        onOpenChange={setIsOrderDetailsOpen}
+        orderDetails={orderDetails as OrderDetailsData | null}
+        isLoading={orderDetails === undefined}
+      />
     </div>
   );
 }

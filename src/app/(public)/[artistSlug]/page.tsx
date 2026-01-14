@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { Track } from "@/types/player";
+import { ConvexHttpClient } from "convex/browser";
 import { useQuery } from "convex/react";
 import { Calendar, Music } from "lucide-react";
 
@@ -202,13 +203,26 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
   /**
    * Request playable URL for a track
    * Used by MediaCardOverlay for audio/video playback
-   * Note: This is a placeholder - actual implementation would use Convex action
    */
-  const handleRequestUrl = async (_track: Track): Promise<string | null> => {
-    // TODO: Implement actual URL fetching via Convex action
-    // For now, return null as we'd need to set up a proper action
-    // The MediaCardOverlay will handle this gracefully
-    return null;
+  const handleRequestUrl = async (track: Track): Promise<string | null> => {
+    if (!track.fileStorageId) {
+      return null;
+    }
+
+    try {
+      // Create a Convex HTTP client for imperative queries
+      const convexClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+      
+      // Fetch playable URL from Convex storage using the files.getPlayableUrl query
+      const url = await convexClient.query(api.files.getPlayableUrl, {
+        storageId: track.fileStorageId,
+      });
+
+      return url;
+    } catch (error) {
+      console.error("Error fetching playable URL:", error);
+      return null;
+    }
   };
 
   return (

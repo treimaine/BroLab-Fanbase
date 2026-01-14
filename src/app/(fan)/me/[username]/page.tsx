@@ -21,38 +21,21 @@ import type { FeedPost } from "@/components/feed/feed-card";
 import { FeaturedTrackCard } from "@/components/player";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Track } from "@/types/player";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useCallback, useMemo } from "react";
 
 /**
  * Generate feed posts from followed artists' products and events
+ * 
+ * Note: For MVP, we generate mock feed posts from followed artists.
+ * In production, this would be replaced with a dedicated Convex query
+ * that efficiently fetches and aggregates products and events from followed artists.
+ * 
+ * Future enhancement: Create `convex/feed.ts` with:
+ * - getFollowedArtistsFeed: Aggregate products + events from followed artists
+ * - Pagination support
+ * - Real-time updates via Convex subscriptions
  */
-function useFeedPosts() {
-  // Get followed artists
-  const followedArtists = useQuery(api.follows.getFollowedArtists);
-  
-  // Get products and events for each followed artist
-  const artistsData = useQuery(
-    api.follows.getFollowedArtists,
-    followedArtists ? {} : "skip"
-  );
-
-  // Generate feed posts
-  const feedPosts = useMemo(() => {
-    if (!artistsData) return [];
-
-    const posts: FeedPost[] = [];
-
-    // For each followed artist, fetch their recent products and events
-    // In MVP, we'll use mock data structure
-    // TODO: Create a dedicated Convex query to fetch feed data efficiently
-    
-    // For now, return empty array - will be populated with real data
-    return posts;
-  }, [artistsData]);
-
-  return feedPosts;
-}
 
 export default function FanFeedPage() {
   // Fetch data
@@ -60,6 +43,9 @@ export default function FanFeedPage() {
   const followingCount = useQuery(api.follows.getFollowingCount);
   const upcomingEventsCount = useQuery(api.follows.getFollowedArtistsUpcomingEventsCount);
   const suggestedArtists = useQuery(api.artists.getSuggestedArtists, { limit: 5 });
+
+  // Mutations
+  const toggleFollow = useMutation(api.follows.toggle);
 
   // Loading state
   const isLoading = 
@@ -157,17 +143,30 @@ export default function FanFeedPage() {
   }, [feedPosts]);
 
   // Handle follow artist from suggested widget
-  const handleFollowArtist = useCallback((artistId: string) => {
-    // TODO: Implement follow mutation
-    console.log("Follow artist:", artistId);
-  }, []);
+  const handleFollowArtist = useCallback(async (artistId: string) => {
+    try {
+      // Use the existing follow toggle mutation from Convex
+      const result = await toggleFollow({ artistId: artistId as any });
+      
+      // Log success (in production, would show a toast notification)
+      console.log("Follow action:", result.action);
+    } catch (error) {
+      console.error("Failed to follow artist:", error);
+    }
+  }, [toggleFollow]);
 
   // Handle playable URL request
   const handleRequestUrl = useCallback(async (track: Track): Promise<string | null> => {
-    // TODO: Implement URL fetching from Convex
-    // For MVP, return null (will use playableUrl from post if available)
-    console.log("Request URL for track:", track.id);
-    return null;
+    try {
+      // Note: In production, this would use the downloads.getDownloadUrl action
+      // which verifies ownership and returns a secure download URL.
+      // For MVP with mock data, we return null and rely on the track's playableUrl
+      console.log("Request URL for track:", track.id);
+      return null;
+    } catch (error) {
+      console.error("Failed to get download URL:", error);
+      return null;
+    }
   }, []);
 
   // Loading skeleton
