@@ -187,6 +187,73 @@ export const getCurrentArtist = query({
 });
 
 /**
+ * Create artist profile from webhook (internal use)
+ * Called by Clerk webhook when a new artist user is created
+ * 
+ * Creates a minimal artist profile with auto-generated slug.
+ * This ensures every artist user has a profile immediately after signup.
+ * 
+ * @param userId - Convex user ID
+ * @returns The new artist's Convex document ID
+ */
+export const createFromWebhook = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get the user
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify user has artist role
+    if (user.role !== "artist") {
+      throw new Error("Only artists can have an artist profile");
+    }
+
+    // Check if user already has an artist profile
+    const existingArtist = await ctx.db
+      .query("artists")
+      .withIndex("by_owner", (q) => q.eq("ownerUserId", user._id))
+      .unique();
+
+    if (existingArtist) {
+      // Artist profile already exists, return existing ID
+      return existingArtist._id;
+    }
+
+    // Generate a unique slug from username
+    let baseSlug = user.usernameSlug.toLowerCase().trim();
+    let slug = baseSlug;
+    let counter = 1;
+
+    // Ensure slug is not reserved and not taken
+    while (isReservedSlug(slug) || (await findArtistBySlug(ctx, slug))) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    // Create the artist profile with minimal data
+    const now = Date.now();
+    const artistId = await ctx.db.insert("artists", {
+      ownerUserId: user._id,
+      artistSlug: slug,
+      displayName: user.displayName,
+      bio: undefined,
+      avatarUrl: user.avatarUrl,
+      coverUrl: undefined,
+      socials: [],
+      connectStatus: "not_connected",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return artistId;
+  },
+});
+
+/**
  * Create new artist profile
  * Requirements: 5.4, 5.5, 15.7 - Create artist with unique slug, reject reserved slugs
  *

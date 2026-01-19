@@ -137,3 +137,111 @@ export const getByUsername = query({
     return user;
   },
 });
+
+/**
+ * Helper: Delete all records from a table by index
+ */
+async function deleteRecordsByIndex<T extends string>(
+  ctx: any,
+  table: T,
+  indexName: string,
+  indexValue: any
+) {
+  const records = await ctx.db
+    .query(table)
+    .withIndex(indexName, (q: any) => q.eq(indexName.replace("by_", ""), indexValue))
+    .collect();
+  
+  for (const record of records) {
+    await ctx.db.delete(record._id);
+  }
+}
+
+/**
+ * Helper: Delete artist-related data
+ */
+async function deleteArtistData(ctx: any, artistId: any) {
+  // Delete links, events, products, follows, balance snapshots, and payouts
+  await Promise.all([
+    deleteRecordsByIndex(ctx, "links", "by_artist", artistId),
+    deleteRecordsByIndex(ctx, "events", "by_artist", artistId),
+    deleteRecordsByIndex(ctx, "products", "by_artist", artistId),
+    deleteRecordsByIndex(ctx, "follows", "by_artist", artistId),
+    deleteRecordsByIndex(ctx, "artistBalanceSnapshots", "by_artist", artistId),
+    deleteRecordsByIndex(ctx, "artistPayouts", "by_artist", artistId),
+  ]);
+  
+  // Delete artist profile
+  await ctx.db.delete(artistId);
+}
+
+/**
+ * Helper: Delete fan-related data
+ */
+async function deleteFanData(ctx: any, userId: any) {
+  // Delete follows, downloads, and payment methods
+  await Promise.all([
+    deleteRecordsByIndex(ctx, "follows", "by_fan", userId),
+    deleteRecordsByIndex(ctx, "downloads", "by_fan", userId),
+    deleteRecordsByIndex(ctx, "paymentMethods", "by_userId", userId),
+  ]);
+  
+  // Delete orders and their items
+  const orders = await ctx.db
+    .query("orders")
+    .withIndex("by_fan", (q: any) => q.eq("fanUserId", userId))
+    .collect();
+  
+  for (const order of orders) {
+    await deleteRecordsByIndex(ctx, "orderItems", "by_order", order._id);
+    await ctx.db.delete(order._id);
+  }
+}
+
+/**
+ * Delete user and all associated data
+ * Requirements: User deletion cleanup
+ * 
+ * Handles cascading deletion of all user-related data:
+ * - For artists: profile, links, events, products, follows
+ * - For fans: follows, orders, orderItems, downloads, payment methods
+ * - Finally deletes the user record
+ * 
+ * @param clerkUserId - Clerk's unique user identifier
+ */
+export const deleteByClerkId = mutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find the user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .unique();
+
+    if (!user) {
+      console.log(`User ${args.clerkUserId} not found in Convex`);
+      return;
+    }
+
+    // Delete based on role
+    if (user.role === "artist") {
+      const artist = await ctx.db
+        .query("artists")
+        .withIndex("by_owner", (q) => q.eq("ownerUserId", user._id))
+        .unique();
+
+      if (artist) {
+        await deleteArtistData(ctx, artist._id);
+      }
+    } else if (user.role === "fan") {
+      await deleteFanData(ctx, user._id);
+    }
+
+    // Finally, delete the user
+    await ctx.db.delete(user._id);
+
+    console.log(`✅ User ${args.clerkUserId} and all associated data deleted from Convex`);
+  },
+});
