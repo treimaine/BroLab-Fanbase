@@ -88,6 +88,7 @@ function dropToTrack(drop: Drop, artistName: string, artistSlug: string): Track 
     coverImageUrl: drop.coverImageUrl,
     fileStorageId: drop.fileStorageId ?? "",
     type: drop.type,
+    productId: drop.id, // Include productId for ownership verification
   };
 }
 

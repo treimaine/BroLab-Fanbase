@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowUpRight, Clock, Wallet } from "lucide-react";
 
 interface BalanceCardProps {
@@ -11,20 +12,28 @@ interface BalanceCardProps {
     date: string;
   };
   currency?: string;
+  isLoading?: boolean;
 }
 
 /**
  * BalanceCard - Artist billing balance display
- * Requirements: 8.1 - Display available balance with pending and last payout amounts
+ * Requirements: R-ART-BAL-1, R-PROD-0.1
  * 
  * Features a gradient background matching SuperDesign aesthetic.
  * Shows available balance prominently with pending and last payout info.
+ * 
+ * Props:
+ * - availableBalance: Real available balance (no placeholder data)
+ * - pendingBalance: Real pending balance (no placeholder data)
+ * - lastPayout: Real last payout data (optional, no placeholder data)
+ * - isLoading: Show loading state while fetching data
  */
 export function BalanceCard({
   availableBalance,
   pendingBalance,
   lastPayout,
   currency = "USD",
+  isLoading = false,
 }: Readonly<BalanceCardProps>) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -33,6 +42,43 @@ export function BalanceCard({
       minimumFractionDigits: 2,
     }).format(amount);
   };
+
+  // Show loading skeleton while fetching data
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden border-0 shadow-lg">
+        <div className="bg-gradient-to-br from-primary/90 via-primary to-primary/80 dark:from-primary/80 dark:via-primary/70 dark:to-primary/60">
+          <CardContent className="p-6 sm:p-8">
+            <div className="space-y-1 mb-6">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-primary-foreground/80" />
+                <Skeleton className="h-4 w-32 bg-primary-foreground/20" />
+              </div>
+              <Skeleton className="h-10 w-40 bg-primary-foreground/30" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-primary-foreground/20">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-primary-foreground/70" />
+                  <Skeleton className="h-3 w-16 bg-primary-foreground/20" />
+                </div>
+                <Skeleton className="h-6 w-24 bg-primary-foreground/30" />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpRight className="h-3.5 w-3.5 text-primary-foreground/70" />
+                  <Skeleton className="h-3 w-20 bg-primary-foreground/20" />
+                </div>
+                <Skeleton className="h-6 w-24 bg-primary-foreground/30" />
+              </div>
+            </div>
+          </CardContent>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="overflow-hidden border-0 shadow-lg">

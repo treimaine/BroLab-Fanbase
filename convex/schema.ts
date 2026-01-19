@@ -22,12 +22,14 @@ import { v } from "convex/values";
 export default defineSchema({
   // Users synced from Clerk
   // Requirements: 15.2 - Sync Clerk → Convex on sign-in
+  // Requirements: R-FAN-PM-1.1 - Stripe customer binding
   users: defineTable({
     clerkUserId: v.string(),
     role: v.union(v.literal("artist"), v.literal("fan")),
     displayName: v.string(),
     usernameSlug: v.string(),
     avatarUrl: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_clerk_id", ["clerkUserId"])
@@ -42,6 +44,7 @@ export default defineSchema({
 
   // Artist profiles
   // Requirements: 3.1, 5.4, 5.5, 15.7 - Artist hub with unique slug
+  // Requirements: R-ART-CONNECT-2 - Stripe Connect state
   artists: defineTable({
     ownerUserId: v.id("users"),
     artistSlug: v.string(),
@@ -56,6 +59,19 @@ export default defineSchema({
         active: v.boolean(),
       })
     ),
+    // Stripe Connect fields
+    stripeConnectAccountId: v.optional(v.string()),
+    connectStatus: v.optional(
+      v.union(
+        v.literal("not_connected"),
+        v.literal("pending"),
+        v.literal("connected")
+      )
+    ),
+    chargesEnabled: v.optional(v.boolean()),
+    payoutsEnabled: v.optional(v.boolean()),
+    requirementsDue: v.optional(v.array(v.string())),
+    connectUpdatedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -167,4 +183,55 @@ export default defineSchema({
     orderId: v.id("orders"),
     timestamp: v.number(),
   }).index("by_fan", ["fanUserId"]),
+
+  // Payment methods (Stripe)
+  // Requirements: R-FAN-PM-3.3, R-FAN-PM-3.4 - Deterministic read model for payment methods
+  paymentMethods: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+    stripePaymentMethodId: v.string(),
+    brand: v.string(), // visa, mastercard, amex, etc.
+    last4: v.string(),
+    expMonth: v.number(),
+    expYear: v.number(),
+    isDefault: v.boolean(),
+    billingName: v.optional(v.string()),
+    billingEmail: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_stripeCustomerId", ["stripeCustomerId"])
+    .index("by_stripePaymentMethodId", ["stripePaymentMethodId"]),
+
+  // Artist balance snapshots (optional - Palier B)
+  // Requirements: R-ART-BAL-2 - Balance data from deterministic read-model
+  artistBalanceSnapshots: defineTable({
+    artistId: v.id("artists"),
+    stripeConnectAccountId: v.string(),
+    availableUSD: v.number(),
+    pendingUSD: v.number(),
+    currency: v.string(), // "usd"
+    snapshotAt: v.number(), // timestamp
+  }).index("by_artist", ["artistId"]),
+
+  // Artist payouts (optional - Palier B)
+  // Requirements: R-ART-BAL-3 - Payout history tracking
+  artistPayouts: defineTable({
+    artistId: v.id("artists"),
+    stripePayoutId: v.string(),
+    amount: v.number(),
+    currency: v.string(),
+    status: v.union(
+      v.literal("paid"),
+      v.literal("pending"),
+      v.literal("in_transit"),
+      v.literal("canceled"),
+      v.literal("failed")
+    ),
+    arrivalDate: v.number(), // timestamp
+    createdAt: v.number(),
+  })
+    .index("by_artist", ["artistId"])
+    .index("by_stripe_payout", ["stripePayoutId"]),
 });

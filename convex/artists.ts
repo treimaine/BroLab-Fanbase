@@ -115,6 +115,22 @@ export const getBySlug = query({
 });
 
 /**
+ * Get artist by ID
+ * Used to fetch artist details by their Convex document ID
+ *
+ * @param artistId - Convex artist document ID
+ * @returns Artist document or null if not found
+ */
+export const getById = query({
+  args: {
+    artistId: v.id("artists"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.artistId);
+  },
+});
+
+/**
  * Get artist by owner user ID
  * Used to fetch the artist profile for the currently authenticated user
  *
@@ -263,6 +279,8 @@ export const create = mutation({
       avatarUrl: args.avatarUrl,
       coverUrl: args.coverUrl,
       socials: args.socials ?? [],
+      // Initialize Stripe Connect status as not connected
+      connectStatus: "not_connected",
       createdAt: now,
       updatedAt: now,
     });

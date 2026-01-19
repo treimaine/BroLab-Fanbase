@@ -1,10 +1,18 @@
 /**
  * Stripe Checkout Route Handler
- * Requirements: 18.1 - Create Stripe Checkout session for product purchase
+ * Requirements: 
+ * - 18.1: Create Stripe Checkout session for product purchase
+ * - R-CHECKOUT-CONNECT-1: Route payment to artist's Stripe Connect account
+ * - R-CHECKOUT-CONNECT-2: No platform commission (application_fee_amount = 0)
+ * - R-CHECKOUT-CONNECT-4: Return error if artist not connected
  *
  * This route creates a Stripe Checkout session for purchasing digital products.
- * It includes metadata (fanUserId, productId) that will be used by the webhook
- * to create the order after successful payment.
+ * Payments are routed directly to the artist's Stripe Connect account using
+ * destination charges. The platform takes no commission on sales (revenue comes
+ * from artist subscriptions via Clerk Billing).
+ *
+ * It includes metadata (fanUserId, productId, artistId) that will be used by 
+ * the webhook to create the order after successful payment.
  */
 
 import { api } from "@/../convex/_generated/api";
@@ -95,7 +103,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Create Stripe Checkout session
+    // 5. Get artist details and verify Stripe Connect status
+    // Requirements: R-CHECKOUT-CONNECT-1, R-CHECKOUT-CONNECT-4
+    const artist = await fetchQuery(api.artists.getById, {
+      artistId: product.artistId,
+    });
+
+    if (!artist) {
+      return NextResponse.json(
+        { error: "Artist not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify artist has connected Stripe account
+    if (!artist.stripeConnectAccountId || artist.connectStatus !== "connected") {
+      return NextResponse.json(
+        { 
+          error: "This artist has not set up payments yet. Please try again later or contact the artist.",
+          details: "Artist must complete Stripe Connect onboarding to accept payments"
+        },
+        { status: 400 }
+      );
+    }
+
+    // 6. Create Stripe Checkout session
+    // Requirements: R-CHECKOUT-CONNECT-1, R-CHECKOUT-CONNECT-2
+    // Route payment to artist's Stripe Connect account with no platform commission
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -113,15 +147,24 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
+      // Route payment to artist's Stripe Connect account (destination charges)
+      payment_intent_data: {
+        transfer_data: {
+          destination: artist.stripeConnectAccountId,
+        },
+        // No platform commission (platform revenue comes from artist subscriptions)
+        application_fee_amount: 0,
+      },
       metadata: {
         fanUserId: user._id,
         productId: product._id,
+        artistId: artist._id,
       },
       success_url: `${process.env.NEXT_PUBLIC_URL || req.nextUrl.origin}/me/${user.usernameSlug}/purchases?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL || req.nextUrl.origin}/me/${user.usernameSlug}/purchases?canceled=true`,
     });
 
-    // 6. Return checkout URL
+    // 7. Return checkout URL
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Stripe checkout error:", error);

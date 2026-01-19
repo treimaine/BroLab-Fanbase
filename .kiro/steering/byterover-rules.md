@@ -6,6 +6,36 @@ inclusion: always
 
 **IMPORTANT:** ByteRover 3.0 utilise une architecture CLI-first (plus MCP-based comme 2.0).
 
+## ⚠️ WORKFLOW OBLIGATOIRE - À SUIVRE POUR CHAQUE TÂCHE
+
+### AVANT toute tâche (MANDATORY)
+
+```bash
+# 1. TOUJOURS consulter ByteRover en premier
+brv query "How is [feature] implemented?"
+brv query "What patterns exist for [task]?"
+
+# 2. Lire le code SEULEMENT après avoir consulté ByteRover
+```
+
+### APRÈS toute tâche (MANDATORY)
+
+```bash
+# IMMÉDIATEMENT curer ce qui a été appris/implémenté
+brv curate "Description de l'implémentation/fix/décision" --files file1.ts --files file2.ts
+```
+
+### Quand utiliser (TOUS les cas)
+
+- ✅ Nouvelle feature → query AVANT, curate APRÈS
+- ✅ Bug fix → query AVANT, curate APRÈS
+- ✅ Refactoring → query AVANT, curate APRÈS
+- ✅ Design changes → query AVANT, curate APRÈS
+- ✅ Petites modifications → query AVANT, curate APRÈS
+- ✅ **TOUTE modification de code** → query AVANT, curate APRÈS
+
+**Ce workflow n'est PAS optionnel. C'est une règle fondamentale.**
+
 ## Workflow avec Coding Agents
 
 ByteRover 3.0 est conçu pour être utilisé via les coding agents (Cursor, Claude, Kiro, etc.). Les agents exécutent automatiquement les commandes CLI ByteRover.

@@ -204,6 +204,8 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
   /**
    * Request playable URL for a track
    * Used by MediaCardOverlay for audio/video playback
+   * 
+   * Requirements: R-STRIPE-OT-1.3 - Server-side gating for private products
    */
   const handleRequestUrl = async (track: Track): Promise<string | null> => {
     if (!track.fileStorageId) {
@@ -215,8 +217,10 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
       const convexClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
       
       // Fetch playable URL from Convex storage using the files.getPlayableUrl query
+      // Pass productId for ownership verification (required for private products)
       const url = await convexClient.query(api.files.getPlayableUrl, {
         storageId: track.fileStorageId as Id<"_storage">,
+        productId: track.productId as Id<"products"> | undefined,
       });
 
       return url;

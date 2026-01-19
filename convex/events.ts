@@ -13,6 +13,7 @@
 
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { canCreateEvent, enforceLimit } from "./subscriptions";
 
 /**
  * Get all events for an artist
@@ -259,6 +260,15 @@ export const create = mutation({
         "Artist profile not found. Please create your profile first."
       );
     }
+
+    // Check subscription limits (R-CLERK-SUB-1.2)
+    const existingEvents = await ctx.db
+      .query("events")
+      .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
+      .collect();
+
+    const canCreate = await canCreateEvent(ctx, existingEvents.length);
+    enforceLimit(canCreate, "events");
 
     // Validate optional URLs
     if (args.ticketUrl) {

@@ -550,10 +550,12 @@ interface PlayerState {
 - Idempotency via `processedEvents` table
 - Supported event: `checkout.session.completed`
 
-### MVP Scope
+### MVP Scope (Updated - Stripe Connect In Scope)
 
-- Stripe Connect / payouts: OUT OF SCOPE
-- Billing pages show placeholders only
+- **Stripe Connect**: IN SCOPE (Express onboarding, automatic payouts)
+- **Artist Billing**: Real data (no placeholders), deterministic read-model
+- **Fan → Artist payments**: Routed via destination charges (application_fee = 0)
+- **Platform revenue**: Artist subscriptions only (Clerk Billing)
 
 ## Error Handling
 
@@ -648,3 +650,473 @@ interface PlayerState {
 - Stripe checkout integration
 - Stripe webhooks
 - Download system with ownership verification
+
+
+## Fan Billing — Saved Payment Methods (Stripe Elements)
+
+### UX Goals
+- Remplacer tout "Coming soon" et supprimer toute donnée mock.
+- Le fan voit une liste réelle de cartes enregistrées (brand/last4/expiry) + default.
+- Ajout de carte via un **Dialog** Stripe Elements (PaymentElement).
+
+### Page: /fan/me/[username]/billing
+
+#### Section "Payment methods"
+States:
+1) **Loading**: skeleton list avec `<Loader2>` + "Loading payment methods…"
+2) **Empty**: message "No payment method saved yet." + button "Add payment method"
+3) **List**:
+   - cartes en list items (brand icon + last4 + expiry)
+   - badge "Default" sur la carte `isDefault === true`
+   - actions:
+     - "Set as default" button (optionnel V1, caché si déjà default)
+     - "Remove" button (destructive variant)
+   - loading state individuel pendant actions (busyId)
+
+#### Add Payment Method Flow (Dialog)
+1. Button "Add payment method" → call Convex action `stripe.createSetupIntent()`
+2. Ouvre un Dialog (`sm:max-w-[520px]`) avec:
+   - Title: "Add a payment method"
+   - Loading state: "Initializing Stripe…" (pendant fetch clientSecret)
+   - `<Elements key={key} stripe={stripePromise} options={{ clientSecret }}>`
+   - `<PaymentElement />` (Stripe hosted UI)
+   - Footer: Cancel button + Save button (disabled si !stripe || !elements)
+   - Security notice: "Your full card details are never stored on our servers."
+3. Confirm button → `stripe.confirmSetup({ elements, redirect: "if_required" })`
+4. Après succès:
+   - Toast "Payment method added — Your card has been saved."
+   - Close dialog (reset Elements state via key increment)
+   - La liste se met à jour automatiquement via query Convex (webhook-driven)
+5. Après erreur:
+   - Toast destructive avec `result.error.message`
+
+#### Components Architecture
+```
+AddPaymentMethodDialog (wrapper)
+  ├─ Dialog state management (open/onOpenChange)
+  ├─ clientSecret prop
+  ├─ Elements key reset on close
+  └─ <Elements> wrapper
+      └─ PaymentMethodForm (isolated)
+          ├─ useStripe() + useElements()
+          ├─ <PaymentElement />
+          ├─ confirmSetup logic
+          └─ Cancel/Save buttons
+```
+
+### Data model used by UI (deterministic)
+- Query `api.paymentMethods.listForCurrentUser()` → returns `PaymentMethod[]`
+  - Sorted: default first, then by createdAt desc
+- Actions:
+  - `api.stripe.createSetupIntent()` → `{ clientSecret: string }`
+  - `api.stripe.setDefaultPaymentMethod({ stripePaymentMethodId })` → `{ ok: true }`
+  - `api.stripe.detachPaymentMethod({ stripePaymentMethodId })` → `{ ok: true }`
+- Update events viennent de Stripe webhooks → Convex table `paymentMethods`
+
+### Stripe Elements Integration Notes
+- Use `@stripe/stripe-js` + `@stripe/react-stripe-js`
+- `stripePromise = loadStripe(NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)`
+- `<Elements options={{ clientSecret }}>` wraps `<PaymentElement />`
+- Confirm with `stripe.confirmSetup({ elements, confirmParams: { return_url? }, redirect: "if_required" })`
+- After success: rely on webhooks to update Convex `paymentMethods`
+- UI refetches automatically via Convex reactivity
+
+### Security / Privacy
+- Jamais stocker PAN complet / CVC.
+- Stocker uniquement: brand, last4, expMonth, expYear, stripePaymentMethodId, isDefault, billingName, billingEmail.
+- Stripe Elements collecte les données sensibles (PCI-compliant).
+
+### UX Micro-details
+- Après `confirmSetup`, afficher "Saved — syncing…" (car update dépend du webhook)
+- Ajouter texte helper: "It may take a few seconds to appear."
+- Pendant "Set default" ou "Remove", afficher `<Loader2>` sur le bouton concerné (pas toute la liste)
+- Sort payment methods: default first, then newest first
+
+---
+
+## Fan Feed — Real content
+
+### Page: /fan/me/[username]
+- Affiche un feed réel basé sur les follows:
+  - items = drops/releases (products)
+- States: loading / empty (no follows) / list / error
+- Pagination "Load more"
+
+---
+
+## Artist Billing — Stripe Connect + Automatic Payouts (Production)
+
+### Business Model
+- **Fan → Artist**: Direct payments via Stripe Connect (destination charges)
+- **Platform Revenue**: Artist subscriptions (Clerk Billing: Free/Pro/Premium)
+- **Commission**: 0% on sales (`application_fee_amount = 0`)
+- **Payouts**: Automatic (Stripe schedule), no manual withdraw
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FAN CHECKOUT FLOW                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Fan clicks "Buy" → Stripe Checkout Session                    │
+│  ├─ payment_intent_data.transfer_data.destination = artist_acct│
+│  ├─ application_fee_amount = 0                                  │
+│  └─ metadata: { fanUserId, productId, artistId }               │
+├─────────────────────────────────────────────────────────────────┤
+│  Webhook: checkout.session.completed                           │
+│  ├─ Verify signature + idempotency (processedEvents)           │
+│  ├─ Create order + orderItems (Convex)                         │
+│  ├─ Grant download entitlement                                 │
+│  └─ Funds go directly to artist's Stripe Connect account       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                 ARTIST CONNECT FLOW                             │
+├─────────────────────────────────────────────────────────────────┤
+│  Artist clicks "Connect Stripe"                                │
+│  ├─ Convex action: stripeConnect.createAccount (Express)       │
+│  ├─ Store stripeConnectAccountId in artists table              │
+│  └─ Redirect to Stripe onboarding (account link)               │
+├─────────────────────────────────────────────────────────────────┤
+│  Webhook: account.updated                                      │
+│  ├─ Update connectStatus, chargesEnabled, payoutsEnabled       │
+│  ├─ Update requirementsDue (KYC, bank, etc.)                   │
+│  └─ Idempotency via processedEvents                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Automatic Payouts (Stripe managed)                            │
+│  ├─ Webhook: payout.paid → update payout history (optional V1) │
+│  └─ Artist manages schedule via Express dashboard              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Model (Convex Schema Updates)
+
+#### `artists` table (add Connect fields)
+```typescript
+artists: defineTable({
+  // ... existing fields ...
+  stripeConnectAccountId: v.optional(v.string()),
+  connectStatus: v.union(
+    v.literal("not_connected"),
+    v.literal("pending"),
+    v.literal("connected")
+  ),
+  chargesEnabled: v.optional(v.boolean()),
+  payoutsEnabled: v.optional(v.boolean()),
+  requirementsDue: v.optional(v.array(v.string())),
+  connectUpdatedAt: v.optional(v.number()),
+})
+```
+
+#### `artistBalanceSnapshots` table (optional - for balance history)
+```typescript
+artistBalanceSnapshots: defineTable({
+  artistId: v.id("artists"),
+  stripeConnectAccountId: v.string(),
+  availableUSD: v.number(),
+  pendingUSD: v.number(),
+  currency: v.string(), // "usd"
+  snapshotAt: v.number(),
+}).index("by_artist", ["artistId"])
+```
+
+#### `artistPayouts` table (optional - for payout history)
+```typescript
+artistPayouts: defineTable({
+  artistId: v.id("artists"),
+  stripePayoutId: v.string(),
+  amount: v.number(),
+  currency: v.string(),
+  status: v.union(
+    v.literal("paid"),
+    v.literal("pending"),
+    v.literal("in_transit"),
+    v.literal("canceled"),
+    v.literal("failed")
+  ),
+  arrivalDate: v.number(),
+  createdAt: v.number(),
+})
+  .index("by_artist", ["artistId"])
+  .index("by_stripe_payout", ["stripePayoutId"])
+```
+
+### Page: /dashboard/billing (Artist)
+
+#### UI States
+
+**State 1: Not Connected**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Earnings & Payouts                                         │
+├─────────────────────────────────────────────────────────────┤
+│  ⚠️  Connect Stripe to Receive Payments                     │
+│                                                             │
+│  Fans pay you directly via Stripe. Payouts are automatic.  │
+│                                                             │
+│  [Connect Stripe Account] (primary CTA)                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**State 2: Pending (Requirements Due)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Earnings & Payouts                                         │
+├─────────────────────────────────────────────────────────────┤
+│  ⚠️  Action Required                                        │
+│                                                             │
+│  Complete these steps to activate payments:                │
+│  • Verify your identity                                    │
+│  • Add bank account                                        │
+│                                                             │
+│  [Continue Stripe Setup] (primary CTA)                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**State 3: Connected**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Earnings & Payouts                                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Balance Card (gradient)                            │   │
+│  │  Available: $1,234.56                               │   │
+│  │  Pending: $89.00                                    │   │
+│  │  Last Payout: $500.00 on Dec 15, 2024              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────┐  ┌─────────────────────────────┐  │
+│  │  Payout Method      │  │  Recent Transactions        │  │
+│  │  ✅ Connected       │  │  • Midnight Dreams EP       │  │
+│  │  Payouts: Automatic │  │    +$9.99 (Dec 13)         │  │
+│  │                     │  │  • Summer Tour Ticket       │  │
+│  │  [Manage on Stripe] │  │    +$125.00 (Dec 15)       │  │
+│  └─────────────────────┘  └─────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Components Architecture
+
+**BalanceCard** (updated)
+- Props: `availableBalance`, `pendingBalance`, `lastPayout` (real data from Convex)
+- Fallback: If balance webhooks not implemented, show transaction totals
+
+**PayoutMethodCard** (updated)
+- Props: `connectStatus`, `chargesEnabled`, `payoutsEnabled`, `expressLoginUrl`
+- States:
+  - `not_connected`: CTA "Connect Stripe"
+  - `pending`: Show requirements + CTA "Continue Setup"
+  - `connected`: Show status + link "Manage Payouts on Stripe"
+- NO "Withdraw Funds" button
+
+**TransactionsList** (updated)
+- Data source: Convex query `artistBilling.getTransactions()`
+- Query: `orders` → `orderItems` → `products` (filter by `artistId`)
+- Empty state: "No sales yet. Share your products with fans!"
+- NO placeholder/mock transactions
+
+### Convex Functions (New)
+
+#### Queries (Deterministic)
+
+```typescript
+// convex/artistBilling.ts
+
+export const getSummary = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get current artist
+    // Return: {
+    //   connectStatus, chargesEnabled, payoutsEnabled, requirementsDue,
+    //   availableBalance, pendingBalance, lastPayout
+    // }
+  }
+});
+
+export const getTransactions = query({
+  args: { limit: v.optional(v.number()), cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    // Get current artist
+    // Query orders → orderItems → products (filter by artistId)
+    // Return paginated transactions with product details
+  }
+});
+```
+
+#### Actions (Stripe API Calls)
+
+```typescript
+// convex/stripeConnect.ts
+
+export const createAccount = action({
+  args: {},
+  handler: async (ctx) => {
+    // Create Stripe Connect Express account
+    // Store stripeConnectAccountId in artists table
+    // Return account ID
+  }
+});
+
+export const createAccountLink = action({
+  args: { type: v.union(v.literal("onboarding"), v.literal("refresh")) },
+  handler: async (ctx, args) => {
+    // Create Stripe account link for onboarding/refresh
+    // Return URL for redirect
+  }
+});
+
+export const createLoginLink = action({
+  args: {},
+  handler: async (ctx) => {
+    // Create Stripe Express dashboard login link
+    // Return URL for "Manage Payouts on Stripe"
+  }
+});
+```
+
+#### Internal Mutations (Webhook-driven)
+
+```typescript
+// convex/stripeConnect.ts
+
+export const updateAccountStatus = internalMutation({
+  args: {
+    stripeConnectAccountId: v.string(),
+    connectStatus: v.string(),
+    chargesEnabled: v.boolean(),
+    payoutsEnabled: v.boolean(),
+    requirementsDue: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Update artists table with Connect status
+    // Called by webhook account.updated
+  }
+});
+
+export const upsertBalanceSnapshot = internalMutation({
+  args: {
+    artistId: v.id("artists"),
+    availableUSD: v.number(),
+    pendingUSD: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Upsert balance snapshot
+    // Called by webhook balance.available (optional V1)
+  }
+});
+
+export const upsertPayoutHistory = internalMutation({
+  args: {
+    artistId: v.id("artists"),
+    stripePayoutId: v.string(),
+    amount: v.number(),
+    status: v.string(),
+    arrivalDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Upsert payout history
+    // Called by webhook payout.* (optional V1)
+  }
+});
+```
+
+### Webhooks (Extended)
+
+#### Existing: `src/app/api/stripe/webhook/route.ts`
+
+Add support for Connect events:
+
+```typescript
+// Handle Connect events
+if (event.type === "account.updated") {
+  const account = event.data.object as Stripe.Account;
+  await fetchMutation(api.stripeConnect.updateAccountStatus, {
+    stripeConnectAccountId: account.id,
+    connectStatus: account.charges_enabled && account.payouts_enabled 
+      ? "connected" 
+      : "pending",
+    chargesEnabled: account.charges_enabled,
+    payoutsEnabled: account.payouts_enabled,
+    requirementsDue: account.requirements?.currently_due || [],
+  });
+}
+
+// Optional V1: Balance webhooks
+if (event.type === "balance.available") {
+  // Update balance snapshot
+}
+
+// Optional V1: Payout webhooks
+if (event.type.startsWith("payout.")) {
+  // Update payout history
+}
+```
+
+### Checkout Flow (Updated)
+
+#### `src/app/api/stripe/checkout/route.ts`
+
+```typescript
+// Get artist's Stripe Connect account
+const product = await fetchQuery(api.products.getById, { productId });
+const artist = await fetchQuery(api.artists.getById, { artistId: product.artistId });
+
+if (!artist.stripeConnectAccountId || artist.connectStatus !== "connected") {
+  return NextResponse.json(
+    { error: "Artist not connected to Stripe" },
+    { status: 400 }
+  );
+}
+
+// Create Checkout Session with destination charge
+const session = await stripe.checkout.sessions.create({
+  mode: "payment",
+  line_items: [...],
+  payment_intent_data: {
+    transfer_data: {
+      destination: artist.stripeConnectAccountId, // Route to artist
+    },
+    application_fee_amount: 0, // No platform commission
+  },
+  metadata: {
+    fanUserId,
+    productId,
+    artistId: artist._id,
+  },
+  success_url: `${process.env.NEXT_PUBLIC_URL}/me/purchases?success=true`,
+  cancel_url: `${process.env.NEXT_PUBLIC_URL}/products/${productId}`,
+});
+```
+
+### Implementation Phases
+
+**Palier A (Indispensable - Core Connect)**
+- ✅ Stripe Connect onboarding + status tracking
+- ✅ Checkout routed to connected account (destination charges)
+- ✅ Orders/entitlements continue to work in Convex
+- ✅ Artist Billing page: not_connected/pending/connected states
+- ✅ "Manage Payouts on Stripe" link (Express login)
+- ✅ Real transactions list from Convex orders
+
+**Palier B (Nice-to-have - Balance Display)**
+- ⚙️ Webhooks `balance.available` + `payout.*`
+- ⚙️ Read-model balance + payout history in Convex
+- ⚙️ Display available/pending/last payout in UI
+- ⚙️ Balance snapshots table for history
+
+### Security & Compliance
+
+- **PCI Compliance**: Stripe handles all payment data
+- **Connect Verification**: Stripe handles KYC/identity verification
+- **Idempotency**: All webhooks checked via `processedEvents` table
+- **Authorization**: Only artist owner can access their billing data
+- **No Manual Payouts**: Prevents fraud, Stripe manages schedule
+
+### Error Handling
+
+| Error | Strategy | User Feedback |
+|-------|----------|---------------|
+| Artist not connected | Block checkout | "This artist hasn't set up payments yet" |
+| Connect onboarding incomplete | Show requirements | "Complete these steps: [list]" |
+| Webhook processing failure | Retry (Stripe automatic) | Log error, no user impact |
+| Balance fetch failure | Show transaction totals | "Balance unavailable, showing sales total" |

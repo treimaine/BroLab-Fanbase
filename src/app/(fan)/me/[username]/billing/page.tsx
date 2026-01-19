@@ -3,6 +3,7 @@
 /**
  * Fan Billing Page
  * Requirements: 11.1-11.5 - Payment methods and billing history management
+ * Requirements: R-FAN-PM-3.1, R-FAN-PM-7.2, R-FAN-PM-7.3 - Real data from Convex
  * 
  * Displays fan's billing information with:
  * - Tabs: Payment Methods / Billing History
@@ -10,131 +11,156 @@
  * - Transaction history
  * - Security notice about Stripe-secured payments
  * 
- * Connected to Stripe via Convex (future implementation)
+ * Connected to Stripe via Convex with real data
  */
 
 import { api } from "@/../convex/_generated/api";
+import { AddPaymentMethodDialog } from "@/components/fan/add-payment-method-dialog";
 import { BillingHistoryTab, type TransactionData } from "@/components/fan/billing-history-tab";
 import { PaymentMethodsTab, type PaymentMethodData } from "@/components/fan/payment-methods-tab";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { Shield } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-/**
- * Mock data for MVP - will be replaced with Convex queries
- */
-const MOCK_PAYMENT_METHODS: PaymentMethodData[] = [
-  {
-    id: "pm_1",
-    brand: "visa",
-    last4: "4242",
-    expiryMonth: 12,
-    expiryYear: 2025,
-    isDefault: true,
-  },
-  {
-    id: "pm_2",
-    brand: "mastercard",
-    last4: "5555",
-    expiryMonth: 8,
-    expiryYear: 2026,
-    isDefault: false,
-  },
-];
-
-const MOCK_TRANSACTIONS: TransactionData[] = [
-  {
-    id: "txn_1",
-    type: "purchase",
-    description: "Album: Midnight Dreams - DJ Nova",
-    amount: 9.99,
-    currency: "usd",
-    date: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
-    status: "completed",
-  },
-  {
-    id: "txn_2",
-    type: "purchase",
-    description: "Event Ticket: Summer Festival 2024",
-    amount: 45,
-    currency: "usd",
-    date: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago
-    status: "completed",
-  },
-  {
-    id: "txn_3",
-    type: "refund",
-    description: "Refund: Cancelled Event Ticket",
-    amount: 30,
-    currency: "usd",
-    date: Date.now() - 1000 * 60 * 60 * 24 * 7, // 1 week ago
-    status: "completed",
-  },
-  {
-    id: "txn_4",
-    type: "purchase",
-    description: "Video: Behind the Scenes - Treigua",
-    amount: 4.99,
-    currency: "usd",
-    date: Date.now() - 1000 * 60 * 60 * 24 * 14, // 2 weeks ago
-    status: "completed",
-  },
-];
-
 export default function BillingPage() {
-  // State for mock data (will be replaced with Convex queries)
-  const [paymentMethods] = useState<PaymentMethodData[]>(MOCK_PAYMENT_METHODS);
-  const [transactions] = useState<TransactionData[]>(MOCK_TRANSACTIONS);
-  const [isRemoving, setIsRemoving] = useState<string | null>(null);
+  // Convex query for payment methods (deterministic read model)
+  // Requirements: R-FAN-PM-3.1 - Read from Convex table (webhook-synced)
+  const paymentMethodsData = useQuery(api.paymentMethods.listForCurrentUser);
 
-  // Convex actions (not mutations, because they're defined as actions)
+  // Convex query for purchase history (real orders data)
+  // Requirements: R-PROD-0.1, R-PROD-0.2 - No mock data on user-facing pages
+  const purchasesData = useQuery(api.orders.getMyPurchases);
+
+  // State for busy actions (individual loading states)
+  // Requirements: R-FAN-PM-7.3 - Show loading state during actions
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  // State for Add Payment Method dialog
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
+
+  // Convex actions
   const createSetupIntent = useAction(api.stripe.createSetupIntent);
-  const removePaymentMethodAction = useAction(api.stripe.removePaymentMethod);
+  const setDefaultPaymentMethod = useAction(api.stripe.setDefaultPaymentMethod);
+  const detachPaymentMethod = useAction(api.stripe.detachPaymentMethod);
+
+  // Transform purchases data to transactions format
+  // Requirements: R-PROD-0.1 - Display real data from Convex
+  const transactions: TransactionData[] = useMemo(() => {
+    if (!purchasesData) return [];
+
+    return purchasesData.flatMap((purchase) => {
+      const { order, items } = purchase;
+
+      // Create a transaction for each order
+      // For now, we'll create one transaction per order with all items combined
+      // In the future, we could create separate transactions per item
+      if (items.length === 0) return [];
+
+      // Get the first item for description (or combine multiple items)
+      const description =
+        items.length === 1
+          ? `${items[0].product.title} - ${items[0].artist.displayName}`
+          : `${items.length} items from ${items[0].artist.displayName}`;
+
+      return [
+        {
+          id: order._id,
+          type: "purchase" as const,
+          description,
+          amount: order.totalUSD,
+          currency: order.currency,
+          date: order.createdAt,
+          status: order.status === "paid" ? ("completed" as const) : ("pending" as const),
+        },
+      ];
+    });
+  }, [purchasesData]);
 
   // Handle add payment method
-  // Requirements: 11.2 - Add payment method via Stripe Setup Intent
+  // Requirements: R-FAN-PM-2.1, R-FAN-PM-2.2 - Create SetupIntent and show dialog
   const handleAddPaymentMethod = useCallback(async () => {
     try {
       // Create a Stripe Setup Intent
       const result = await createSetupIntent();
       
-      // In production, you would:
-      // 1. Use the clientSecret to initialize Stripe Elements
-      // 2. Show a payment method form modal
-      // 3. Confirm the setup intent
-      // 4. Refresh the payment methods list
-      
-      console.log("Setup Intent created:", result);
-      toast.info("Payment method setup - Stripe integration coming soon!");
+      // Open dialog with clientSecret
+      setSetupClientSecret(result.clientSecret);
+      setIsAddDialogOpen(true);
     } catch (error) {
       console.error("Create setup intent error:", error);
       toast.error("Failed to initialize payment method setup. Please try again.");
     }
   }, [createSetupIntent]);
 
+  // Handle set default payment method
+  // Requirements: R-FAN-PM-5.1, R-FAN-PM-5.2 - Set default via Stripe API
+  const handleSetDefaultPaymentMethod = useCallback(async (methodId: string) => {
+    try {
+      setBusyId(methodId);
+      
+      await setDefaultPaymentMethod({ stripePaymentMethodId: methodId });
+      
+      toast.success("Default payment method updated");
+    } catch (error) {
+      console.error("Set default payment method error:", error);
+      toast.error("Failed to set default payment method. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  }, [setDefaultPaymentMethod]);
+
   // Handle remove payment method
-  // Requirements: 11.3 - Remove payment method via Stripe API
+  // Requirements: R-FAN-PM-6.1, R-FAN-PM-6.2 - Remove via Stripe API
   const handleRemovePaymentMethod = useCallback(async (methodId: string) => {
     try {
-      setIsRemoving(methodId);
+      setBusyId(methodId);
       
-      // Remove payment method via Convex action (calls Stripe API)
-      const result = await removePaymentMethodAction({ paymentMethodId: methodId });
+      await detachPaymentMethod({ stripePaymentMethodId: methodId });
       
-      console.log("Payment method removed:", result);
       toast.success("Payment method removed successfully");
-      
-      // In production, you would refresh the payment methods list here
     } catch (error) {
       console.error("Remove payment method error:", error);
       toast.error("Failed to remove payment method. Please try again.");
     } finally {
-      setIsRemoving(null);
+      setBusyId(null);
     }
-  }, [removePaymentMethodAction]);
+  }, [detachPaymentMethod]);
+
+  // Handle dialog success
+  // Requirements: R-FAN-PM-7.1, R-FAN-PM-7.2 - Show success toast and auto-update
+  const handleDialogSuccess = useCallback(() => {
+    toast.success("Payment method added — syncing…", {
+      description: "It may take a few seconds to appear.",
+    });
+    setIsAddDialogOpen(false);
+    setSetupClientSecret(null);
+  }, []);
+
+  // Handle dialog close
+  const handleDialogClose = useCallback((open: boolean) => {
+    setIsAddDialogOpen(open);
+    if (!open) {
+      setSetupClientSecret(null);
+    }
+  }, []);
+
+  // Transform Convex payment methods to component format
+  const paymentMethods: PaymentMethodData[] = paymentMethodsData?.map((pm) => ({
+    id: pm.stripePaymentMethodId,
+    brand: pm.brand as PaymentMethodData["brand"],
+    last4: pm.last4,
+    expiryMonth: pm.expMonth,
+    expiryYear: pm.expYear,
+    isDefault: pm.isDefault,
+  })) ?? [];
+
+  // Loading states
+  const isLoadingPaymentMethods = paymentMethodsData === undefined;
+  const isLoadingTransactions = purchasesData === undefined;
 
   return (
     <div className="min-h-screen bg-background">
@@ -177,8 +203,9 @@ export default function BillingPage() {
               paymentMethods={paymentMethods}
               onAddPaymentMethod={handleAddPaymentMethod}
               onRemovePaymentMethod={handleRemovePaymentMethod}
-              isLoading={false}
-              isRemoving={isRemoving}
+              onSetDefaultPaymentMethod={handleSetDefaultPaymentMethod}
+              isLoading={isLoadingPaymentMethods}
+              isRemoving={busyId}
             />
           </TabsContent>
 
@@ -186,11 +213,19 @@ export default function BillingPage() {
           <TabsContent value="billing-history" className="mt-0">
             <BillingHistoryTab
               transactions={transactions}
-              isLoading={false}
+              isLoading={isLoadingTransactions}
             />
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Add Payment Method Dialog */}
+      <AddPaymentMethodDialog
+        open={isAddDialogOpen}
+        onOpenChange={handleDialogClose}
+        clientSecret={setupClientSecret}
+        onSuccess={handleDialogSuccess}
+      />
     </div>
   );
 }

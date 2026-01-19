@@ -56,6 +56,7 @@ interface PaymentMethodsTabProps {
   readonly paymentMethods: PaymentMethodData[];
   readonly onAddPaymentMethod?: () => void;
   readonly onRemovePaymentMethod?: (methodId: string) => void;
+  readonly onSetDefaultPaymentMethod?: (methodId: string) => void;
   readonly isLoading?: boolean;
   readonly isRemoving?: string | null; // ID of method being removed
   readonly disabled?: boolean;
@@ -76,11 +77,13 @@ function formatExpiry(month: number, year: number): string {
 function PaymentMethodCard({
   method,
   onRemove,
+  onSetDefault,
   isRemoving,
   disabled,
 }: {
   readonly method: PaymentMethodData;
   readonly onRemove?: (methodId: string) => void;
+  readonly onSetDefault?: (methodId: string) => void;
   readonly isRemoving?: boolean;
   readonly disabled?: boolean;
 }) {
@@ -130,6 +133,19 @@ function PaymentMethodCard({
             <p className="text-xs text-muted-foreground">
               Expires {formatExpiry(method.expiryMonth, method.expiryYear)}
             </p>
+
+            {/* Set as Default Button (only show if not already default) */}
+            {!method.isDefault && onSetDefault && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => onSetDefault(method.id)}
+                disabled={disabled || isRemoving}
+              >
+                Set as default
+              </Button>
+            )}
           </div>
         </div>
 
@@ -156,6 +172,7 @@ export function PaymentMethodsTab({
   paymentMethods,
   onAddPaymentMethod,
   onRemovePaymentMethod,
+  onSetDefaultPaymentMethod,
   isLoading = false,
   isRemoving = null,
   disabled = false,
@@ -168,25 +185,27 @@ export function PaymentMethodsTab({
 
   return (
     <div className="space-y-6">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold">Payment Methods</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your saved payment methods
-          </p>
+      {/* Header with Add Button (only show when there are payment methods) */}
+      {hasPaymentMethods && (
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Payment Methods</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage your saved payment methods
+            </p>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-2"
+            onClick={onAddPaymentMethod}
+            disabled={disabled}
+          >
+            <Plus className="h-4 w-4" />
+            Add Method
+          </Button>
         </div>
-        <Button
-          variant="default"
-          size="sm"
-          className="gap-2"
-          onClick={onAddPaymentMethod}
-          disabled={disabled}
-        >
-          <Plus className="h-4 w-4" />
-          Add Method
-        </Button>
-      </div>
+      )}
 
       {/* Payment Methods List */}
       {hasPaymentMethods ? (
@@ -196,6 +215,7 @@ export function PaymentMethodsTab({
               key={method.id}
               method={method}
               onRemove={onRemovePaymentMethod}
+              onSetDefault={onSetDefaultPaymentMethod}
               isRemoving={isRemoving === method.id}
               disabled={disabled}
             />

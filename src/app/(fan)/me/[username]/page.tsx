@@ -3,43 +3,47 @@
 /**
  * Fan Feed Page
  * Requirements: 9.1-9.6 - Fan Dashboard with personalized feed
+ * Requirements: R-FEED-1 - Feed powered by real Convex data
+ * Requirements: R-FEED-1.4 - Pagination (cursor/limit)
  * 
  * Desktop: Feed + sidebar widgets (CommunityWidget, SuggestedArtistsWidget, FeaturedTrackCard)
  * Mobile: Single column feed
  * Connected to Convex (followed artists feed)
  * 
  * Displays posts from followed artists including:
- * - New releases (products)
- * - Upcoming events
- * - Action buttons (like, comment, share)
+ * - New releases (products from followed artists)
+ * - Action buttons (like, comment, share) - Future
  * - CTA buttons (Listen, Get Tickets, Shop Now)
+ * - Pagination with "Load more" button
+ * 
+ * Data source: convex/feed.ts - getForCurrentUser query (paginated)
+ * Fetches public products from all followed artists, sorted by creation date descending
  */
 
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { CommunityWidget, FeedCard, SuggestedArtistsWidget } from "@/components/feed";
 import type { FeedPost } from "@/components/feed/feed-card";
 import { FeaturedTrackCard } from "@/components/player";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Track } from "@/types/player";
+import { ConvexHttpClient } from "convex/browser";
 import { useMutation, useQuery } from "convex/react";
-import { useCallback, useMemo } from "react";
-
-/**
- * Generate feed posts from followed artists' products and events
- * 
- * Note: For MVP, we generate mock feed posts from followed artists.
- * In production, this would be replaced with a dedicated Convex query
- * that efficiently fetches and aggregates products and events from followed artists.
- * 
- * Future enhancement: Create `convex/feed.ts` with:
- * - getFollowedArtistsFeed: Aggregate products + events from followed artists
- * - Pagination support
- * - Real-time updates via Convex subscriptions
- */
+import { Loader2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 export default function FanFeedPage() {
-  // Fetch data
-  const followedArtists = useQuery(api.follows.getFollowedArtists);
+  // Pagination state
+  const [cursor, setCursor] = useState<number | undefined>(undefined);
+  const [allFeedItems, setAllFeedItems] = useState<any[]>([]);
+  const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+
+  // Fetch data with pagination
+  const feedResult = useQuery(api.feed.getForCurrentUser, { 
+    limit: 10,
+    cursor: cursor 
+  });
   const followingCount = useQuery(api.follows.getFollowingCount);
   const upcomingEventsCount = useQuery(api.follows.getFollowedArtistsUpcomingEventsCount);
   const suggestedArtists = useQuery(api.artists.getSuggestedArtists, { limit: 5 });
@@ -47,94 +51,67 @@ export default function FanFeedPage() {
   // Mutations
   const toggleFollow = useMutation(api.follows.toggle);
 
-  // Loading state
-  const isLoading = 
-    followedArtists === undefined || 
+  // Accumulate feed items as we paginate
+  useMemo(() => {
+    if (feedResult?.items) {
+      if (!hasLoadedInitial) {
+        // First load - replace all items
+        setAllFeedItems(feedResult.items);
+        setHasLoadedInitial(true);
+      } else if (cursor !== undefined) {
+        // Subsequent loads - append items
+        setAllFeedItems((prev: any[]) => {
+          // Deduplicate by _id
+          const existingIds = new Set(prev.map((item: any) => item._id));
+          const newItems = feedResult.items.filter((item: any) => !existingIds.has(item._id));
+          return [...prev, ...newItems];
+        });
+      }
+    }
+  }, [feedResult?.items, cursor, hasLoadedInitial]);
+
+  // Loading states
+  const isInitialLoading = 
+    feedResult === undefined || 
     followingCount === undefined || 
     upcomingEventsCount === undefined ||
     suggestedArtists === undefined;
 
-  // Generate feed posts (MVP: mock data)
+  const isLoadingMore = cursor !== undefined && feedResult === undefined;
+  const hasMore = feedResult?.nextCursor !== null && feedResult?.nextCursor !== undefined;
+
+  // Transform feed items into feed posts
   const feedPosts = useMemo<FeedPost[]>(() => {
-    if (!followedArtists || followedArtists.length === 0) {
+    if (!allFeedItems || allFeedItems.length === 0) {
       return [];
     }
 
-    // MVP: Generate mock feed posts from followed artists
-    const posts: FeedPost[] = [];
-    
-    followedArtists.forEach((artist: any, index: number) => {
-      // Skip null artists
-      if (!artist) return;
-      
-      // Mock release post
-      if (index % 2 === 0) {
-        posts.push({
-          id: `release-${artist._id}`,
-          artist: {
-            name: artist.displayName,
-            avatarUrl: artist.avatarUrl,
-            slug: artist.artistSlug,
-          },
-          content: `Just dropped my latest track! 🎵 Check it out and let me know what you think!`,
-          imageUrl: artist.coverUrl || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80",
-          type: "release",
-          createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          likes: Math.floor(Math.random() * 500) + 50,
-          comments: Math.floor(Math.random() * 50) + 5,
-          track: {
-            id: `track-${artist._id}`,
-            title: "New Single",
-            artistName: artist.displayName,
-            coverImageUrl: artist.coverUrl,
-            fileStorageId: "mock-storage-id",
-            type: "music",
-            duration: 180,
-          },
-        });
-      }
-
-      // Mock event post
-      if (index % 3 === 0) {
-        posts.push({
-          id: `event-${artist._id}`,
-          artist: {
-            name: artist.displayName,
-            avatarUrl: artist.avatarUrl,
-            slug: artist.artistSlug,
-          },
-          content: `Excited to announce my upcoming show! Get your tickets before they sell out! 🎤`,
-          imageUrl: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
-          type: "event",
-          createdAt: new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString(),
-          likes: Math.floor(Math.random() * 300) + 30,
-          comments: Math.floor(Math.random() * 30) + 3,
-        });
-      }
-
-      // Mock update post
-      if (index % 4 === 0) {
-        posts.push({
-          id: `update-${artist._id}`,
-          artist: {
-            name: artist.displayName,
-            avatarUrl: artist.avatarUrl,
-            slug: artist.artistSlug,
-          },
-          content: `Working on something special for you all... Stay tuned! 👀✨`,
-          type: "update",
-          createdAt: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toISOString(),
-          likes: Math.floor(Math.random() * 200) + 20,
-          comments: Math.floor(Math.random() * 20) + 2,
-        });
-      }
-    });
-
-    // Sort by date descending (newest first)
-    return posts.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [followedArtists]);
+    // Transform products into feed posts
+    return allFeedItems.map((item: any) => ({
+      id: item._id,
+      artist: {
+        name: item.artist.displayName,
+        avatarUrl: item.artist.avatarUrl,
+        slug: item.artist.artistSlug,
+      },
+      content: `Check out my latest ${item.type === "music" ? "track" : "video"}! ${item.description || ""}`,
+      imageUrl: item.coverImageUrl || item.artist.coverUrl || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80",
+      type: "release" as const,
+      createdAt: new Date(item.createdAt).toISOString(),
+      likes: 0, // Future: implement likes
+      comments: 0, // Future: implement comments
+      track: item.fileStorageId ? {
+        id: item._id,
+        title: item.title,
+        artistName: item.artist.displayName,
+        coverImageUrl: item.coverImageUrl || item.artist.coverUrl,
+        fileStorageId: item.fileStorageId as string,
+        type: item.type,
+        duration: 180, // Future: store actual duration
+        productId: item._id, // Include productId for ownership verification
+      } : undefined,
+    }));
+  }, [allFeedItems]);
 
   // Featured track (first track from feed)
   const featuredTrack = useMemo<Track | null>(() => {
@@ -155,22 +132,40 @@ export default function FanFeedPage() {
     }
   }, [toggleFollow]);
 
+  // Handle load more
+  const handleLoadMore = useCallback(() => {
+    if (feedResult?.nextCursor) {
+      setCursor(feedResult.nextCursor);
+    }
+  }, [feedResult?.nextCursor]);
+
   // Handle playable URL request
+  // Requirements: R-STRIPE-OT-1.3 - Server-side gating for private products
   const handleRequestUrl = useCallback(async (track: Track): Promise<string | null> => {
-    try {
-      // Note: In production, this would use the downloads.getDownloadUrl action
-      // which verifies ownership and returns a secure download URL.
-      // For MVP with mock data, we return null and rely on the track's playableUrl
-      console.log("Request URL for track:", track.id);
+    if (!track.fileStorageId) {
       return null;
+    }
+
+    try {
+      // Create a Convex HTTP client for imperative queries
+      const convexClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+      
+      // Fetch playable URL from Convex storage using the files.getPlayableUrl query
+      // Pass productId for ownership verification (required for private products)
+      const url = await convexClient.query(api.files.getPlayableUrl, {
+        storageId: track.fileStorageId as Id<"_storage">,
+        productId: track.productId as Id<"products"> | undefined,
+      });
+
+      return url;
     } catch (error) {
-      console.error("Failed to get download URL:", error);
+      console.error("Error fetching playable URL:", error);
       return null;
     }
   }, []);
 
   // Loading skeleton
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -195,7 +190,7 @@ export default function FanFeedPage() {
   }
 
   // Empty state - no followed artists
-  if (!followedArtists || followedArtists.length === 0) {
+  if (!allFeedItems || allFeedItems.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -258,13 +253,46 @@ export default function FanFeedPage() {
                 </p>
               </div>
             ) : (
-              feedPosts.map((post) => (
-                <FeedCard
-                  key={post.id}
-                  post={post}
-                  onRequestUrl={handleRequestUrl}
-                />
-              ))
+              <>
+                {feedPosts.map((post) => (
+                  <FeedCard
+                    key={post.id}
+                    post={post}
+                    onRequestUrl={handleRequestUrl}
+                  />
+                ))}
+
+                {/* Load More Button */}
+                {hasMore && (
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="rounded-full gap-2"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        "Load more"
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                {/* End of feed message */}
+                {!hasMore && feedPosts.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    <p className="text-sm text-muted-foreground">
+                      You&apos;ve reached the end of your feed
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </main>
 

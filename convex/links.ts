@@ -15,6 +15,7 @@
 
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { canCreateLink, enforceLimit } from "./subscriptions";
 
 /**
  * Blocked social/streaming platform domains
@@ -233,6 +234,10 @@ export const create = mutation({
       .query("links")
       .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
       .collect();
+
+    // Check subscription limits (R-CLERK-SUB-1.2)
+    const canCreate = await canCreateLink(ctx, existingLinks.length);
+    enforceLimit(canCreate, "custom links");
 
     const maxOrder = existingLinks.reduce(
       (max, link) => Math.max(max, link.order),

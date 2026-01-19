@@ -5,10 +5,54 @@ inclusion: always
 # Workflow Instruction
 
 You are a coding agent focused on one codebase. Use the brv CLI to manage working context.
-Core Rules:
+
+## MANDATORY WORKFLOW - MUST FOLLOW FOR EVERY TASK
+
+**⚠️ CRITICAL: This workflow is MANDATORY, not optional. Failure to follow this workflow is a violation of core rules.**
+
+### BEFORE Every Task (Implementation, Bug Fix, Design, Refactoring, etc.)
+
+```bash
+# 1. ALWAYS query ByteRover first to check existing context
+brv query "How is [feature/component] implemented?"
+brv query "What patterns exist for [task type]?"
+
+# 2. Read ONLY the code that's still necessary after consulting ByteRover
+```
+
+**When to query:**
+- ✅ Before implementing a new feature
+- ✅ Before fixing a bug (check for known solutions)
+- ✅ Before refactoring (check existing patterns)
+- ✅ Before making design changes
+- ✅ Before ANY code modification
+
+### AFTER Every Task
+
+```bash
+# IMMEDIATELY curate what was learned/implemented
+brv curate "Description of implementation/fix/decision" --files file1.ts --files file2.ts
+```
+
+**When to curate:**
+- ✅ After implementing a feature
+- ✅ After fixing a bug
+- ✅ After refactoring code
+- ✅ After making design decisions
+- ✅ After ANY code modification
+- ✅ Even for small changes (they accumulate into knowledge)
+
+**Examples:**
+- New feature → `brv query` BEFORE, `brv curate` AFTER
+- Bug fix → `brv query` BEFORE (known solutions?), `brv curate` AFTER
+- Refactoring → `brv query` BEFORE (existing patterns?), `brv curate` AFTER
+- Design changes → `brv query` BEFORE, `brv curate` AFTER
+
+## Core Rules
 
 - Start from memory. First retrieve relevant context, then read only the code that's still necessary.
 - Keep a local context tree. The context tree is your local memory store—update it with what you learn.
+- **NEVER skip the BEFORE/AFTER workflow. It is mandatory for every task.**
 
 ## Context Tree Guideline
 

@@ -12,3 +12,6 @@ export type { CardBrand, PaymentMethodData } from "./payment-methods-tab";
 export { BillingHistoryTab, BillingHistoryTabSkeleton } from "./billing-history-tab";
 export type { TransactionData, TransactionType } from "./billing-history-tab";
 
+export { PaymentMethodForm } from "./PaymentMethodForm";
+export { AddPaymentMethodDialog } from "./add-payment-method-dialog";
+

@@ -156,17 +156,58 @@ THE System MAY auto-detect link type as "custom" and suggest appropriate labels 
 4. WHEN an artist creates an event, THE System SHALL store date, city, venue, ticket URL, and image URL
 5. WHEN an artist clicks "Manage" on an event, THE System SHALL display event details and edit options
 
-### Requirement 8: Artist Billing & Payouts
+### Requirement 8: Artist Billing & Payouts (Stripe Connect)
 
-**User Story:** As an artist, I want to manage my earnings and payouts, so that I can receive my revenue.
+**User Story:** As an artist, I want to receive payments directly from fans via Stripe Connect with automatic payouts, so that I can manage my earnings professionally.
+
+**Business Model:** Fans pay artists directly (no platform commission). Platform revenue comes from artist subscriptions (Clerk Billing: Free/Pro/Premium).
 
 #### Acceptance Criteria
 
-1. WHEN an artist accesses /dashboard/billing, THE System SHALL display available balance with pending and last payout amounts
-2. THE Billing_Page SHALL display connected Stripe Connect account status
-3. THE Billing_Page SHALL include "Add Payout Method" option
-4. THE Billing_Page SHALL display recent transactions list (Ticket Sales, Merch Revenue, Payouts, Subscriptions)
-5. WHEN an artist clicks "Withdraw Funds", THE System SHALL initiate a Stripe payout (stub for MVP)
+**R-ART-CONNECT (Stripe Connect Onboarding & Status)**
+
+1. **R-ART-CONNECT-1**: WHEN an artist initiates Stripe Connect onboarding, THE System SHALL use Stripe Connect Express (recommended) to create a connected account
+2. **R-ART-CONNECT-2**: THE System SHALL store Stripe Connect state in Convex `artists` table:
+   - `stripeConnectAccountId` (string, optional)
+   - `connectStatus` (enum: "not_connected" | "pending" | "connected")
+   - `chargesEnabled` (boolean)
+   - `payoutsEnabled` (boolean)
+   - `requirementsDue` (array of strings, e.g., ["bank_account", "identity_verification"])
+3. **R-ART-CONNECT-3**: THE System SHALL update connect status automatically via Stripe webhooks (`account.updated`) with idempotency via `processedEvents` table
+4. **R-ART-CONNECT-4**: WHEN an artist's account has `requirementsDue`, THE System SHALL display actionable requirements in the UI with a "Continue Setup" CTA
+
+**R-ART-PAYOUT (Automatic Payouts Only)**
+
+1. **R-ART-PAYOUT-1**: Payouts to artists SHALL be automatic, managed by Stripe's payout schedule (configured on the connected account)
+2. **R-ART-PAYOUT-2**: THE System SHALL NOT trigger manual payouts (no `stripe.payouts.create` calls in V1)
+3. **R-ART-PAYOUT-3**: THE UI MAY provide a "Manage Payouts on Stripe" link (Stripe Express dashboard login link) but SHALL NOT include a "Withdraw Funds" button
+
+**R-ART-BAL (Real Balances - Deterministic Read Model)**
+
+1. **R-ART-BAL-1**: THE Artist Billing page SHALL display real `available` and `pending` balances
+2. **R-ART-BAL-2**: Balance data SHALL come from a deterministic Convex read-model fed by Stripe webhooks (`balance.available`) and/or non-blocking refresh actions
+3. **R-ART-BAL-3**: THE System SHALL display "Last Payout" information (amount, date, status) if available
+4. **R-ART-BAL-4**: IF balance webhooks are not implemented in V1, THE System MAY display a simplified view with transaction totals from Convex `orders` data
+
+**R-ART-TXN (Real Transactions List)**
+
+1. **R-ART-TXN-1**: THE "Recent Transactions" list SHALL display real sales data, not placeholder/mock data
+2. **R-ART-TXN-2**: Transaction data source of truth SHALL be Convex `orders`/`orderItems` filtered by `artistId` via relation: `orderItems.productId` → `products.artistId`
+3. **R-ART-TXN-3**: Transaction statuses (`paid`, `refunded`, `pending`) SHALL be mapped to UI-friendly labels
+4. **R-ART-TXN-4**: IF no transactions exist, THE System SHALL display an empty state message (not fake transactions)
+
+**R-CHECKOUT-CONNECT (Fan Checkout Routed to Artist)**
+
+1. **R-CHECKOUT-CONNECT-1**: WHEN a fan purchases a product, THE payment SHALL be routed to the artist's Stripe Connect account using destination charges (`transfer_data.destination`)
+2. **R-CHECKOUT-CONNECT-2**: THE platform SHALL NOT take a commission on sales (`application_fee_amount = 0`) because platform revenue comes from artist subscriptions
+3. **R-CHECKOUT-CONNECT-3**: THE webhook `checkout.session.completed` SHALL continue to create Convex `orders`/`orderItems` and grant download entitlements, even in Connect mode
+4. **R-CHECKOUT-CONNECT-4**: IF an artist is not connected to Stripe, THE System SHALL prevent product purchases and display an error message to fans
+
+**R-PROD-0 (No Mock Data - Updated)**
+
+1. **R-PROD-0.1**: NO mock/placeholder data SHALL be visible in Artist Billing (no fake transactions, no "Coming Soon" badges without real state)
+2. **R-PROD-0.2**: IF an artist is not connected to Stripe, THE page SHALL display a real "Connect Stripe" state with actionable CTA, not fake balance/transaction data
+3. **R-PROD-0.3**: ALL UI states (not_connected, pending, connected) SHALL reflect real data from Convex deterministic queries
 
 ### Requirement 9: Fan Dashboard
 
@@ -346,3 +387,83 @@ THE System MAY auto-detect link type as "custom" and suggest appropriate labels 
 
 ### 20.3 Playback for Uploaded Files
 - Uploaded audio/video MUST be playable via the global player (subject to visibility and ownership rules).
+
+
+## Public V1 — Production Readiness (Payments & Feed)
+
+### R-PROD-0 — No Mock Data (Hard Rule)
+- **R-PROD-0.1**: Aucune donnée mock/placeholder ne doit être affichée sur des pages user-facing (fan/artist/public).
+- **R-PROD-0.2**: Toute section "Coming soon" doit être remplacée par un flux réel ou un empty state honnête (sans fausses cartes, sans fausses transactions).
+
+---
+
+## Fan Billing — Saved Payment Methods (Stripe SetupIntent + Webhooks + Convex deterministic queries)
+
+### R-FAN-PM-1 — Stripe Customer binding
+- **R-FAN-PM-1.1**: Chaque user (fan) a un `stripeCustomerId` persisté dans Convex (table `users`).
+- **R-FAN-PM-1.2**: Si `stripeCustomerId` absent, il est créé via une **Convex action** `stripe.ensureCustomerForCurrentUser` et stocké dans Convex (idempotent).
+- **R-FAN-PM-1.3**: Le Stripe Customer est créé avec `email` et `metadata: { convexUserId, clerkUserId }` pour traçabilité.
+
+### R-FAN-PM-2 — Add payment method (SetupIntent)
+- **R-FAN-PM-2.1**: Le clic "Add payment method" appelle l'action Convex `stripe.createSetupIntent` qui crée un SetupIntent Stripe et renvoie `clientSecret`.
+- **R-FAN-PM-2.2**: Le frontend utilise **Stripe Elements** (`<Elements clientSecret>` + `<PaymentElement>`) pour collecter et confirmer le moyen de paiement.
+- **R-FAN-PM-2.3**: La confirmation utilise `stripe.confirmSetup({ elements, redirect: "if_required" })` sans redirect URL.
+- **R-FAN-PM-2.4**: Aucune donnée de carte complète n'est stockée côté app (uniquement metadata : brand/last4/expMonth/expYear).
+
+### R-FAN-PM-3 — Deterministic read model in Convex
+- **R-FAN-PM-3.1**: La liste des payment methods affichée dans l'app provient **exclusivement** d'une **Convex query déterministe** `paymentMethods.listForCurrentUser`.
+- **R-FAN-PM-3.2**: Les payment methods sont synchronisés vers Convex **uniquement via Stripe webhooks** (push), pas via appels Stripe en query.
+- **R-FAN-PM-3.3**: La table `paymentMethods` contient : `userId`, `stripeCustomerId`, `stripePaymentMethodId`, `brand`, `last4`, `expMonth`, `expYear`, `isDefault`, `billingName`, `billingEmail`, `createdAt`, `updatedAt`.
+- **R-FAN-PM-3.4**: Index requis : `by_userId`, `by_stripeCustomerId`, `by_stripePaymentMethodId`.
+
+### R-FAN-PM-4 — Webhooks coverage + idempotence
+- **R-FAN-PM-4.1**: Les webhooks Stripe sont vérifiés par signature (`stripe.webhooks.constructEvent`) et traités de façon idempotente via `processedEvents` (provider="stripe", eventId).
+- **R-FAN-PM-4.2**: Les événements minimaux requis pour PM sync :
+  - `setup_intent.succeeded` → upsert payment method
+  - `payment_method.attached` → upsert payment method (fallback)
+  - `payment_method.detached` → delete payment method
+  - `customer.updated` → sync `isDefault` from `invoice_settings.default_payment_method`
+- **R-FAN-PM-4.3**: Sur ces events, Convex internal mutations (`upsertFromStripe`, `removeByStripePaymentMethodId`, `setDefaultByCustomer`) sont appelées.
+- **R-FAN-PM-4.4**: Les données carte proviennent de `payment_method.card.brand`, `payment_method.card.last4`, `payment_method.card.exp_month`, `payment_method.card.exp_year`, `payment_method.billing_details`.
+
+### R-FAN-PM-5 — Default payment method management
+- **R-FAN-PM-5.1**: L'app peut définir une carte par défaut (optionnel V1) via action Convex `stripe.setDefaultPaymentMethod`.
+- **R-FAN-PM-5.2**: L'action appelle `stripe.customers.update(customerId, { invoice_settings: { default_payment_method } })`.
+- **R-FAN-PM-5.3**: La vérité finale est reflétée via webhook `customer.updated` qui met à jour `isDefault` dans Convex.
+
+### R-FAN-PM-6 — Remove payment method
+- **R-FAN-PM-6.1**: L'utilisateur peut retirer un PM via action Convex `stripe.detachPaymentMethod`.
+- **R-FAN-PM-6.2**: L'action appelle `stripe.paymentMethods.detach(paymentMethodId)`.
+- **R-FAN-PM-6.3**: La suppression est reflétée dans Convex via webhook `payment_method.detached` (source of truth).
+
+### R-FAN-PM-7 — UX feedback
+- **R-FAN-PM-7.1**: Après `confirmSetup` réussi, afficher toast "Payment method added — syncing…".
+- **R-FAN-PM-7.2**: La liste se met à jour automatiquement via Convex reactivity (pas de refresh manuel).
+- **R-FAN-PM-7.3**: Pendant les actions (set default, remove), afficher loading state sur le bouton concerné.
+
+---
+
+## Fan Feed — Real Data (Artist-first)
+
+### R-FEED-1 — Feed powered by Convex (real)
+- **R-FEED-1.1**: Le feed fan affiche des items réels issus de Convex (pas de posts mock).
+- **R-FEED-1.2**: Source: artistes suivis (table `follows`) → dernières publications (`products` et/ou drops).
+- **R-FEED-1.3**: Tri desc par `createdAt`/`publishedAt` (défini dans le modèle).
+- **R-FEED-1.4**: Pagination (cursor/limit) obligatoire (V1).
+
+---
+
+## Stripe One-time purchases — Production End-to-End
+
+### R-STRIPE-OT-1 — Checkout + webhook fulfillment
+- **R-STRIPE-OT-1.1**: Les paiements ponctuels utilisent Stripe Checkout.
+- **R-STRIPE-OT-1.2**: Le webhook `checkout.session.completed` met à jour `orders`/`orderItems` et déclenche l'entitlement (downloads/licence).
+- **R-STRIPE-OT-1.3**: Accès downloads/licence doit être **server-side gated** sur `orders` payés.
+
+---
+
+## Artist subscriptions — Clerk Billing (source of truth)
+
+### R-CLERK-SUB-1 — Subscription gating
+- **R-CLERK-SUB-1.1**: Les subscriptions artistes sont gérées par Clerk Billing (source of truth).
+- **R-CLERK-SUB-1.2**: Les features premium sont gated côté backend (pas uniquement UI).

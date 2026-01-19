@@ -7,18 +7,42 @@ inclusion: always
 
 ## Règles de Sécurité du Code
 
+### Règle ByteRover (OBLIGATOIRE)
+
+**AVANT de commencer une tâche:**
+```bash
+# Toujours consulter ByteRover pour contexte existant
+brv query "How is [feature] implemented?"
+brv query "What patterns exist for [task]?"
+```
+
+**APRÈS avoir terminé une tâche:**
+```bash
+# Toujours curer la connaissance dans ByteRover
+brv curate "Description du pattern/décision/solution" --files file1.ts --files file2.ts
+
+# Exemples:
+brv curate "Stripe checkout flow with webhook idempotency" --files src/app/api/stripe/checkout/route.ts --files convex/stripe.ts
+brv curate "Authentication middleware with role-based access" --files src/middleware.ts
+```
+
+**Documentation:**
+- ❌ NE JAMAIS créer de fichiers .md à la racine du projet
+- ✅ Utiliser ByteRover pour la connaissance opérationnelle
+- ✅ Utiliser docs/ UNIQUEMENT pour documentation externe/utilisateur
+- ✅ Supprimer tout fichier .md créé à la racine et curer son contenu dans ByteRover
+
 ### Règle Anti-Duplication
 
 **Avant de créer un composant, fonction ou fichier, TOUJOURS vérifier qu'il n'existe pas déjà.**
 
 ```bash
-# Avant de créer un composant
+# 1. Vérifier dans ByteRover d'abord
+brv query "Does [component/function] exist?"
+
+# 2. Puis chercher dans le code
 grepSearch: "ComponentName" in src/components/
-
-# Avant de créer une fonction Convex
 fileSearch: "functionName" in convex/
-
-# Avant de créer un utilitaire
 grepSearch: "utilityName" in src/lib/
 ```
 
@@ -34,11 +58,13 @@ grepSearch: "utilityName" in src/lib/
 
 ### Règle de Refactoring
 
-1. Lire le fichier original complet
-2. Analyser les dépendances
-3. Modifier de façon incrémentale
-4. Vérifier que tout fonctionne
-5. Rollback si problème
+1. Consulter ByteRover pour contexte existant
+2. Lire le fichier original complet
+3. Analyser les dépendances
+4. Modifier de façon incrémentale
+5. Vérifier que tout fonctionne
+6. Curer les changements dans ByteRover
+7. Rollback si problème
 
 ## Best Practices Next.js 14 (App Router)
 
@@ -95,6 +121,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 ```
 
 ## Best Practices Convex
+
+### Schema Design (convex/schema.ts)
+
+```typescript
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  users: defineTable({
+    clerkUserId: v.string(),
+    role: v.union(v.literal("artist"), v.literal("fan")),
+    displayName: v.string(),
+    usernameSlug: v.string(),
+    avatarUrl: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_clerk_id", ["clerkUserId"])
+    .index("by_username", ["usernameSlug"]),
+});
+```
+
+**Règles:**
+- Toujours définir des indexes sur les clés étrangères
+- Utiliser v.optional() pour champs optionnels
+- Timestamps en number (Date.now())
+- Enums avec v.union() + v.literal()
 
 ### Schema Design
 
@@ -593,3 +645,166 @@ npx convex dashboard     # Ouvrir le dashboard
 6. ✅ Auth vérifié dans toutes les mutations Convex
 7. ✅ Validation Zod sur les inputs utilisateur
 8. ✅ Erreurs gérées avec try-catch et toast
+
+
+## Commandes de Développement
+
+```bash
+# Développement
+npm run dev              # Next.js dev server (Turbo mode)
+npx convex dev           # Convex dev (dans un autre terminal)
+
+# Vérification
+npm run lint             # ESLint
+npx tsc --noEmit         # TypeScript check
+
+# Build
+npm run build            # Production build
+npm start                # Production server
+
+# Convex
+npx convex deploy        # Déployer en production
+npx convex dashboard     # Ouvrir le dashboard
+npx convex import        # Importer des données
+```
+
+## Checklist Pré-Commit
+
+1. ✅ Vérifier `getDiagnostics` sur tous les fichiers modifiés
+2. ✅ `npm run lint` sans erreurs
+3. ✅ `npx tsc --noEmit` sans erreurs
+4. ✅ Pas de `console.log` en production
+5. ✅ Pas de `any` types
+6. ✅ Auth vérifié dans toutes les mutations Convex
+7. ✅ Validation Zod sur les inputs utilisateur
+8. ✅ Erreurs gérées avec try-catch et toast
+9. ✅ Tests manuels des fonctionnalités modifiées
+10. ✅ Responsive vérifié (mobile + desktop)
+11. ✅ **Contexte curé dans ByteRover** (`brv curate`)
+12. ✅ **Aucun fichier .md à la racine du projet**
+
+## Standards de Code Actuels
+
+### TypeScript
+- Strict mode activé
+- Target: ES2022
+- No implicit any
+- Strict null checks
+- Path alias: @/* → ./src/*
+
+### Naming Conventions
+- Components: PascalCase (UserProfile.tsx)
+- Files: kebab-case (user-profile.tsx)
+- Functions: camelCase (getUserById)
+- Constants: UPPER_SNAKE_CASE (RESERVED_SLUGS)
+- Types/Interfaces: PascalCase (UserRole, Artist)
+
+### File Organization
+- One component per file
+- Index files for barrel exports (index.ts)
+- Colocate related components
+- Separate UI components (components/ui/)
+- Group by feature (components/dashboard/, components/fan/)
+
+### Import Order
+1. React imports
+2. Third-party libraries
+3. Internal components
+4. Utils and constants
+5. Types
+6. Styles
+
+### Component Structure
+```typescript
+"use client"; // Si client component
+
+import { useState } from "react";
+import { useQuery } from "convex/react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { api } from "@/../convex/_generated/api";
+
+interface Props {
+  // Props types
+}
+
+export function ComponentName({ prop }: Props) {
+  // Hooks
+  const [state, setState] = useState();
+  const data = useQuery(api.module.function);
+
+  // Handlers
+  const handleClick = () => {};
+
+  // Render
+  return <div>...</div>;
+}
+```
+
+## Patterns de Sécurité
+
+### Convex Mutations
+```typescript
+// TOUJOURS vérifier l'auth
+const identity = await ctx.auth.getUserIdentity();
+if (!identity) throw new Error("Non authentifié");
+
+// TOUJOURS vérifier la propriété
+const resource = await ctx.db.get(resourceId);
+if (resource.ownerId !== user._id) {
+  throw new Error("Non autorisé");
+}
+```
+
+### Validation Zod
+```typescript
+import { z } from "zod";
+
+const schema = z.object({
+  email: z.string().email(),
+  slug: z.string().min(3).max(30).regex(/^[a-z0-9-]+$/),
+  price: z.number().positive(),
+});
+
+// Utiliser dans react-hook-form
+const form = useForm({
+  resolver: zodResolver(schema),
+});
+```
+
+### File Upload
+```typescript
+// Validation client
+if (file.size > MAX_SIZE) throw new Error("Trop volumineux");
+if (!ALLOWED_TYPES.includes(file.type)) throw new Error("Type invalide");
+
+// Upload vers Convex
+const uploadUrl = await generateUploadUrl();
+const result = await fetch(uploadUrl, {
+  method: "POST",
+  headers: { "Content-Type": file.type },
+  body: file,
+});
+const { storageId } = await result.json();
+```
+
+## Performance Best Practices
+
+### Convex Queries
+- Utiliser indexes pour toutes les queries
+- Éviter .collect() sur grandes tables
+- Utiliser .first() ou .unique() quand possible
+- Paginer les résultats longs
+
+### Next.js
+- Utiliser Server Components par défaut
+- Client Components uniquement pour interactivité
+- Lazy load heavy components
+- Optimize images avec next/image
+- Use dynamic imports pour code splitting
+
+### React
+- Éviter re-renders inutiles (useMemo, useCallback)
+- Utiliser keys stables dans listes
+- Debounce inputs de recherche
+- Virtualize longues listes (future)

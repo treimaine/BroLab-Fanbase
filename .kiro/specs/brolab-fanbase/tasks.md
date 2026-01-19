@@ -232,11 +232,12 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Sync Clerk → Convex on sign-in
     - _Requirements: 15.2_
 
-- [x] 7. Checkpoint 1 — Vérifier Landing + Auth + Convex
+- [x] 7. Checkpoint 1 — Vérifier Landing + Auth + Convex (manuel via Playwright MCP)
   - Ensure Landing page renders correctly
   - Verify light/dark toggle works
   - Test sign-up → onboarding → role selection flow
   - Verify waitlist submission stores in Convex
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_type_
   - Ask user if questions arise
 
 - [ ] 8. Phase 3C — Public Artist Hub
@@ -308,11 +309,12 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Reject with clear error message if domain is blocked
     - _Requirements: R-CL-2, R-CL-3_
 
-  - [x] 8.9.5 QA checkpoint
+  - [x] 8.9.5 QA checkpoint (manuel via Playwright MCP)
     - Social links managed ONLY via Profile & Bio → Social Links
     - Custom links page rejects social/streaming platform URLs
     - Public Hub no longer displays Linktree-style links list
     - Public Hub still shows: HubHeader (with social icons) → Tabs (Latest Drops / Tour Dates)
+    - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
     - _Requirements: R-CL-1..5_
 
 - [x] 9. Phase 3D — Artist Dashboard
@@ -493,39 +495,199 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Test visibility toggle
   - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type/file_upload_
 
-- [ ] 14. Phase 3I — Artist Billing Page (Placeholder)
-  - [x] 14.1 Créer le composant BalanceCard
-    - Available balance, pending, last payout (gradient background)
-    - _Requirements: 8.1_
+- [ ] 14. Phase 3I — Artist Billing (Stripe Connect + Automatic Payouts)
+  
+  **Business Context:**
+  - Fans pay artists directly (no platform commission)
+  - Platform revenue = artist subscriptions (Clerk Billing)
+  - Payouts are automatic (Stripe managed schedule)
+  - NO manual "Withdraw Funds" button
 
-  - [x] 14.2 Créer le composant PayoutMethodCard
-    - Stripe Connect status (placeholder "Coming soon")
-    - "Add Payout Method" disabled
-    - _Requirements: 8.2, 8.3_
+  - [ ] 14.1 Schema & Data Model Updates
+    - [x] 14.1.1 Update Convex schema (convex/schema.ts)
+      - Add fields to `artists` table:
+        - `stripeConnectAccountId: v.optional(v.string())`
+        - `connectStatus: v.union(v.literal("not_connected"), v.literal("pending"), v.literal("connected"))`
+        - `chargesEnabled: v.optional(v.boolean())`
+        - `payoutsEnabled: v.optional(v.boolean())`
+        - `requirementsDue: v.optional(v.array(v.string()))`
+        - `connectUpdatedAt: v.optional(v.number())`
+      - _Requirements: R-ART-CONNECT-2_
 
-  - [x] 14.3 Créer le composant TransactionsList
-    - Liste placeholder de transactions
-    - _Requirements: 8.4_
+    - [x] 14.1.2 Create `artistBalanceSnapshots` table (optional - Palier B)
+      - Fields: artistId, stripeConnectAccountId, availableUSD, pendingUSD, currency, snapshotAt
+      - Index: by_artist
+      - _Requirements: R-ART-BAL-2_
 
-  - [x] 14.4 Assembler la page Billing
-    - src/app/(artist)/dashboard/billing/page.tsx
-    - BalanceCard + PayoutMethodCard + TransactionsList
-    - "Withdraw Funds" button disabled
-    - _Requirements: 8.1-8.5_
+    - [x] 14.1.3 Create `artistPayouts` table (optional - Palier B)
+      - Fields: artistId, stripePayoutId, amount, currency, status, arrivalDate, createdAt
+      - Indexes: by_artist, by_stripe_payout
+      - _Requirements: R-ART-BAL-3_
 
-- [x] 14.5 Checkpoint Phase 3I — Vérifier Artist Billing Page (manuel via Playwright MCP)
-  - Verify balance card renders with placeholder data
-  - Verify payout method card shows "Coming soon"
-  - Verify transactions list renders
-  - Verify disabled buttons are properly disabled
-  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot_
+  - [ ] 14.2 Stripe Connect Onboarding (Convex Actions)
+    - [x] 14.2.1 Create convex/stripeConnect.ts
+      - Action `createAccount`: Create Stripe Connect Express account
+      - Action `createAccountLink`: Generate onboarding/refresh URL
+      - Action `createLoginLink`: Generate Express dashboard URL for "Manage Payouts"
+      - Store `stripeConnectAccountId` in artists table
+      - _Requirements: R-ART-CONNECT-1_
 
-- [x] 15. Checkpoint 2 — Vérifier Artist Dashboard complet
+    - [x] 14.2.2 Create internal mutations for webhook sync
+      - `updateAccountStatus`: Update connect status from account.updated webhook
+      - `upsertBalanceSnapshot`: Update balance from balance.available webhook (optional Palier B)
+      - `upsertPayoutHistory`: Update payout history from payout.* webhooks (optional Palier B)
+      - _Requirements: R-ART-CONNECT-3_
+
+  - [ ] 14.3 Webhooks Extension (Stripe Connect Events)
+    - [x] 14.3.1 Extend src/app/api/stripe/webhook/route.ts
+      - Handle `account.updated` event:
+        - Extract connectStatus, chargesEnabled, payoutsEnabled, requirementsDue
+        - Call `stripeConnect.updateAccountStatus` internal mutation
+        - Idempotency via processedEvents table
+      - _Requirements: R-ART-CONNECT-3_
+
+    - [x] 14.3.2 Add balance webhooks (optional - Palier B)
+      - Handle `balance.available` event
+      - Call `stripeConnect.upsertBalanceSnapshot` internal mutation
+      - _Requirements: R-ART-BAL-2_
+
+    - [x] 14.3.3 Add payout webhooks (optional - Palier B)
+      - Handle `payout.paid`, `payout.failed`, `payout.canceled` events
+      - Call `stripeConnect.upsertPayoutHistory` internal mutation
+      - _Requirements: R-ART-BAL-3_
+
+  - [ ] 14.4 Checkout Flow Update (Route to Artist)
+    - [x] 14.4.1 Update src/app/api/stripe/checkout/route.ts
+      - Query artist's `stripeConnectAccountId` and `connectStatus`
+      - Validate artist is connected (connectStatus === "connected")
+      - Add `payment_intent_data.transfer_data.destination` = artist account
+      - Set `application_fee_amount = 0` (no platform commission)
+      - Return error if artist not connected
+      - _Requirements: R-CHECKOUT-CONNECT-1, R-CHECKOUT-CONNECT-2, R-CHECKOUT-CONNECT-4_
+
+    - [x] 14.4.2 Verify webhook still creates orders/entitlements
+      - Ensure `checkout.session.completed` continues to work
+      - Orders/orderItems created in Convex
+      - Download entitlements granted
+      - _Requirements: R-CHECKOUT-CONNECT-3_
+
+  - [ ] 14.5 Artist Billing Queries (Deterministic Read Model)
+    - [x] 14.5.1 Create convex/artistBilling.ts
+      - Query `getSummary`: Return connectStatus, balances, last payout, requirements
+      - Query `getTransactions`: Return real sales from orders/orderItems/products
+        - Filter by artistId via relation: orderItems.productId → products.artistId
+        - Pagination support (limit, cursor)
+        - Map order statuses to UI-friendly labels
+      - _Requirements: R-ART-BAL-1, R-ART-TXN-1, R-ART-TXN-2, R-ART-TXN-3_
+
+  - [ ] 14.6 UI Components Update (Remove Placeholders)
+    - [x] 14.6.1 Update BalanceCard component
+      - Accept real props: availableBalance, pendingBalance, lastPayout
+      - Remove hardcoded placeholder data
+      - Show loading state while fetching
+      - _Requirements: R-ART-BAL-1, R-PROD-0.1_
+
+    - [x] 14.6.2 Update PayoutMethodCard component
+      - Accept props: connectStatus, chargesEnabled, payoutsEnabled, expressLoginUrl
+      - States:
+        - not_connected: Show "Connect Stripe" CTA
+        - pending: Show requirements list + "Continue Setup" CTA
+        - connected: Show status + "Manage Payouts on Stripe" link
+      - Remove "Coming soon" badge
+      - Remove "Add Payout Method" button
+      - _Requirements: R-ART-CONNECT-4, R-ART-PAYOUT-3, R-PROD-0.2_
+
+    - [x] 14.6.3 Update TransactionsList component
+      - Remove PLACEHOLDER_TRANSACTIONS constant
+      - Accept real transactions from Convex query
+      - Show empty state if no transactions: "No sales yet. Share your products with fans!"
+      - Display real transaction data: product title, amount, date, status
+      - _Requirements: R-ART-TXN-1, R-ART-TXN-4, R-PROD-0.1_
+
+  - [ ] 14.7 Page Assembly (src/app/(artist)/dashboard/billing/page.tsx)
+    - [x] 14.7.1 Wire up Convex queries
+      - Use `useQuery(api.artistBilling.getSummary)`
+      - Use `useQuery(api.artistBilling.getTransactions)`
+      - Handle loading states
+      - _Requirements: R-ART-BAL-1, R-ART-TXN-1_
+
+    - [x] 14.7.2 Implement UI state branching
+      - If connectStatus === "not_connected": Show Connect CTA
+      - If connectStatus === "pending": Show requirements + Continue Setup CTA
+      - If connectStatus === "connected": Show full billing dashboard
+      - _Requirements: R-PROD-0.2, R-PROD-0.3_
+
+    - [x] 14.7.3 Remove "Withdraw Funds" button
+      - Delete button from UI
+      - Update page title to "Earnings & Payouts"
+      - _Requirements: R-ART-PAYOUT-2, R-ART-PAYOUT-3_
+
+  - [ ] 14.8 Connect Onboarding Flow (UI)
+    - [x] 14.8.1 Create "Connect Stripe" button handler
+      - Call `stripeConnect.createAccount` action
+      - Call `stripeConnect.createAccountLink` action
+      - Redirect to Stripe onboarding URL
+      - _Requirements: R-ART-CONNECT-1_
+
+    - [x] 14.8.2 Create return/refresh handlers
+      - Handle return from Stripe onboarding
+      - Refresh account link if expired
+      - Show success/error toasts
+      - _Requirements: R-ART-CONNECT-4_
+
+    - [x] 14.8.3 Create "Manage Payouts on Stripe" link
+      - Call `stripeConnect.createLoginLink` action
+      - Open Express dashboard in new tab
+      - _Requirements: R-ART-PAYOUT-3_
+
+- [ ] 14.9 Checkpoint Phase 3I — Vérifier Artist Billing (Stripe Connect) (manuel via Playwright MCP)
+  - [x] 14.9.1 Test not_connected state
+    - Verify "Connect Stripe" CTA displays
+    - Verify no mock/placeholder data visible
+    - Verify helper text explains direct payments + automatic payouts
+    - _Requirements: R-PROD-0.2_
+
+  - [x] 14.9.2 Test Stripe Connect onboarding flow
+    - Click "Connect Stripe" → redirects to Stripe
+    - Complete onboarding (test mode)
+    - Return to app → status updates to "connected"
+    - _Requirements: R-ART-CONNECT-1, R-ART-CONNECT-3_
+
+  - [ ] 14.9.3 Test pending state (if requirements due)
+    - Verify requirements list displays
+    - Verify "Continue Setup" CTA works
+    - _Requirements: R-ART-CONNECT-4_
+
+  - [ ] 14.9.4 Test connected state
+    - Verify BalanceCard shows real data (or transaction totals if Palier A)
+    - Verify PayoutMethodCard shows "Connected" status
+    - Verify "Manage Payouts on Stripe" link works
+    - Verify TransactionsList shows real sales (or empty state)
+    - Verify NO "Withdraw Funds" button
+    - _Requirements: R-ART-BAL-1, R-ART-TXN-1, R-ART-PAYOUT-3, R-PROD-0.1_
+
+  - [ ] 14.9.5 Test fan checkout → artist routing
+    - Fan purchases product from connected artist
+    - Verify payment routes to artist's Stripe account
+    - Verify order created in Convex
+    - Verify download entitlement granted
+    - Verify transaction appears in artist's billing page
+    - _Requirements: R-CHECKOUT-CONNECT-1, R-CHECKOUT-CONNECT-3, R-ART-TXN-2_
+
+  - [ ] 14.9.6 Test error handling
+    - Fan tries to purchase from non-connected artist → error message
+    - Verify graceful error states in UI
+    - _Requirements: R-CHECKOUT-CONNECT-4_
+
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_network_requests_
+
+- [x] 15. Checkpoint 2 — Vérifier Artist Dashboard complet (manuel via Playwright MCP)
   - Ensure all artist pages render correctly
   - Verify navigation between pages
   - Test responsive layout
   - Verify Convex mutations work (profile, links, events, products)
   - Test file upload flow
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_type + mcp_playwright_browser_file_upload_
   - Ask user if questions arise
 
 - [ ] 16. Phase 3J — Fan Dashboard
@@ -610,11 +772,12 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify security notice displays
   - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
 
-- [x] 19. Checkpoint 3 — Vérifier Fan Dashboard complet
+- [x] 19. Checkpoint 3 — Vérifier Fan Dashboard complet (manuel via Playwright MCP)
   - Ensure all fan pages render correctly
   - Verify navigation between pages
   - Test responsive layout
   - Verify /me redirect works with real Clerk user
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
   - Ask user if questions arise
 
 - [ ] 20. Phase 4 — Stripe Integration (Checkout + Webhooks)
@@ -666,12 +829,13 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - **Property 14: Download Ownership Verification**
     - **Validates: Requirements 17.3, 17.4, 17.5**
 
-- [x] 22. Checkpoint 4 — Vérifier intégrations complètes
+- [x] 22. Checkpoint 4 — Vérifier intégrations complètes (manuel via Playwright MCP)
   - Ensure Clerk auth works (sign-in, sign-up, role selection)
   - Verify Convex queries/mutations work end-to-end
   - Test Stripe checkout flow (test mode)
   - Test webhook → order creation
   - Test download flow (ownership verification)
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_network_requests_
   - Ask user if questions arise
 
 - [ ] 23. Phase 6 — Qualité / Fidélité Design
@@ -697,11 +861,12 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Vérifier bottom nav mobile, sidebar desktop
     - _Requirements: 12.1-12.5_
 
-- [ ] 24. Final Checkpoint — Projet complet
+- [ ] 24. Final Checkpoint — Projet complet (manuel via Playwright MCP)
   - Ensure all tests pass
   - Verify all pages render correctly
   - Test full user flows (sign-up → dashboard → purchase → download)
   - Prepare for Vercel deployment
+  - _Note: Vérification manuelle complète via Playwright MCP (tous les outils disponibles)_
   - Ask user if questions arise
 
 ## Notes
@@ -709,7 +874,169 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - Tasks marked with `*` are optional property-based tests and can be skipped for faster MVP
 - Each task references specific requirements for traceability
 - Checkpoints ensure incremental validation
+- **IMPORTANT - Playwright MCP**: TOUS les checkpoints (existants et futurs) DOIVENT être vérifiés manuellement via Playwright MCP. Utiliser les outils: `mcp_playwright_browser_navigate`, `mcp_playwright_browser_snapshot`, `mcp_playwright_browser_click`, `mcp_playwright_browser_type`, `mcp_playwright_browser_file_upload`, `mcp_playwright_browser_network_requests`, etc. Toujours ajouter une note explicite dans chaque checkpoint.
 - **Notifications**: sonner for global toasts, FormMessage for inline validation
 - **Auth**: Clerk introduced early (Phase 2B) to avoid "mock user" debt
 - **Stripe webhooks**: Next.js route verifies signature → forwards to Convex action for business logic
 - **File uploads**: Client-side validation (type/size) before requesting upload URL
+
+
+## 9.0 Production V1 (Artist-first) — Remove mocks, Real feed, Real payments
+
+### 9.1 Fan Billing — Saved Payment Methods (Stripe Elements + webhooks + deterministic query)
+
+- [x] 9.1.1 Install Stripe dependencies
+  - `npm install @stripe/stripe-js @stripe/react-stripe-js`
+  - Add env vars: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+  - _Requirements: R-FAN-PM-2.2_
+
+- [x] 9.1.2 Convex schema: add Stripe customer + payment methods read model
+  - Add `users.stripeCustomerId: v.optional(v.string())`
+  - Add table `paymentMethods` with fields:
+    - `userId: v.id("users")`
+    - `stripeCustomerId: v.string()`
+    - `stripePaymentMethodId: v.string()`
+    - `brand: v.string()` (visa, mastercard, etc.)
+    - `last4: v.string()`
+    - `expMonth: v.number()`
+    - `expYear: v.number()`
+    - `isDefault: v.boolean()`
+    - `billingName: v.optional(v.string())`
+    - `billingEmail: v.optional(v.string())`
+    - `createdAt: v.number()`
+    - `updatedAt: v.number()`
+  - Add indexes: `by_userId`, `by_stripeCustomerId`, `by_stripePaymentMethodId`
+  - _Requirements: R-FAN-PM-1.1, R-FAN-PM-3.3, R-FAN-PM-3.4_
+
+- [x] 9.1.3 Convex queries: deterministic read for billing page
+  - Create `convex/paymentMethods.ts`
+  - Export `listForCurrentUser` query (reads from `paymentMethods` table)
+  - Sort: default first, then by createdAt desc
+  - _Requirements: R-FAN-PM-3.1, R-FAN-PM-3.2_
+
+- [x] 9.1.4 Convex actions: Stripe customer + setup intent
+  - Create `convex/stripe.ts` with Stripe client (`new Stripe(process.env.STRIPE_SECRET_KEY)`)
+  - Export `ensureCustomerForCurrentUser` action:
+    - Check if user has `stripeCustomerId`
+    - If not, create Stripe customer with email + metadata
+    - Store `stripeCustomerId` in Convex via internal mutation
+    - Return `{ stripeCustomerId }`
+  - Export `createSetupIntent` action:
+    - Ensure customer exists (call `ensureCustomerForCurrentUser`)
+    - Create SetupIntent with `customer`, `payment_method_types: ["card"]`, `usage: "off_session"`
+    - Return `{ clientSecret: setupIntent.client_secret }`
+  - _Requirements: R-FAN-PM-1.2, R-FAN-PM-1.3, R-FAN-PM-2.1_
+
+- [x] 9.1.5 Convex internal mutations: webhook sync helpers
+  - Create `convex/internal/paymentMethods.ts` (or in `stripe.ts` as internalMutation)
+  - Export `upsertFromStripe` mutation:
+    - Args: userId, stripeCustomerId, stripePaymentMethodId, brand, last4, expMonth, expYear, isDefault, billingName, billingEmail
+    - Query by `stripePaymentMethodId` (unique)
+    - If exists: patch with new data + updatedAt
+    - If not: insert new record
+  - Export `removeByStripePaymentMethodId` mutation:
+    - Query by `stripePaymentMethodId`
+    - Delete if exists
+  - Export `setDefaultByCustomer` mutation:
+    - Query all PMs by `stripeCustomerId`
+    - Update `isDefault` for all (true for matching `stripePaymentMethodId`, false for others)
+  - _Requirements: R-FAN-PM-4.3_
+
+- [x] 9.1.6 Convex actions: set default + detach (optional V1)
+  - In `convex/stripe.ts`, export `setDefaultPaymentMethod` action:
+    - Args: `stripePaymentMethodId`
+    - Get current user + stripeCustomerId
+    - Call `stripe.customers.update(customerId, { invoice_settings: { default_payment_method } })`
+    - Return `{ ok: true }` (webhook will sync)
+  - Export `detachPaymentMethod` action:
+    - Args: `stripePaymentMethodId`
+    - Verify current user authenticated
+    - Call `stripe.paymentMethods.detach(paymentMethodId)`
+    - Return `{ ok: true }` (webhook will sync)
+  - _Requirements: R-FAN-PM-5.1, R-FAN-PM-5.2, R-FAN-PM-6.1, R-FAN-PM-6.2_
+
+- [x] 9.1.7 Webhooks: sync payment methods into Convex (idempotent)
+  - Update `/api/stripe/webhook/route.ts` to handle 4 new events:
+    - `setup_intent.succeeded`: extract payment_method + customer, call `upsertFromStripe`
+    - `payment_method.attached`: extract payment_method + customer, call `upsertFromStripe`
+    - `payment_method.detached`: extract payment_method id, call `removeByStripePaymentMethodId`
+    - `customer.updated`: extract `invoice_settings.default_payment_method`, call `setDefaultByCustomer`
+  - Extract card data from `payment_method.card.brand`, `payment_method.card.last4`, `payment_method.card.exp_month`, `payment_method.card.exp_year`
+  - Extract billing details from `payment_method.billing_details.name`, `payment_method.billing_details.email`
+  - Ensure idempotence via `processedEvents` table (provider="stripe", eventId)
+  - _Requirements: R-FAN-PM-4.1, R-FAN-PM-4.2, R-FAN-PM-4.3, R-FAN-PM-4.4_
+
+- [x] 9.1.8 Frontend: Stripe client helper
+  - Create `src/lib/stripe/stripeClient.ts`
+  - Export `stripePromise = loadStripe(NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)`
+  - _Requirements: R-FAN-PM-2.2_
+
+- [x] 9.1.9 Frontend: AddPaymentMethodDialog component
+  - Create `src/components/fan/AddPaymentMethodDialog.tsx`
+  - Props: `open`, `onOpenChange`, `clientSecret`, `onSuccess`
+  - Wrap `<Elements key={key} stripe={stripePromise} options={{ clientSecret }}>` around form
+  - Reset Elements state on close (key increment)
+  - Show "Initializing Stripe…" while clientSecret is null
+  - _Requirements: R-FAN-PM-2.2_
+
+- [x] 9.1.10 Frontend: PaymentMethodForm component
+  - Create `src/components/fan/PaymentMethodForm.tsx`
+  - Use `useStripe()` + `useElements()` hooks
+  - Render `<PaymentElement />`
+  - Confirm button calls `stripe.confirmSetup({ elements, redirect: "if_required" })`
+  - Handle success: toast "Payment method added — Your card has been saved." + call `onSuccess()`
+  - Handle error: toast destructive with `result.error.message`
+  - Show security notice: "Your full card details are never stored on our servers."
+  - _Requirements: R-FAN-PM-2.2, R-FAN-PM-2.3, R-FAN-PM-7.1_
+
+- [x] 9.1.11 Frontend: Update billing page (remove mocks)
+  - Update `src/app/(fan)/me/[username]/billing/page.tsx`
+  - Remove `MOCK_PAYMENT_METHODS` usage
+  - Use `useQuery(api.paymentMethods.listForCurrentUser)` for list
+  - Use `useAction(api.stripe.createSetupIntent)` for add flow
+  - Use `useAction(api.stripe.setDefaultPaymentMethod)` for set default
+  - Use `useAction(api.stripe.detachPaymentMethod)` for remove
+  - Implement 3 states: loading (skeleton), empty (message + button), list (cards with actions)
+  - Show individual loading state during actions (busyId pattern)
+  - _Requirements: R-FAN-PM-3.1, R-FAN-PM-7.2, R-FAN-PM-7.3_
+
+- [x] 9.1.12 QA checkpoint: Payment methods end-to-end (manuel via Playwright MCP)
+  - Verify "Add payment method" opens dialog with Stripe Elements
+  - Test card addition with test card (4242 4242 4242 4242)
+  - Verify webhook sync updates Convex table (card appears in list)
+  - Test "Set as default" action (webhook updates isDefault)
+  - Test "Remove" action (webhook deletes from table)
+  - Verify no mock data displayed
+  - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_type + mcp_playwright_browser_network_requests_
+  - _Requirements: R-PROD-0.1, R-PROD-0.2_
+
+### 9.2 Fan Feed — Real data (Convex)
+- [x] 9.2.1 Remove mock feed posts generator
+- [x] 9.2.2 Convex query: `feed.getForCurrentUser`
+  - Inputs: limit, cursor
+  - Join: follows -> artistId -> products/drops
+  - Sort desc by publishedAt/createdAt
+- [x] 9.2.3 UI wiring + pagination
+  - loading/empty/error states
+  - "Load more"
+
+### 9.3 Stripe One-time purchases — Production verification
+- [x] 9.3.1 Validate checkout flow end-to-end (no mocks)
+- [x] 9.3.2 Webhook: `checkout.session.completed` idempotent
+  - Update orders/orderItems
+  - Write entitlement/download permissions
+- [x] 9.3.3 Server-side gating for downloads/licenses
+
+### 9.4 Clerk Billing (Artists) — Production hardening
+- [x] 9.4.1 Backend gating for premium artist features
+- [x] 9.4.2 Subscription status sync strategy validated (Clerk as source of truth)
+- [x] 9.4.3 QA: upgrade/downgrade flows
+
+### 9.5 QA Checkpoint — "Prod ready" (manuel via Playwright MCP)
+- [x] 9.5.1 No mock payment data anywhere user-facing
+- [x] 9.5.2 Add card works (Elements) + card appears (webhook sync)
+- [ ] 9.5.3 Remove/set default reflected correctly
+- [ ] 9.5.4 Fan feed is real and paginated
+- [ ] 9.5.5 Stripe one-time purchase unlocks downloads
+- [ ] 9.5.6 Clerk artist subscription gates features server-side
+- [ ] _Note: Vérification manuelle complète via Playwright MCP pour validation production_

@@ -246,6 +246,25 @@ export const create = mutation({
       throw new Error("Artist profile not found. Please create your profile first.");
     }
 
+    // Check subscription limits (R-CLERK-SUB-1.2)
+    const existingProducts = await ctx.db
+      .query("products")
+      .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
+      .collect();
+
+    const canCreate = await canCreateProduct(ctx, existingProducts.length);
+    enforceLimit(canCreate, "products");
+
+    // Check video upload permission (R-CLERK-SUB-1.2)
+    if (args.type === "video") {
+      const canVideo = await canUploadVideo(ctx);
+      enforceLimit(
+        canVideo,
+        "video uploads",
+        "Video uploads are only available on Pro and Premium plans. Upgrade to upload videos."
+      );
+    }
+
     // Validate price
     if (args.priceUSD < 0) {
       throw new Error("Price cannot be negative");

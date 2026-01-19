@@ -14,6 +14,7 @@ export interface Track {
   fileStorageId: string;
   type: "music" | "video";
   duration?: number;
+  productId?: string; // For ownership verification when accessing private content
 }
 
 export interface PlayerState {
