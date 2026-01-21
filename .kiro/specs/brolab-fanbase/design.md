@@ -91,6 +91,43 @@ src/app/
 └── globals.css             # Theme tokens
 ```
 
+## Dashboard Overview — Stats Cards (Real Data)
+
+### Stats Cards Layout
+3 cards in responsive grid (sm:grid-cols-2 lg:grid-cols-3):
+
+1. **Followers**
+   - Icon: Users
+   - Value: Integer count (e.g., "127")
+   - Source: `follows.countByArtist(artistId)`
+   - Format: `count.toString()`
+
+2. **Revenue**
+   - Icon: DollarSign
+   - Value: Currency (e.g., "$1,234.56")
+   - Source: `artistBilling.getSummary()` → `available + pending`
+   - Format: `Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })`
+
+3. **Upcoming Events**
+   - Icon: Calendar
+   - Value: Integer count (e.g., "3")
+   - Source: `events.countUpcomingByArtist(artistId)` (date >= now)
+   - Format: `count.toString()`
+
+### Loading States
+- **Skeleton**: Display `<Skeleton className="h-28 rounded-xl" />` during fetch
+- **Duration**: Until all 3 queries resolve
+- **Partial loading**: Show skeletons for pending queries, real data for resolved
+
+### Empty States
+- **Followers**: "0" (not "—" or "N/A")
+- **Revenue**: "$0.00" (not "$—")
+- **Events**: "0" (not "—")
+
+### Error States (Optional V1)
+- Display error card with retry button
+- Fallback to "0" or "$0.00" if query fails
+
 ## Components (Implemented)
 
 ### Layout Components
@@ -189,17 +226,33 @@ Public Hub layout order:
 - Social icon pills are driven by `artists.socials[]` (managed in Profile & Bio → Social Links)
 - NO separate links list is displayed on the Public Hub
 
-## Dashboard — Custom Links
+## Dashboard — Custom Links (Business-Only)
 
 ### Purpose
-The `/dashboard/links` page manages "Custom Links" for merch, booking, press kit, newsletter, etc.
+The `/dashboard/links` page manages "Business Links" for merch, booking, press kit, newsletter, etc.
 These links are NOT displayed on the Public Hub (reserved for future use).
 
 ### UI Copy
-- Page title: "Custom Links"
-- Helper text: "Use this for merch, booking, press kit, newsletter, etc. Social platforms are managed in Profile & Bio → Social Links."
+- **Page title**: "Business Links" or "Custom Links"
+- **Helper text**: "Add links for merch, booking, press kit, newsletter, etc. For social media, use Profile & Bio → Social Links."
+- **Dialog title**: "Add Business Link"
+- **Dialog description**: "Add a business link to your hub. For social media, use Social Links."
 
-### URL Domain Validation (Anti-Duplicate)
+### Type Dropdown (Business Types Only)
+Available types:
+- `merch` - Merch Store
+- `tickets` - Tickets
+- `website` - Website
+- `booking` - Booking
+- `presskit` - Press Kit
+- `newsletter` - Newsletter
+- `donate` - Donate
+- `other` - Custom Link
+
+**Removed types** (managed in Social Links):
+- ~~instagram~~ ~~youtube~~ ~~spotify~~ ~~apple-music~~
+
+### URL Domain Validation (Unchanged)
 The system SHALL reject URLs pointing to social/streaming platforms already managed in Social Links.
 
 **Blocked domains (defined in `src/lib/constants.ts`):**
@@ -742,6 +795,37 @@ AddPaymentMethodDialog (wrapper)
 - States: loading / empty (no follows) / list / error
 - Pagination "Load more"
 
+### Fan Feed — Pagination UX
+
+#### Behavior
+- Feed items are fetched page-by-page (limit: 10 items per page)
+- Client accumulates pages in state (`allFeedItems`) for continuous scroll experience
+- Deduplication by `_id` prevents duplicate items if user navigates back/forward
+
+#### "Load More" Button
+- **Visible**: When `nextCursor` is present (more items available)
+- **Hidden**: When `nextCursor` is null (end of feed reached)
+- **Disabled**: During fetch operation (prevents race conditions)
+- **Label**: "Load more" (default) or "Loading..." (during fetch)
+
+#### States
+1. **Loading (Initial)**: Skeleton cards (3x) + sidebar skeletons
+2. **Empty**: "Your feed is empty" message + "Start following artists" CTA + Suggested Artists widget
+3. **List**: Feed cards + "Load more" button (if hasMore)
+4. **End of Feed**: Feed cards + "You've reached the end of your feed" message
+
+#### Refresh Behavior
+- Page refresh resets to first page (cursor = undefined)
+- Navigation back/forward preserves scroll position (browser default)
+
+#### Deduplication Logic
+```typescript
+// Prevent duplicates when accumulating pages
+const existingIds = new Set(prev.map(item => item._id));
+const newItems = feedResult.items.filter(item => !existingIds.has(item._id));
+return [...prev, ...newItems];
+```
+
 ---
 
 ## Artist Billing — Stripe Connect + Automatic Payouts (Production)
@@ -1120,3 +1204,508 @@ const session = await stripe.checkout.sessions.create({
 | Connect onboarding incomplete | Show requirements | "Complete these steps: [list]" |
 | Webhook processing failure | Retry (Stripe automatic) | Log error, no user impact |
 | Balance fetch failure | Show transaction totals | "Balance unavailable, showing sales total" |
+
+---
+
+## Landing/Home — UX Specification (Conversion-First)
+
+### Design Philosophy
+
+**Goal:** Convert visitors to artist sign-ups within 5 seconds of landing.
+
+**Approach:**
+- Artist-first messaging (not fan-first)
+- Clear value prop: "Fans pay you directly"
+- Minimal friction: "Start free" CTA above fold
+- Trust indicators: Stripe, 0% fee, automatic payouts
+- Mobile-first hierarchy
+
+### Information Architecture
+
+#### Page Structure (6 Sections Max)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. HERO (Above Fold)                                       │
+│     - Headline + Subheadline                                │
+│     - Primary CTA: "Start free as an Artist"                │
+│     - Trust line: "0% platform fee • Stripe secured"        │
+├─────────────────────────────────────────────────────────────┤
+│  2. PROOF BAR (3 Trust Indicators)                          │
+│     - Direct payouts                                        │
+│     - 0% sales fee                                          │
+│     - Stripe secured                                        │
+├─────────────────────────────────────────────────────────────┤
+│  3. HOW IT WORKS (3 Steps)                                  │
+│     - Sign up → Connect Stripe → Share link                │
+├─────────────────────────────────────────────────────────────┤
+│  4. USE CASES (3 Cards)                                     │
+│     - Music (sell tracks/albums)                            │
+│     - Merch (sell physical goods)                           │
+│     - Tickets (sell event access)                           │
+├─────────────────────────────────────────────────────────────┤
+│  5. SOCIAL PROOF (Minimal - Optional V1)                    │
+│     - Testimonial OR stats (if available)                   │
+│     - Omit if no real data                                  │
+├─────────────────────────────────────────────────────────────┤
+│  6. FAQ (5 Questions Max)                                   │
+│     - How do I get paid?                                    │
+│     - What fees do you charge?                              │
+│     - How long does setup take?                             │
+│     - Can I sell internationally?                           │
+│     - What payment methods do fans use?                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Copy Guidelines (English)
+
+#### Tone & Voice
+- **Premium but clear**: Not cryptic or overly clever
+- **Direct and benefit-focused**: "You earn more" not "We have features"
+- **Artist-first perspective**: "Your earnings" not "Our platform"
+- **Active voice**: "Fans pay you" not "Payments are received"
+
+#### Headline Style
+- **Length**: ≤10 words
+- **Benefit-driven**: Focus on outcome, not feature
+- **Emotional hook**: Tap into artist pain points (control, fairness, transparency)
+
+#### Example Copy (Reference)
+
+**Hero Section:**
+```
+Headline: "Fans pay you directly."
+Subheadline: "Sell music, merch, and tickets with Stripe Connect payouts. 
+              We earn from your subscription—not your sales."
+Trust Line: "0% platform fee on sales • Automatic payouts • No credit card required"
+Primary CTA: "Start free as an Artist"
+Secondary CTA: "Explore artists"
+```
+
+**Proof Bar:**
+```
+1. "Direct Payouts"
+   "Funds go straight to your bank. No waiting, no middleman."
+
+2. "0% Sales Fee"
+   "We earn from subscriptions, not your hard work."
+
+3. "Stripe Secured"
+   "Industry-leading payment security and compliance."
+```
+
+**How It Works:**
+```
+Step 1: "Sign up in 60 seconds"
+        "Choose your unique link and create your hub."
+
+Step 2: "Connect Stripe"
+        "Set up automatic payouts to your bank account."
+
+Step 3: "Share your link"
+        "Post on Instagram, YouTube, or anywhere fans find you."
+```
+
+**Use Cases:**
+```
+Music:
+  "Sell tracks, albums, and exclusive releases"
+  "Fans download instantly after purchase"
+
+Merch:
+  "Sell physical goods with custom links"
+  "Manage orders and fulfillment your way"
+
+Tickets:
+  "Sell event access and tour tickets"
+  "Fans get instant confirmation"
+```
+
+**FAQ:**
+```
+Q: "How do I get paid?"
+A: "Stripe automatically deposits earnings to your bank account. 
+    You control the payout schedule (daily, weekly, or monthly)."
+
+Q: "What fees do you charge?"
+A: "0% on sales. We earn from artist subscriptions ($0-$29/month). 
+    Stripe charges standard processing fees (~2.9% + 30¢)."
+
+Q: "How long does setup take?"
+A: "5 minutes. Sign up, connect Stripe, and you're live."
+
+Q: "Can I sell internationally?"
+A: "Yes. Stripe supports 135+ currencies and global payments."
+
+Q: "What payment methods do fans use?"
+A: "Credit/debit cards, Apple Pay, Google Pay, and more via Stripe."
+```
+
+### Visual & Interaction Design
+
+#### Hero Section (Above Fold)
+
+**Layout (Desktop):**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Navbar: Logo | Sign In | Start free (CTA)                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [Left 50%]                        [Right 50%]             │
+│  Headline (serif, 48px)            Hero Image/Video        │
+│  Subheadline (sans, 18px)          (Artist using app)      │
+│  Trust line (14px, muted)                                  │
+│                                                             │
+│  [Start free as an Artist] (pill)                          │
+│  [Explore artists] (ghost)                                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Layout (Mobile):**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Navbar: Logo | Burger Menu                                 │
+├─────────────────────────────────────────────────────────────┤
+│  Headline (serif, 32px)                                     │
+│  Subheadline (sans, 16px)                                   │
+│  Trust line (12px, muted)                                   │
+│                                                             │
+│  [Start free as an Artist] (full-width pill)                │
+│  [Explore artists] (ghost, centered)                        │
+│                                                             │
+│  Hero Image (below fold)                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Typography:**
+- Headline: Playfair Display (serif), 700 weight, lavender gradient on key word
+- Subheadline: Inter (sans), 400 weight, foreground color
+- Trust line: Inter, 400 weight, muted color
+
+**CTA Styling:**
+- Primary: Pill button, lavender gradient background, white text, shadow on hover
+- Secondary: Ghost button, border only, hover fill
+
+**Animations:**
+- Headline: Fade in + slide up (0.5s ease-out)
+- Subheadline: Fade in + slide up (0.6s ease-out, 0.1s delay)
+- CTAs: Fade in + slide up (0.7s ease-out, 0.2s delay)
+- Hero image: Fade in (0.8s ease-out, 0.3s delay)
+
+#### Proof Bar
+
+**Layout:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Icon] Direct Payouts    [Icon] 0% Sales Fee    [Icon] Stripe Secured │
+│  Description text         Description text        Description text      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Styling:**
+- 3 columns (desktop), stacked (mobile)
+- Icons: Lucide React, 32px, lavender accent
+- Title: Inter 600, 16px
+- Description: Inter 400, 14px, muted
+
+#### How It Works
+
+**Layout:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1                   Step 2                   Step 3   │
+│  [Number Badge]           [Number Badge]           [Number Badge] │
+│  Title                    Title                    Title    │
+│  Description              Description              Description │
+│  [Arrow →]                [Arrow →]                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Styling:**
+- Number badges: Circle, lavender gradient, white text
+- Arrows: Subtle, muted color
+- Cards: Soft border, rounded-2xl, hover shadow
+
+#### Use Cases
+
+**Layout:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Music Card]             [Merch Card]             [Tickets Card] │
+│  Icon                     Icon                     Icon     │
+│  Title                    Title                    Title    │
+│  Description              Description              Description │
+│  [Learn more →]           [Learn more →]           [Learn more →] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Styling:**
+- Cards: Glass effect (bg-white/80 dark:bg-black/80), border, rounded-2xl
+- Icons: Lucide React, 48px, lavender accent
+- Hover: Lift effect (translateY -4px), shadow increase
+
+#### FAQ
+
+**Layout:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Q: How do I get paid?                                      │
+│  [Expand Icon]                                              │
+│  ────────────────────────────────────────────────────────── │
+│  A: Stripe automatically deposits...                        │
+│                                                             │
+│  Q: What fees do you charge?                                │
+│  [Expand Icon]                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Interaction:**
+- Accordion pattern (shadcn Accordion component)
+- Expand/collapse with smooth animation
+- Only one open at a time (optional)
+
+### States & Interactions
+
+#### Navbar States
+
+**SignedOut:**
+- Logo (left)
+- "Sign In" link (right)
+- "Start free" button (right, primary)
+
+**SignedIn (Artist):**
+- Logo (left)
+- "Dashboard" link (right)
+- User avatar + dropdown (right)
+
+**SignedIn (Fan):**
+- Logo (left)
+- "Feed" link (right)
+- User avatar + dropdown (right)
+
+#### CTA Click Tracking (PostHog)
+
+**PostHog Initialization:**
+```typescript
+// app/providers.tsx (or instrumentation-client.ts for Next.js 15.3+)
+'use client'
+import posthog from 'posthog-js'
+import { PostHogProvider } from 'posthog-js/react'
+import { useEffect } from 'react'
+
+export function PHProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users
+      capture_pageview: false, // Disable automatic pageview capture (we'll do it manually)
+    })
+  }, [])
+
+  return <PostHogProvider client={posthog}>{children}</PostHogProvider>
+}
+```
+
+**Events to track:**
+```typescript
+// Option 1: Direct import (client components)
+import posthog from 'posthog-js'
+
+// Primary CTA
+onClick={() => {
+  posthog.capture('start_as_artist_click', {
+    location: 'hero',
+    timestamp: Date.now(),
+  });
+  router.push('/sign-up');
+}}
+
+// Secondary CTA
+onClick={() => {
+  posthog.capture('explore_artists_click', {
+    location: 'hero',
+    timestamp: Date.now(),
+  });
+  router.push('/explore'); // or /artists
+}}
+
+// Option 2: React hook (client components)
+import { usePostHog } from 'posthog-js/react'
+
+function HeroSection() {
+  const posthog = usePostHog()
+  
+  return (
+    <Button onClick={() => {
+      posthog.capture('start_as_artist_click', { location: 'hero' })
+      router.push('/sign-up')
+    }}>
+      Start free as an Artist
+    </Button>
+  )
+}
+```
+
+**Note:** PostHog autocapture can automatically track clicks and pageviews. Manual tracking provides more control over event names and properties.
+
+### Accessibility Requirements
+
+#### WCAG 2.1 AA Compliance
+
+**Color Contrast:**
+- Text on background: ≥4.5:1
+- Large text (≥18px): ≥3:1
+- Interactive elements: ≥3:1
+
+**Focus Indicators:**
+- Visible on all interactive elements
+- 2px solid ring, lavender accent
+- Offset 2px from element
+
+**Semantic HTML:**
+```html
+<header>
+  <nav aria-label="Main navigation">
+    <a href="/" aria-label="BroLab Fanbase home">Logo</a>
+    <a href="/sign-in">Sign In</a>
+    <button>Start free as an Artist</button>
+  </nav>
+</header>
+
+<main>
+  <section aria-labelledby="hero-heading">
+    <h1 id="hero-heading">Fans pay you directly.</h1>
+    <p>Sell music, merch, and tickets...</p>
+  </section>
+
+  <section aria-labelledby="proof-heading">
+    <h2 id="proof-heading" class="sr-only">Why choose BroLab Fanbase</h2>
+    <!-- Proof bar content -->
+  </section>
+
+  <!-- More sections -->
+</main>
+```
+
+**Keyboard Navigation:**
+- Tab order follows visual order
+- Skip to main content link
+- All interactive elements reachable via keyboard
+- Enter/Space activates buttons
+
+**Screen Reader Support:**
+- Alt text for all images
+- ARIA labels for icon-only buttons
+- ARIA live regions for dynamic content
+- Proper heading hierarchy (h1 → h2 → h3)
+
+### Performance Optimization
+
+#### Image Optimization
+
+```tsx
+import Image from 'next/image';
+
+<Image
+  src="/hero-artist.jpg"
+  alt="Artist using BroLab Fanbase on mobile"
+  width={600}
+  height={800}
+  priority // Above fold
+  quality={85}
+  placeholder="blur"
+  blurDataURL="data:image/jpeg;base64,..."
+/>
+```
+
+#### Code Splitting
+
+```tsx
+// Lazy load below-fold sections
+const FAQ = dynamic(() => import('@/components/marketing/faq'), {
+  loading: () => <Skeleton className="h-96" />,
+});
+
+const UseCases = dynamic(() => import('@/components/marketing/use-cases'), {
+  loading: () => <Skeleton className="h-64" />,
+});
+```
+
+#### Bundle Size Targets
+
+- Landing page JS: ≤100KB (gzipped)
+- First Load JS: ≤150KB (gzipped)
+- CSS: ≤20KB (gzipped)
+
+#### Lighthouse Targets
+
+- Performance: ≥90 (mobile)
+- Accessibility: 100
+- Best Practices: 100
+- SEO: 100
+
+### Responsive Breakpoints
+
+```css
+/* Mobile-first approach */
+/* Base: 375px - 767px (mobile) */
+.hero-headline {
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+/* Tablet: 768px - 1023px */
+@media (min-width: 768px) {
+  .hero-headline {
+    font-size: 40px;
+  }
+}
+
+/* Desktop: 1024px+ */
+@media (min-width: 1024px) {
+  .hero-headline {
+    font-size: 48px;
+  }
+}
+```
+
+### Component Checklist
+
+**Before delivery, verify:**
+
+- [ ] Hero headline visible without scroll (mobile)
+- [ ] Primary CTA above fold (all devices)
+- [ ] All images use `next/image`
+- [ ] No client components unless necessary (prefer RSC)
+- [ ] Animations respect `prefers-reduced-motion`
+- [ ] Color contrast meets WCAG AA
+- [ ] Focus indicators visible
+- [ ] Keyboard navigation works
+- [ ] Screen reader friendly
+- [ ] Lighthouse Performance ≥90
+- [ ] No console errors/warnings
+- [ ] Analytics events fire correctly
+- [ ] Mobile touch targets ≥44x44px
+- [ ] No horizontal scroll on mobile
+- [ ] Fast 3G load time ≤3s
+
+### Success Metrics (Post-Launch)
+
+**Primary KPIs:**
+- Artist sign-up conversion rate: ≥3%
+- Bounce rate: ≤60%
+- Time on page: ≥45 seconds
+
+**Secondary KPIs:**
+- CTA click-through rate: ≥10%
+- Mobile vs desktop conversion parity: ≥80%
+- Page load time (FCP): ≤1.8s
+- Page load time (LCP): ≤2.5s
+
+**Measurement Period:** 30 days post-launch
+
+**Tools:**
+- Analytics: Posthog or Plausible (privacy-first)
+- Performance: Vercel Analytics + Lighthouse CI
+- Heatmaps: Optional (Hotjar/Clarity) for UX insights

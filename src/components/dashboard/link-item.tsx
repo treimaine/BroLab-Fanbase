@@ -4,43 +4,27 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
+    Calendar,
     ExternalLink,
+    FileText,
     Globe,
+    Heart,
+    Mail,
     Music,
     ShoppingBag,
     Ticket,
-    Video,
     type LucideIcon,
 } from "lucide-react";
 
 /**
  * Link types with their display metadata
+ * Business links only - social media managed via Profile & Bio → Social Links
  */
 export const LINK_TYPES = {
   "latest-release": {
     label: "Latest Release",
     icon: Music,
     badgeVariant: "default" as const,
-  },
-  instagram: {
-    label: "Instagram",
-    icon: Globe,
-    badgeVariant: "secondary" as const,
-  },
-  youtube: {
-    label: "YouTube",
-    icon: Video,
-    badgeVariant: "secondary" as const,
-  },
-  spotify: {
-    label: "Spotify",
-    icon: Music,
-    badgeVariant: "secondary" as const,
-  },
-  "apple-music": {
-    label: "Apple Music",
-    icon: Music,
-    badgeVariant: "secondary" as const,
   },
   merch: {
     label: "Merch",
@@ -52,14 +36,29 @@ export const LINK_TYPES = {
     icon: Ticket,
     badgeVariant: "outline" as const,
   },
-  video: {
-    label: "Video",
-    icon: Video,
-    badgeVariant: "secondary" as const,
-  },
   website: {
     label: "Website",
     icon: Globe,
+    badgeVariant: "outline" as const,
+  },
+  booking: {
+    label: "Booking",
+    icon: Calendar,
+    badgeVariant: "outline" as const,
+  },
+  presskit: {
+    label: "Press Kit",
+    icon: FileText,
+    badgeVariant: "outline" as const,
+  },
+  newsletter: {
+    label: "Newsletter",
+    icon: Mail,
+    badgeVariant: "outline" as const,
+  },
+  donate: {
+    label: "Donate",
+    icon: Heart,
     badgeVariant: "outline" as const,
   },
   other: {

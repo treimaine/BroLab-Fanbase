@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { motion, type Variants } from "framer-motion";
 import { Globe, Heart, Shield } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Feature {
   icon: React.ElementType;
@@ -32,6 +33,13 @@ const features: Feature[] = [
 ];
 
 export function FeatureGrid() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Container animation - stagger children
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -43,32 +51,33 @@ export function FeatureGrid() {
     },
   };
 
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
+  // Card animation - fade in + slide up
+  const cardVariants: Variants = {
+    hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
         duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94],
+        ease: "easeOut",
       },
     },
   };
 
   return (
     <section className="relative px-4 py-20 md:px-6 md:py-32">
-      <motion.div
-        className="mx-auto max-w-6xl"
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-      >
-        <div className="grid gap-8 md:grid-cols-3 md:gap-10">
+      <div className="mx-auto max-w-6xl">
+        <motion.div
+          className="grid gap-8 md:grid-cols-3 md:gap-10"
+          variants={mounted ? containerVariants : undefined}
+          initial={mounted ? "hidden" : false}
+          whileInView={mounted ? "visible" : undefined}
+          viewport={mounted ? { once: true, margin: "-100px" } : undefined}
+        >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
-              variants={itemVariants}
+              variants={cardVariants}
               className={cn(
                 "group relative rounded-2xl border border-border/50 bg-card p-8 md:p-10",
                 "transition-all duration-300 ease-out",
@@ -98,8 +107,8 @@ export function FeatureGrid() {
               </p>
             </motion.div>
           ))}
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </section>
   );
 }

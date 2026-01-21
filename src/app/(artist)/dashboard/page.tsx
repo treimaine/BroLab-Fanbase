@@ -5,6 +5,7 @@ import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
 import { useQuery } from "convex/react";
 import { Calendar, DollarSign, ExternalLink, Users } from "lucide-react";
 import Link from "next/link";
@@ -12,9 +13,9 @@ import { api } from "../../../../convex/_generated/api";
 
 /**
  * Artist Dashboard Overview Page
- * Requirements: 4.1-4.4
+ * Requirements: 4.1-4.4, R-ART-DASH-STAT-1, R-ART-DASH-STAT-2, R-ART-DASH-STAT-3
  * 
- * - 3 StatsCards: Followers, Revenue, Events
+ * - 3 StatsCards: Followers (real), Revenue (real), Events (real)
  * - SetupChecklist with progress
  * - CreateContentCard for quick actions
  * - "View Public Hub" link
@@ -22,6 +23,18 @@ import { api } from "../../../../convex/_generated/api";
 export default function DashboardPage() {
   const artist = useQuery(api.artists.getCurrentArtist);
   const products = useQuery(api.products.getCurrentArtistProducts);
+  
+  // Real stats queries (R-ART-DASH-STAT-1, R-ART-DASH-STAT-2, R-ART-DASH-STAT-3)
+  const followersCount = useQuery(
+    api.follows.countByArtist,
+    artist ? { artistId: artist._id } : "skip"
+  );
+  const billingSummary = useQuery(api.artistBilling.getSummary);
+  const upcomingEventsCount = useQuery(
+    api.events.countUpcomingByArtist,
+    artist ? { artistId: artist._id } : "skip"
+  );
+
   const isLoading = artist === undefined || products === undefined;
 
   // Calculate setup checklist items based on artist data
@@ -84,25 +97,42 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Real Data (R-ART-DASH-STAT-1, R-ART-DASH-STAT-2, R-ART-DASH-STAT-3, R-ART-DASH-STAT-4) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatsCard
-          title="Followers"
-          value="0"
-          change={{ value: 0, type: "neutral" }}
-          icon={Users}
-        />
-        <StatsCard
-          title="Revenue"
-          value="$0.00"
-          change={{ value: 0, type: "neutral" }}
-          icon={DollarSign}
-        />
-        <StatsCard
-          title="Upcoming Events"
-          value="0"
-          icon={Calendar}
-        />
+        {/* Followers stat with loading state */}
+        {followersCount === undefined ? (
+          <Skeleton className="h-28 rounded-xl" />
+        ) : (
+          <StatsCard
+            title="Followers"
+            value={followersCount.toString()}
+            change={{ value: 0, type: "neutral" }}
+            icon={Users}
+          />
+        )}
+
+        {/* Revenue stat with loading state */}
+        {billingSummary === undefined ? (
+          <Skeleton className="h-28 rounded-xl" />
+        ) : (
+          <StatsCard
+            title="Revenue"
+            value={formatCurrency(billingSummary.availableBalance)}
+            change={{ value: 0, type: "neutral" }}
+            icon={DollarSign}
+          />
+        )}
+
+        {/* Upcoming Events stat with loading state */}
+        {upcomingEventsCount === undefined ? (
+          <Skeleton className="h-28 rounded-xl" />
+        ) : (
+          <StatsCard
+            title="Upcoming Events"
+            value={upcomingEventsCount.toString()}
+            icon={Calendar}
+          />
+        )}
       </div>
 
       {/* Setup & Actions Grid */}

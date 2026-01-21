@@ -31,7 +31,7 @@ import type { Track } from "@/types/player";
 import { ConvexHttpClient } from "convex/browser";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function FanFeedPage() {
   // Pagination state
@@ -52,21 +52,21 @@ export default function FanFeedPage() {
   const toggleFollow = useMutation(api.follows.toggle);
 
   // Accumulate feed items as we paginate
-  useMemo(() => {
-    if (feedResult?.items) {
-      if (!hasLoadedInitial) {
-        // First load - replace all items
-        setAllFeedItems(feedResult.items);
-        setHasLoadedInitial(true);
-      } else if (cursor !== undefined) {
-        // Subsequent loads - append items
-        setAllFeedItems((prev: any[]) => {
-          // Deduplicate by _id
-          const existingIds = new Set(prev.map((item: any) => item._id));
-          const newItems = feedResult.items.filter((item: any) => !existingIds.has(item._id));
-          return [...prev, ...newItems];
-        });
-      }
+  useEffect(() => {
+    if (!feedResult?.items) return;
+
+    if (!hasLoadedInitial) {
+      // First load - replace all items
+      setAllFeedItems(feedResult.items);
+      setHasLoadedInitial(true);
+    } else if (cursor !== undefined) {
+      // Subsequent loads - append items
+      setAllFeedItems((prev) => {
+        // Deduplicate by _id
+        const existingIds = new Set(prev.map((item) => item._id));
+        const newItems = feedResult.items.filter((item) => !existingIds.has(item._id));
+        return [...prev, ...newItems];
+      });
     }
   }, [feedResult?.items, cursor, hasLoadedInitial]);
 

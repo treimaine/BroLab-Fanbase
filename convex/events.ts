@@ -76,6 +76,31 @@ export const getUpcomingByArtist = query({
 });
 
 /**
+ * Count upcoming events for an artist
+ * Requirements: R-ART-DASH-STAT-2 - Upcoming Events Count for Dashboard Stats
+ *
+ * Returns the count of upcoming events (date >= now) for the specified artist.
+ * Used in the Artist Dashboard Overview stats card.
+ *
+ * @param artistId - Artist's Convex document ID
+ * @returns Number of upcoming events
+ */
+export const countUpcomingByArtist = query({
+  args: {
+    artistId: v.id("artists"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const events = await ctx.db
+      .query("events")
+      .withIndex("by_artist", (q) => q.eq("artistId", args.artistId))
+      .filter((q) => q.gte(q.field("date"), now))
+      .collect();
+    return events.length;
+  },
+});
+
+/**
  * Get events for the current authenticated artist
  * Requirements: 7.2 - Display list of events in dashboard
  *

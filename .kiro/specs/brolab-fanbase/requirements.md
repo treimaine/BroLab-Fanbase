@@ -76,13 +76,16 @@ MVP stores uploaded audio/video in Convex File Storage; for larger scale and hea
 > The Public Hub now only displays: HubHeader (with social icons) → Tabs (Latest Drops / Tour Dates).
 > Custom links are managed via /dashboard/links but NOT displayed on the Public Hub.
 
-### Dashboard — Custom Links
+### Artist — Business Links (Custom Links)
 
-### R-CL-1: Custom Links Management
-THE Dashboard Links page (`/dashboard/links`) SHALL manage "custom" links (merch, booking, press kit, newsletter, etc.).
+#### R-ART-LINKS-1: Business Links Only
+THE `/dashboard/links` page SHALL manage business links only (merch, tickets, booking, press kit, newsletter, donate, website, other). Social media links are managed exclusively in "Profile & Bio → Social Links".
 
-### R-CL-2: Social/Streaming Platform URL Rejection
-THE System SHALL reject any link URL whose domain matches a social or streaming platform already managed in Profile & Bio → Social Links.
+#### R-ART-LINKS-2: Social Links Separation
+Social media platforms (Instagram, YouTube, Spotify, TikTok, SoundCloud, Apple Music, Facebook, Twitch) SHALL be managed ONLY via "Profile & Bio → Social Links", not via Custom Links.
+
+#### R-ART-LINKS-3: URL Domain Validation
+THE System SHALL reject URLs pointing to social/streaming platform domains (defined in `BLOCKED_SOCIAL_DOMAINS`) with the error message: "Manage social links in Profile & Bio → Social Links."
 
 **Blocked domains:**
 - instagram.com
@@ -95,17 +98,8 @@ THE System SHALL reject any link URL whose domain matches a social or streaming 
 - facebook.com
 - twitch.tv
 
-### R-CL-3: User-Friendly Error Message
-WHEN a user attempts to add a link with a blocked domain, THE System SHALL display the error message:
-"Manage social links in Profile & Bio → Social Links."
-
-### R-CL-4: Link Ordering and Toggle
-THE Dashboard Links page SHALL:
-- Sort links by `order` field ascending
-- Allow toggling `active` status for each link (for future display use)
-
-### R-CL-5: Auto-Detection (Optional)
-THE System MAY auto-detect link type as "custom" and suggest appropriate labels based on URL patterns.
+#### R-ART-LINKS-4: Type Dropdown Restriction
+THE "Type" dropdown in the Add Link dialog SHALL NOT display social media types. Only business types SHALL be available: merch, tickets, website, booking, presskit, newsletter, donate, other.
 
 ### Requirement 4: Artist Dashboard
 
@@ -118,6 +112,25 @@ THE System MAY auto-detect link type as "custom" and suggest appropriate labels 
 3. THE Artist_Dashboard SHALL display a "Create New Content" card with "Add Link" and "Add Event" actions
 4. THE Artist_Dashboard SHALL include a "View Public Hub" link to preview the public page
 5. WHEN an artist navigates via sidebar, THE System SHALL display the corresponding section (Profile, Links, Events, Billing)
+
+### Artist — Dashboard Overview Stats (Real Data)
+
+#### R-ART-DASH-STAT-1: Followers Count
+THE Followers stat card SHALL display the real count of follows for the current artist, queried from Convex `follows` table by `artistId`.
+
+#### R-ART-DASH-STAT-2: Upcoming Events Count
+THE Upcoming Events stat card SHALL display the real count of future events for the current artist, filtered by `date >= now` from Convex `events` table.
+
+#### R-ART-DASH-STAT-3: Revenue Display
+THE Revenue stat card SHALL display real revenue data:
+- **Option A (Preferred)**: Use `artistBilling.getSummary` to display `available + pending` balance
+- **Option B (Fallback)**: Calculate total from paid orders via `orders`/`orderItems` filtered by artist's products
+
+#### R-ART-DASH-STAT-4: Loading & Empty States
+THE stat cards SHALL:
+- Display skeleton loaders during data fetch
+- Format values appropriately (followers/events as integers, revenue as currency)
+- Handle empty states gracefully (display "0" or "$0.00", not placeholders)
 
 ### Requirement 5: Artist Profile Management
 
@@ -451,12 +464,214 @@ THE System MAY auto-detect link type as "custom" and suggest appropriate labels 
 - **R-FEED-1.3**: Tri desc par `createdAt`/`publishedAt` (défini dans le modèle).
 - **R-FEED-1.4**: Pagination (cursor/limit) obligatoire (V1).
 
+### Fan Feed — Pagination & Stability
+
+#### R-FAN-FEED-1: Paginated Feed Display
+THE Fan Feed SHALL display items paginated with a configurable limit (default: 10) and support "Load more" functionality via nextCursor.
+
+#### R-FAN-FEED-2: Client-Side Accumulation Without Duplicates
+THE System SHALL accumulate feed pages on the client side and deduplicate items by `_id` to prevent duplicate displays.
+
+#### R-FAN-FEED-3: Refresh Behavior
+WHEN a fan refreshes the page, THE System SHALL reset the feed to the first page (initial load state).
+
+#### R-FAN-FEED-4: Race Condition Prevention
+THE "Load more" button SHALL be disabled during fetch operations to prevent race conditions from rapid clicks.
+
+#### R-FAN-FEED-5: End of Feed Indication
+WHEN `nextCursor` is null or undefined, THE "Load more" button SHALL be hidden or disabled to indicate the end of the feed.
+
 ---
 
 ## Stripe One-time purchases — Production End-to-End
 
 ### R-STRIPE-OT-1 — Checkout + webhook fulfillment
-- **R-STRIPE-OT-1.1**: Les paiements ponctuels utilisent Stripe Checkout.
+- **R-STRIPE-OT-1.1**: Les paiements ponctuels sont gérés via Stripe Checkout avec webhooks
+
+---
+
+## Marketing — Landing/Home (Conversion-First)
+
+### R-MKT-LAND-1: Value Proposition Clarity
+THE Landing page hero SHALL communicate the core value proposition within 5 seconds:
+- Fans pay you directly (via Stripe Connect)
+- Powered by Stripe Connect with automatic payouts
+- 0% platform fee on sales (platform earns from artist subscriptions)
+- Clear differentiation from competitors
+
+**Success Criteria:**
+- First-time visitor understands business model in ≤5 seconds
+- Value prop passes "mom test" (non-technical person understands it)
+
+### R-MKT-LAND-2: Primary CTA (Artist-First)
+THE primary CTA SHALL be "Start free as an Artist" and lead to the artist sign-up flow (Clerk).
+
+**Secondary CTA:** "Explore artists" (public hub / explore page)
+
+**CTA Requirements:**
+- Primary CTA visible above the fold on all devices
+- High contrast (meets WCAG AA standards)
+- Clear action verb ("Start", not "Learn more")
+
+### R-MKT-LAND-3: Mobile-First Hierarchy
+ON mobile viewport, THE hero section SHALL display in this order:
+1. Headline
+2. Subheadline
+3. Primary CTA
+4. Trust indicators (3 bullets max)
+5. Secondary sections (below fold)
+
+**Mobile Requirements:**
+- Hero content fits in first viewport (no scroll to see CTA)
+- Touch targets ≥44x44px
+- Readable font sizes (≥16px body, ≥24px headlines)
+
+### R-MKT-LAND-4: Page Structure (6 Sections Max)
+THE Landing page SHALL contain maximum 6 sections in this recommended order:
+
+1. **Hero** - Value prop + CTA
+2. **Proof Bar** - 3 trust indicators (e.g., "Direct payouts", "0% sales fee", "Stripe secured")
+3. **How It Works** - 3 steps (Sign up → Connect Stripe → Share link)
+4. **Use Cases** - 3 cards (Music, Merch, Tickets)
+5. **Social Proof** - Minimal (optional: testimonial or stats)
+6. **FAQ** - 5 questions max
+
+**Rationale:** Reduce cognitive load, improve conversion, faster page load
+
+### R-MKT-LAND-5: No Misleading Content
+THE Landing page SHALL NOT display:
+- Mock data (fake user counts, fake revenue)
+- "Coming soon" for features not in production
+- Promises that cannot be fulfilled in current version
+
+**IF a use-case is not live:**
+- Wording SHALL indicate "coming soon" discreetly
+- OR omit the feature entirely until ready
+
+### R-MKT-LAND-6: Performance Requirements
+THE Landing page SHALL meet these performance standards:
+
+**Technical:**
+- All images via `next/image` with proper sizing
+- Minimal client-side JavaScript (prefer RSC)
+- Animations: lightweight only (framer-motion with reduced motion support)
+- Lighthouse Performance score ≥90 (mobile)
+- First Contentful Paint (FCP) ≤1.8s
+- Largest Contentful Paint (LCP) ≤2.5s
+
+**Bundle Size:**
+- Landing page JS bundle ≤100KB (gzipped)
+- No heavy client components unless necessary
+
+### R-MKT-LAND-7: Analytics & Tracking
+THE System SHALL track these conversion events using PostHog:
+
+**Required Events:**
+- `landing_page_view` - Page load
+- `start_as_artist_click` - Primary CTA click
+- `explore_artists_click` - Secondary CTA click
+- `waitlist_submit` - Email submission (if applicable)
+- `sign_up_initiated` - Redirected to sign-up page
+
+**Optional Events (V2):**
+- Section scroll depth
+- FAQ expansion
+- External link clicks
+
+**Implementation (PostHog Next.js):**
+
+**Installation:**
+```bash
+npm install posthog-js
+```
+
+**Environment Variables:**
+```env
+NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com  # or eu.i.posthog.com
+```
+
+**Setup (App Router):**
+- Create `instrumentation-client.ts` (Next.js 15.3+) OR use provider pattern (Next.js 14.x)
+- Initialize PostHog with `posthog.init()` in client component
+- Wrap app with PostHog provider if using provider pattern
+
+**Event Tracking API:**
+```typescript
+// Direct import (client components)
+import posthog from 'posthog-js'
+posthog.capture('event_name', { property: 'value' })
+
+// React hook (client components)
+import { usePostHog } from 'posthog-js/react'
+const posthog = usePostHog()
+posthog.capture('event_name', { property: 'value' })
+```
+
+**Features:**
+- Autocapture: Automatic pageviews and click tracking (can be disabled)
+- Privacy-first: GDPR compliant, no Google Analytics
+- No PII tracking: Track events without personally identifiable information
+
+**Reference:** https://posthog.com/docs/libraries/next-js
+
+### R-MKT-LAND-8: Copy Guidelines (English)
+THE Landing page copy SHALL follow these guidelines:
+
+**Tone:**
+- Premium but clear (not cryptic or overly clever)
+- Direct and benefit-focused
+- Artist-first perspective
+
+**Headline Style:**
+- Short (≤10 words)
+- Benefit-driven (not feature-driven)
+- Active voice
+
+**Example Copy (Reference):**
+```
+Headline: "Fans pay you directly."
+Subheadline: "Sell music, merch, and tickets with Stripe Connect payouts. We earn from your subscription—not your sales."
+Trust Line: "0% platform fee on sales • Automatic payouts • No credit card required"
+```
+
+### R-MKT-LAND-9: Competitive Differentiation
+THE Landing page SHALL clearly communicate differentiation from competitors:
+
+**Key Differentiators:**
+- Direct payments (not platform-held funds)
+- 0% sales commission (vs Patreon 5-12%, Bandcamp 10-15%)
+- Automatic payouts (vs manual withdrawal)
+- Artist subscriptions fund platform (transparent business model)
+
+**Positioning:**
+- "Built for artists who want control"
+- "Your earnings, your timeline"
+- "No middleman taking a cut"
+
+### R-MKT-LAND-10: Accessibility Requirements
+THE Landing page SHALL meet WCAG 2.1 AA standards:
+
+- Color contrast ≥4.5:1 for text
+- Focus indicators visible on all interactive elements
+- Semantic HTML (proper heading hierarchy)
+- Alt text for all images
+- Keyboard navigation support
+- Screen reader friendly
+
+### R-MKT-LAND-11: Success Metrics (Target)
+THE Landing page SHALL aim for these conversion metrics:
+
+**Primary Metrics:**
+- Artist sign-up conversion rate: ≥3% (industry standard: 2-5%)
+- Bounce rate: ≤60%
+- Time on page: ≥45 seconds
+
+**Secondary Metrics:**
+- CTA click-through rate: ≥10%
+- Mobile vs desktop conversion parity: ≥80%
+
+**Measurement Period:** 30 days post-launchtuels utilisent Stripe Checkout.
 - **R-STRIPE-OT-1.2**: Le webhook `checkout.session.completed` met à jour `orders`/`orderItems` et déclenche l'entitlement (downloads/licence).
 - **R-STRIPE-OT-1.3**: Accès downloads/licence doit être **server-side gated** sur `orders` payés.
 

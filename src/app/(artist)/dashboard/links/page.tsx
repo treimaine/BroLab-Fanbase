@@ -66,20 +66,27 @@ export default function LinksPage() {
     return <LinksSkeleton />;
   }
 
+  // Social media link types that should NOT appear in Custom Links
+  // These are managed via Profile & Bio → Social Links
+  const SOCIAL_LINK_TYPES = new Set(["instagram", "youtube", "spotify", "apple-music", "video"]);
+
   // Transform Convex data to LinkItemData format
-  const linkItems: LinkItemData[] = (links ?? []).map((link: {
-    _id: string;
-    title: string;
-    url: string;
-    type: string;
-    active: boolean;
-  }) => ({
-    id: link._id,
-    title: link.title,
-    url: link.url,
-    type: link.type,
-    active: link.active,
-  }));
+  // Filter out social media links (R-CL-1, R-CL-2)
+  const linkItems: LinkItemData[] = (links ?? [])
+    .filter((link: { type: string }) => !SOCIAL_LINK_TYPES.has(link.type.toLowerCase()))
+    .map((link: {
+      _id: string;
+      title: string;
+      url: string;
+      type: string;
+      active: boolean;
+    }) => ({
+      id: link._id,
+      title: link.title,
+      url: link.url,
+      type: link.type,
+      active: link.active,
+    }));
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -90,7 +97,7 @@ export default function LinksPage() {
             Custom Links
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Use this for merch, booking, press kit, newsletter, etc. Social platforms are managed in{" "}
+            Add links for merch, booking, press kit, newsletter, etc. For social media, use{" "}
             <a href="/dashboard/profile" className="text-primary underline underline-offset-2 hover:text-primary/80">
               Profile &amp; Bio → Social Links
             </a>.

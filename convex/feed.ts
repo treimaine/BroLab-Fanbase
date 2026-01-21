@@ -182,12 +182,23 @@ export const getForCurrentUser = query({
       filteredItems = feedItems.filter((item) => item.createdAt < cursor);
     }
 
-    // Apply limit and get one extra to determine if there's a next page
+    // PAGE-ONLY BEHAVIOR (R-FAN-FEED-1):
+    // This query returns ONLY the current page of items (up to `limit` items).
+    // It does NOT accumulate or return all items - that's the client's responsibility.
+    // 
+    // Pagination strategy:
+    // 1. Fetch limit + 1 items to detect if there's a next page
+    // 2. If we got more than `limit` items, there's more data available
+    // 3. Return exactly `limit` items (trim the extra one)
+    // 4. nextCursor = timestamp of the LAST item in the returned page
+    //    - Client uses this cursor in the next request to fetch older items
+    //    - Cursor filtering: item.createdAt < cursor (strict less-than for no duplicates)
     const paginatedItems = filteredItems.slice(0, limit + 1);
     const hasMore = paginatedItems.length > limit;
     const items = hasMore ? paginatedItems.slice(0, limit) : paginatedItems;
 
-    // Calculate next cursor
+    // Calculate next cursor (timestamp of last item in current page)
+    // nextCursor is null when we've reached the end of the feed
     const nextCursor = hasMore && items.length > 0 
       ? items.at(-1)!.createdAt 
       : null;

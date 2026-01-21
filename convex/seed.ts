@@ -45,10 +45,11 @@ const TEST_ARTIST = {
 };
 
 const TEST_LINKS = [
-  { title: "New Single - On The Road", url: "https://open.spotify.com/album/example", type: "latest-release", active: true, order: 0 },
-  { title: "Follow on Instagram", url: "https://instagram.com/treigua", type: "instagram", active: true, order: 1 },
-  { title: "Subscribe on YouTube", url: "https://youtube.com/@treigua", type: "youtube", active: true, order: 2 },
-  { title: "Listen on Spotify", url: "https://open.spotify.com/artist/treigua", type: "spotify", active: true, order: 3 },
+  { title: "New Single - On The Road", url: "https://open.spotify.com/album/example", type: "latest-release", active: false, order: 0 },
+  { title: "Official Merch Store", url: "https://treigua-merch.example.com", type: "merch", active: false, order: 1 },
+  { title: "Book Me for Events", url: "https://booking.example.com/treigua", type: "booking", active: false, order: 2 },
+  { title: "Press Kit & Media", url: "https://treigua.example.com/press", type: "presskit", active: false, order: 3 },
+  { title: "Newsletter Signup", url: "https://newsletter.example.com/treigua", type: "newsletter", active: false, order: 4 },
 ];
 
 const TEST_EVENTS = [
@@ -261,6 +262,235 @@ export const linkClerkUserToTestArtist = mutation({
       artistId,
       artistSlug: artist?.artistSlug ?? TEST_ARTIST.artistSlug,
       message: `Clerk account linked to "${artist?.displayName ?? TEST_ARTIST.displayName}". Visit /treigua or /dashboard.`,
+    };
+  },
+});
+
+/**
+ * Seed test fan user with follows and feed data for pagination testing
+ * Requirements: R-FAN-FEED-1..5 - Pagination testing
+ * 
+ * Creates:
+ * - 1 fan user
+ * - 3 test artists (each with 8 products = 24 total feed items)
+ * - Follow relationships between fan and all artists
+ */
+export const seedFanFeedTestData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // Create fan user
+    const fanUserId = await ctx.db.insert("users", {
+      clerkUserId: "seed_test_fan_001",
+      role: "fan",
+      displayName: "Test Fan",
+      usernameSlug: "testfan",
+      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop",
+      createdAt: now,
+    });
+
+    // Create 3 test artists
+    const artistData = [
+      {
+        slug: "djnova",
+        name: "DJ Nova",
+        bio: "Electronic music producer and DJ",
+        avatar: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop",
+        cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=400&fit=crop",
+      },
+      {
+        slug: "soulvibes",
+        name: "Soul Vibes",
+        bio: "R&B and soul artist",
+        avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
+        cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=400&fit=crop",
+      },
+      {
+        slug: "rocklegend",
+        name: "Rock Legend",
+        bio: "Classic rock and modern alternative",
+        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+        cover: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=1200&h=400&fit=crop",
+      },
+    ];
+
+    const artistIds: Id<"artists">[] = [];
+
+    for (const data of artistData) {
+      // Create artist owner user
+      const artistUserId = await ctx.db.insert("users", {
+        clerkUserId: `seed_artist_${data.slug}`,
+        role: "artist",
+        displayName: data.name,
+        usernameSlug: data.slug,
+        avatarUrl: data.avatar,
+        createdAt: now,
+      });
+
+      // Create artist profile
+      const artistId = await ctx.db.insert("artists", {
+        ownerUserId: artistUserId,
+        artistSlug: data.slug,
+        displayName: data.name,
+        bio: data.bio,
+        avatarUrl: data.avatar,
+        coverUrl: data.cover,
+        socials: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      artistIds.push(artistId);
+
+      // Create 8 products per artist (24 total = enough for pagination testing)
+      for (let i = 1; i <= 8; i++) {
+        await ctx.db.insert("products", {
+          artistId,
+          title: `${data.name} - Track ${i}`,
+          description: `Amazing track number ${i} from ${data.name}`,
+          type: i % 2 === 0 ? "video" : "music",
+          priceUSD: 4.99 + i,
+          coverImageUrl: `https://images.unsplash.com/photo-${1614149162883 + i}?w=400&h=400&fit=crop`,
+          visibility: "public",
+          createdAt: now - (i * 60 * 60 * 1000), // Stagger creation times
+          updatedAt: now - (i * 60 * 60 * 1000),
+        });
+      }
+
+      // Create follow relationship
+      await ctx.db.insert("follows", {
+        fanUserId,
+        artistId,
+        createdAt: now,
+      });
+    }
+
+    return {
+      success: true,
+      fanUserId,
+      artistIds,
+      totalProducts: 24,
+      message: "Fan feed test data seeded. Fan user: testfan, 3 artists with 8 products each (24 total items)",
+    };
+  },
+});
+
+/**
+ * Clear fan feed test data
+ */
+export const clearFanFeedTestData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Find and delete fan user
+    const fanUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", "seed_test_fan_001"))
+      .unique();
+
+    if (fanUser) {
+      // Delete follows
+      const follows = await ctx.db
+        .query("follows")
+        .withIndex("by_fan", (q) => q.eq("fanUserId", fanUser._id))
+        .collect();
+      await Promise.all(follows.map((f) => ctx.db.delete(f._id)));
+
+      // Delete fan user
+      await ctx.db.delete(fanUser._id);
+    }
+
+    // Find and delete test artists
+    const artistSlugs = ["djnova", "soulvibes", "rocklegend"];
+    for (const slug of artistSlugs) {
+      const artist = await ctx.db
+        .query("artists")
+        .withIndex("by_slug", (q) => q.eq("artistSlug", slug))
+        .unique();
+
+      if (artist) {
+        // Delete products
+        const products = await ctx.db
+          .query("products")
+          .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
+          .collect();
+        await Promise.all(products.map((p) => ctx.db.delete(p._id)));
+
+        // Delete artist
+        await ctx.db.delete(artist._id);
+
+        // Delete artist owner user
+        const artistUser = await ctx.db.get(artist.ownerUserId);
+        if (artistUser) {
+          await ctx.db.delete(artistUser._id);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: "Fan feed test data cleared",
+    };
+  },
+});
+
+/**
+ * Clear ALL QA test data (production cleanup)
+ * Removes all test artists, products, and follows created during QA testing
+ */
+export const clearAllQATestData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const testArtistSlugs = ["djnova-test", "soulvibes-test", "rocklegend-test"];
+    let deletedArtists = 0;
+    let deletedProducts = 0;
+    let deletedFollows = 0;
+    let deletedUsers = 0;
+
+    // Delete test artists and their data
+    for (const slug of testArtistSlugs) {
+      const artist = await ctx.db
+        .query("artists")
+        .withIndex("by_slug", (q) => q.eq("artistSlug", slug))
+        .unique();
+
+      if (artist) {
+        // Delete products
+        const products = await ctx.db
+          .query("products")
+          .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
+          .collect();
+        await Promise.all(products.map((p) => ctx.db.delete(p._id)));
+        deletedProducts += products.length;
+
+        // Delete follows
+        const follows = await ctx.db
+          .query("follows")
+          .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
+          .collect();
+        await Promise.all(follows.map((f) => ctx.db.delete(f._id)));
+        deletedFollows += follows.length;
+
+        // Delete artist
+        await ctx.db.delete(artist._id);
+        deletedArtists++;
+
+        // Delete artist owner user
+        const artistUser = await ctx.db.get(artist.ownerUserId);
+        if (artistUser?.clerkUserId.startsWith("seed_artist_")) {
+          await ctx.db.delete(artistUser._id);
+          deletedUsers++;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      deletedArtists,
+      deletedProducts,
+      deletedFollows,
+      deletedUsers,
+      message: `QA test data cleared: ${deletedArtists} artists, ${deletedProducts} products, ${deletedFollows} follows, ${deletedUsers} users`,
     };
   },
 });

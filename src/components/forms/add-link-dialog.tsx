@@ -8,30 +8,30 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 
 import { LINK_TYPES } from "@/components/dashboard/link-item";
@@ -151,9 +151,9 @@ export function AddLinkDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-serif text-xl">Add New Link</DialogTitle>
+          <DialogTitle className="font-serif text-xl">Add Business Link</DialogTitle>
           <DialogDescription>
-            Add a link to your hub. Fans will see this on your public profile.
+            Add a business link to your hub. For social media, use Profile & Bio → Social Links.
           </DialogDescription>
         </DialogHeader>
 
@@ -230,7 +230,7 @@ export function AddLinkDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Choose the category for this link
+                    Choose the category for this business link
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

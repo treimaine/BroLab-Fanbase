@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -30,4 +30,16 @@ export function slugify(text: string): string {
     // Remove leading and trailing hyphens
     .replaceAll(/^-+/g, "")
     .replaceAll(/-+$/g, "")
+}
+
+/**
+ * Format currency amount in cents to USD string
+ * @param cents - Amount in cents (e.g., 1234 = $12.34)
+ * @returns Formatted currency string (e.g., "$12.34")
+ */
+export function formatCurrency(cents: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(cents / 100);
 }

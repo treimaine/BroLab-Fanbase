@@ -48,7 +48,7 @@ const getFanNavItems = (username: string): NavItem[] => [
 const artistNavItems: NavItem[] = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
   { href: "/dashboard/profile", icon: User, label: "Profile & Bio" },
-  { href: "/dashboard/links", icon: LinkIcon, label: "Links" },
+  { href: "/dashboard/links", icon: LinkIcon, label: "Custom Links" },
   { href: "/dashboard/events", icon: Calendar, label: "Events" },
   { href: "/dashboard/products", icon: Music, label: "Products" },
   { href: "/dashboard/billing", icon: Wallet, label: "Billing" },

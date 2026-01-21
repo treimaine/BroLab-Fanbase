@@ -275,3 +275,26 @@ export const getFollowedArtistsUpcomingEventsCount = query({
     return totalUpcomingEvents;
   },
 });
+
+/**
+ * Count followers for an artist
+ * Requirements: R-ART-DASH-STAT-1 - Followers count for dashboard stats
+ *
+ * Returns the total number of fans following a specific artist.
+ * Used for the artist dashboard stats card.
+ *
+ * @param artistId - ID of the artist
+ * @returns Number of followers
+ */
+export const countByArtist = query({
+  args: {
+    artistId: v.id("artists"),
+  },
+  handler: async (ctx, args) => {
+    const follows = await ctx.db
+      .query("follows")
+      .withIndex("by_artist", (q) => q.eq("artistId", args.artistId))
+      .collect();
+    return follows.length;
+  },
+});
