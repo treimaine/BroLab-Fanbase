@@ -1,152 +1,101 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 interface Step {
-  number: number;
+  number: string;
   title: string;
   description: string;
 }
 
 const steps: Step[] = [
   {
-    number: 1,
-    title: "Sign up in 60 seconds",
-    description: "Choose your unique link and create your hub.",
+    number: "01",
+    title: "Create your hub",
+    description: "Claim your unique link and customize your profile in seconds.",
   },
   {
-    number: 2,
+    number: "02",
     title: "Connect Stripe",
-    description: "Set up automatic payouts to your bank account.",
+    description: "Link your bank for automatic, direct payouts from every sale.",
   },
   {
-    number: 3,
-    title: "Share your link",
-    description: "Post on Instagram, YouTube, or anywhere fans find you.",
+    number: "03",
+    title: "Go live",
+    description: "Share your link everywhere and watch your community grow.",
   },
 ];
 
 export function HowItWorks() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Header animation - fade in + slide up
-  const headerVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  // Container animation - stagger children
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  // Step card animation - fade in + slide up
-  const stepVariants: Variants = {
+  const fadeInUp: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] },
     },
   };
 
   return (
-    <section className="relative px-4 py-20 md:px-6 md:py-32">
-      <div className="mx-auto max-w-6xl">
-        {/* Section header */}
-        <motion.div
-          className="mb-12 text-center md:mb-16"
-          variants={mounted ? headerVariants : undefined}
-          initial={mounted ? "hidden" : false}
-          whileInView={mounted ? "visible" : undefined}
-          viewport={mounted ? { once: true, margin: "-100px" } : undefined}
-        >
-          <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            How It Works
-          </h2>
-          <p className="mt-4 text-base text-muted-foreground md:text-lg">
-            Get started in minutes, not days
-          </p>
-        </motion.div>
+    <section className="relative overflow-hidden bg-background px-4 py-32 md:px-6 transition-colors duration-300">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-20 text-center">
+          <motion.h2 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+          >
+            Simple by <span className="italic text-muted-foreground">design.</span>
+          </motion.h2>
+        </div>
 
-        {/* Steps grid */}
-        <motion.div
-          className="grid gap-8 md:grid-cols-3 md:gap-6 lg:gap-8"
-          variants={mounted ? containerVariants : undefined}
-          initial={mounted ? "hidden" : false}
-          whileInView={mounted ? "visible" : undefined}
-          viewport={mounted ? { once: true, margin: "-100px" } : undefined}
-        >
+        <div className="grid gap-8 md:grid-cols-3">
           {steps.map((step, index) => (
             <motion.div
               key={step.number}
-              className="relative"
-              variants={stepVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInUp}
+              transition={{ delay: index * 0.1 }}
+              className="group relative rounded-[2.5rem] border border-border bg-card/50 p-8 transition-colors hover:bg-card hover:border-primary/20 hover:shadow-lg md:p-12"
             >
-              {/* Card */}
-              <div
-                className={cn(
-                  "group relative h-full rounded-2xl border border-border/50 bg-card p-8 md:p-10",
-                  "transition-all duration-300 ease-out",
-                  "hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5",
-                  "hover:-translate-y-1"
-                )}
-              >
-                {/* Number badge - Circle with lavender gradient */}
-                <div
-                  className={cn(
-                    "mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full",
-                    "bg-gradient-to-br from-primary via-primary/90 to-primary/70",
-                    "text-xl font-bold text-white shadow-lg shadow-primary/20",
-                    "transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-primary/30"
-                  )}
-                >
-                  {step.number}
-                </div>
-
-                {/* Title */}
-                <h3 className="mb-3 font-serif text-xl font-semibold tracking-tight md:text-2xl">
-                  {step.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                  {step.description}
-                </p>
+              <div className="mb-8 font-serif text-5xl font-bold text-primary/40 transition-colors group-hover:text-primary">
+                {step.number}
               </div>
+              
+              <h3 className="mb-4 text-2xl font-bold text-foreground">
+                {step.title}
+              </h3>
+              
+              <p className="text-lg leading-relaxed text-muted-foreground">
+                {step.description}
+              </p>
 
-              {/* Arrow between steps (desktop only) */}
-              {index < steps.length - 1 && (
-                <div className="absolute -right-4 top-1/2 hidden -translate-y-1/2 md:block lg:-right-6">
-                  <ArrowRight className="h-6 w-6 text-muted-foreground/40" />
-                </div>
-              )}
+              <div className="mt-8 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+                <CheckCircle2 className="h-4 w-4" />
+                Completed in 1 min
+              </div>
             </motion.div>
           ))}
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+          className="mt-20 flex justify-center"
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-6 py-3 text-muted-foreground">
+            <span>Ready to take control?</span>
+            <button className="flex items-center gap-1 font-bold text-foreground hover:text-primary transition-colors">
+              Claim your link <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </motion.div>
       </div>
     </section>

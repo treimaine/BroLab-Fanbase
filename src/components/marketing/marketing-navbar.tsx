@@ -11,12 +11,13 @@ export function MarketingNavbar() {
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+    <header className="fixed top-0 z-[100] w-full border-b border-border bg-background/60 backdrop-blur-xl transition-colors duration-300">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 md:px-6">
         {/* Brand */}
-        <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
-          <span className="font-serif text-xl font-semibold text-foreground">
-            BroLab Fanbase
+        <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">B</div>
+          <span className="font-serif text-xl font-bold tracking-tight text-foreground">
+            BroLab
           </span>
         </Link>
 
@@ -29,26 +30,26 @@ export function MarketingNavbar() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]"
+                className="text-muted-foreground hover:bg-accent/10 hover:text-foreground min-h-[44px] px-4"
               >
-                Sign In
+                Login
               </Button>
             </Link>
             <Button 
               size="sm" 
-              className="rounded-full px-5 bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white shadow-md hover:shadow-lg transition-all min-h-[44px]"
+              className="group relative overflow-hidden rounded-full bg-primary px-6 font-bold text-primary-foreground transition-all hover:bg-primary/90 min-h-[44px]"
               onClick={() => {
-                posthog.capture('start_as_artist_click', { location: 'hero' });
+                posthog.capture('start_as_artist_click', { location: 'navbar' });
                 router.push('/sign-up');
               }}
             >
-              <span className="hidden sm:inline">Start free as an Artist</span>
-              <span className="sm:hidden">Start free</span>
+              <span className="relative z-10 hidden sm:inline">Get Started</span>
+              <span className="relative z-10 sm:hidden">Join</span>
             </Button>
           </SignedOut>
 
           <SignedIn>
-            <UserButton />
+            <UserButton appearance={{ elements: { userButtonAvatarBox: "h-10 w-10 border border-border" } }} />
           </SignedIn>
         </div>
       </div>

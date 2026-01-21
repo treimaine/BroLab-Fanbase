@@ -2,109 +2,108 @@
 
 import { cn } from "@/lib/utils";
 import { motion, type Variants } from "framer-motion";
-import { Globe, Heart, Shield } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Eye, Rocket, Zap } from "lucide-react";
 
 interface Feature {
   icon: React.ElementType;
   title: string;
   description: string;
+  gradient: string;
 }
 
 const features: Feature[] = [
   {
-    icon: Heart,
-    title: "Direct to Fan",
+    icon: Zap,
+    title: "Direct Access",
     description:
-      "Build genuine connections with your audience. No middlemen, no algorithms—just you and your fans.",
+      "Connect with your fans without the interference of algorithms. Your content, their feed, zero friction.",
+    gradient: "from-amber-400 to-orange-500",
   },
   {
-    icon: Globe,
-    title: "Global Commerce",
+    icon: Rocket,
+    title: "Instant Payouts",
     description:
-      "Sell music, merch, and tickets worldwide. Accept payments in any currency, reach fans everywhere.",
+      "Sell music, merch, and tickets worldwide. Get paid directly to your bank account via Stripe Connect.",
+    gradient: "from-primary to-blue-500",
   },
   {
-    icon: Shield,
-    title: "Own Your Data",
+    icon: Eye,
+    title: "Full Ownership",
     description:
-      "Your fans, your insights, your revenue. Full control over your career without platform lock-in.",
+      "You own your data, your audience, and your revenue. No platform lock-in, ever. Build your empire.",
+    gradient: "from-purple-500 to-pink-500",
   },
 ];
 
 export function FeatureGrid() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Container animation - stagger children
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.1,
+        staggerChildren: 0.1,
       },
     },
   };
 
-  // Card animation - fade in + slide up
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, y: 40 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.5,
-        ease: "easeOut",
+        duration: 0.8,
+        ease: [0.21, 0.47, 0.32, 0.98],
       },
     },
   };
 
   return (
-    <section className="relative px-4 py-20 md:px-6 md:py-32">
-      <div className="mx-auto max-w-6xl">
+    <section className="relative bg-background px-4 py-32 md:px-6 transition-colors duration-300">
+      {/* Background Accent */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-7xl">
+        <div className="absolute left-0 top-0 h-64 w-64 rounded-full bg-primary/5 blur-[100px]" />
+        <div className="absolute right-0 bottom-0 h-64 w-64 rounded-full bg-accent/5 blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl">
         <motion.div
-          className="grid gap-8 md:grid-cols-3 md:gap-10"
-          variants={mounted ? containerVariants : undefined}
-          initial={mounted ? "hidden" : false}
-          whileInView={mounted ? "visible" : undefined}
-          viewport={mounted ? { once: true, margin: "-100px" } : undefined}
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid gap-6 md:grid-cols-3"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={cardVariants}
-              className={cn(
-                "group relative rounded-2xl border border-border/50 bg-card p-8 md:p-10",
-                "transition-all duration-300 ease-out",
-                "hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5",
-                "hover:-translate-y-1"
-              )}
+              className="group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-border bg-card/50 p-8 transition-colors hover:border-primary/20 hover:bg-card hover:shadow-xl hover:shadow-primary/5 md:p-10"
             >
-              {/* Icon container */}
-              <div
-                className={cn(
-                  "mb-5 inline-flex h-14 w-14 items-center justify-center rounded-xl",
-                  "bg-primary/10 text-primary",
-                  "transition-all duration-300 group-hover:bg-primary/15 group-hover:scale-110"
-                )}
-              >
-                <feature.icon className="h-7 w-7" />
+              <div>
+                <div className={cn(
+                  "mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-foreground transition-transform duration-500 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary"
+                )}>
+                  <feature.icon className="h-8 w-8" />
+                </div>
+                
+                <h3 className="mb-4 font-serif text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                  {feature.title}
+                </h3>
+                
+                <p className="text-lg leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
               </div>
 
-              {/* Title */}
-              <h3 className="mb-3 font-serif text-xl font-semibold tracking-tight md:text-2xl">
-                {feature.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                {feature.description}
-              </p>
+              <div className="mt-12 flex h-1 w-full overflow-hidden rounded-full bg-muted">
+                <motion.div 
+                  initial={{ x: "-100%" }}
+                  whileInView={{ x: "0%" }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className={cn("h-full w-full bg-gradient-to-r", feature.gradient)} 
+                />
+              </div>
             </motion.div>
           ))}
         </motion.div>
