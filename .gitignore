@@ -46,3 +46,5 @@ c/
 
 # byterover 3.0
 .brv/
+
+.agent/
