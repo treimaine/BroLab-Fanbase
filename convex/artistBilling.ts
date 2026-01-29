@@ -113,9 +113,21 @@ export const getSummary = query({
         productIds.has(item.productId)
       );
 
+      // Batch fetch all orders in parallel (eliminates N+1 pattern)
+      const uniqueOrderIds = [...new Set(artistOrderItems.map((item) => item.orderId))];
+      const orders = await Promise.all(
+        uniqueOrderIds.map((orderId) => ctx.db.get(orderId))
+      );
+
+      // Create order lookup map for O(1) access
+      const orderMap = new Map(
+        orders.filter((order): order is NonNullable<typeof order> => order !== null)
+          .map((order) => [order._id, order])
+      );
+
       // Calculate total revenue from paid orders
       for (const item of artistOrderItems) {
-        const order = await ctx.db.get(item.orderId);
+        const order = orderMap.get(item.orderId);
         if (order?.status === "paid") {
           availableBalance += item.priceUSD * 100; // Convert to cents
         }
@@ -260,20 +272,47 @@ export const getTransactions = query({
     const hasMore = sortedItems.length > limit;
     const itemsToReturn = hasMore ? sortedItems.slice(0, limit) : sortedItems;
 
+    // Batch fetch all orders and fans in parallel (eliminates N+1 pattern)
+    const uniqueOrderIds = [...new Set(itemsToReturn.map((item) => item.orderId))];
+    const orders = await Promise.all(
+      uniqueOrderIds.map((orderId) => ctx.db.get(orderId))
+    );
+
+    // Create order lookup map for O(1) access
+    const orderMap = new Map(
+      orders.filter((order): order is NonNullable<typeof order> => order !== null)
+        .map((order) => [order._id, order])
+    );
+
+    // Batch fetch all fans in parallel
+    const uniqueFanIds = [...new Set(
+      orders.filter((order): order is NonNullable<typeof order> => order !== null)
+        .map((order) => order.fanUserId)
+    )];
+    const fans = await Promise.all(
+      uniqueFanIds.map((fanId) => ctx.db.get(fanId))
+    );
+
+    // Create fan lookup map for O(1) access
+    const fanMap = new Map(
+      fans.filter((fan): fan is NonNullable<typeof fan> => fan !== null)
+        .map((fan) => [fan._id, fan])
+    );
+
     // Build transactions with order and fan details
     const transactions: Transaction[] = [];
 
     for (const item of itemsToReturn) {
-      // Get order
-      const order = await ctx.db.get(item.orderId);
+      // Get order from map
+      const order = orderMap.get(item.orderId);
       if (!order) continue;
 
-      // Get product
+      // Get product from map
       const product = productMap.get(item.productId);
       if (!product) continue;
 
-      // Get fan user
-      const fan = await ctx.db.get(order.fanUserId);
+      // Get fan from map
+      const fan = fanMap.get(order.fanUserId);
       if (!fan) continue;
 
       // Map status to UI-friendly label

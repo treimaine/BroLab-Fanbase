@@ -600,3 +600,39 @@ export const getSuggestedArtists = query({
     return unfollowedArtists.slice(0, limit);
   },
 });
+
+
+/**
+ * Get all public artists for the Explore page
+ * Requirements: Public artist discovery
+ * 
+ * Returns all artists with their basic info for the explore/discovery page.
+ * Future enhancement: add pagination, filtering by genre, sorting options.
+ * 
+ * @returns Array of all artist documents
+ */
+export const getAllPublic = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get all artists
+    const artists = await ctx.db.query("artists").collect();
+
+    // For each artist, get their follower count
+    const artistsWithFollowers = await Promise.all(
+      artists.map(async (artist) => {
+        const followers = await ctx.db
+          .query("follows")
+          .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
+          .collect();
+
+        return {
+          ...artist,
+          followerCount: followers.length,
+        };
+      })
+    );
+
+    // Sort by follower count (most popular first)
+    return artistsWithFollowers.sort((a, b) => b.followerCount - a.followerCount);
+  },
+});

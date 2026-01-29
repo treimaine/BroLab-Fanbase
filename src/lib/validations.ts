@@ -8,7 +8,7 @@ export const ALLOWED_VIDEO_TYPES = ["video/mp4"] as const;
 
 // Max file sizes in bytes
 export const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 50MB
-export const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
+export const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 500MB
 
 export type FileType = "music" | "video";
 

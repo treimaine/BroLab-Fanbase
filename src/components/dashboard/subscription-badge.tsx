@@ -24,7 +24,6 @@ export function SubscriptionBadge() {
 
   const planColors = {
     free: "bg-gray-500",
-    pro: "bg-blue-500",
     premium: "bg-purple-500",
   };
 
@@ -77,7 +76,7 @@ export function SubscriptionBadge() {
 
         {subscription.plan === "free" && (
           <Button className="w-full" variant="default">
-            Upgrade to Pro
+            Upgrade to Premium - $19.99/month
           </Button>
         )}
       </CardContent>

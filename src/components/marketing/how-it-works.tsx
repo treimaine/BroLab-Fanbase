@@ -48,7 +48,7 @@ export function HowItWorks() {
             variants={fadeInUp}
             className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
           >
-            Simple by <span className="italic text-muted-foreground">design.</span>
+            Simple by <span className="italic text-primary">design.</span>
           </motion.h2>
         </div>
 

@@ -16,6 +16,10 @@ export const RESERVED_SLUGS = [
   "terms",
   "privacy",
   "contact",
+  "explore",
+  "features",
+  "pricing",
+  "docs",
 ] as const;
 
 export type ReservedSlug = (typeof RESERVED_SLUGS)[number];

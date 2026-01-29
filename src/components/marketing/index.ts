@@ -1,3 +1,4 @@
+export { ArtistCard } from "./artist-card";
 export { ExploreArtistsCta } from "./explore-artists-cta";
 export { Faq } from "./faq";
 export { FeatureGrid } from "./feature-grid";

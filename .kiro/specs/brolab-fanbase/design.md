@@ -593,7 +593,7 @@ interface PlayerState {
 ### Upload Limits
 
 - Audio: mp3, wav (≤ 50MB)
-- Video: mp4 (≤ 200MB)
+- Video: mp4 (≤ 500MB)
 
 ## Stripe Integration (Planned)
 

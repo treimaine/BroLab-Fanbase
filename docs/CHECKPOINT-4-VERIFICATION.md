@@ -301,7 +301,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 - Production webhooks need public URL (Vercel deployment)
 
 ### ⚠️ File Storage
-- MVP uses Convex File Storage (50MB audio, 200MB video limits)
+- MVP uses Convex File Storage (50MB audio, 500MB video limits)
 - For production scale, consider migrating to Cloudflare R2
 
 ### ⚠️ Stripe Test Mode

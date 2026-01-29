@@ -59,7 +59,7 @@ export function UseCases() {
           >
             <h2 className="font-serif text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               Monetize your <br />
-              <span className="text-muted-foreground/60 italic">creative universe.</span>
+              <span className="italic text-primary">creative universe.</span>
             </h2>
             <p className="mt-8 max-w-lg text-xl text-muted-foreground">
               One platform for everything you create. No hidden fees, no complex setups—just your work and your fans.

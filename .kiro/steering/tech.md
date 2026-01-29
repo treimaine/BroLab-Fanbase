@@ -118,7 +118,7 @@ NEXT_PUBLIC_URL=http://localhost:3000
 - /me → redirige vers /me/[username]
 
 ### File Upload (Convex Storage)
-1. Client: validation type/taille (audio ≤50MB, video ≤200MB)
+1. Client: validation type/taille (audio ≤50MB, video ≤500MB)
 2. Request upload URL via Convex mutation: `files.generateUploadUrl`
 3. Upload fichier vers URL via fetch POST
 4. Receive `storageId` from response

@@ -97,6 +97,9 @@ export const getFollowedArtistsFeed = query({
  * Requirements: R-FEED-1.3 - Sort desc by createdAt/publishedAt
  * Requirements: R-FEED-1.4 - Pagination (cursor/limit)
  *
+ * OPTIMIZED: Eliminates N+1 pattern by batching artist fetches and using parallel queries.
+ * Performance: O(N + M) instead of O(N × M) where N = followed artists, M = total products
+ *
  * Returns paginated public products from all artists the current user follows.
  * Products are sorted by creation date descending (newest first).
  *
@@ -139,37 +142,52 @@ export const getForCurrentUser = query({
       return { items: [], nextCursor: null };
     }
 
-    // Fetch public products for each followed artist
-    const feedItems = [];
+    // OPTIMIZATION 1: Batch fetch all artists in parallel (eliminates N sequential gets)
+    const artistIds = follows.map((f) => f.artistId);
+    const artistsPromises = artistIds.map((id) => ctx.db.get(id));
+    const artistsResults = await Promise.all(artistsPromises);
+    
+    // Create artist lookup map for O(1) access
+    const artistsMap = new Map();
+    artistsResults.forEach((artist) => {
+      if (artist) {
+        artistsMap.set(artist._id, artist);
+      }
+    });
 
-    for (const follow of follows) {
-      // Get the artist
-      const artist = await ctx.db.get(follow.artistId);
+    // OPTIMIZATION 2: Fetch products for all artists in parallel (eliminates N sequential queries)
+    const productsPromises = artistIds.map((artistId) =>
+      ctx.db
+        .query("products")
+        .withIndex("by_artist", (q) => q.eq("artistId", artistId))
+        .collect()
+    );
+    const productsResults = await Promise.all(productsPromises);
+
+    // OPTIMIZATION 3: Flatten and filter products, then enrich with artist data
+    const feedItems = [];
+    
+    for (let i = 0; i < productsResults.length; i++) {
+      const products = productsResults[i];
+      const artistId = artistIds[i];
+      const artist = artistsMap.get(artistId);
+      
       if (!artist) continue;
 
-      // Get public products for this artist
-      const products = await ctx.db
-        .query("products")
-        .withIndex("by_artist", (q) => q.eq("artistId", follow.artistId))
-        .collect();
-
-      // Filter to only public products
-      const publicProducts = products.filter(
-        (product) => product.visibility === "public"
-      );
-
-      // Add artist info to each product
-      for (const product of publicProducts) {
-        feedItems.push({
-          ...product,
-          artist: {
-            _id: artist._id,
-            displayName: artist.displayName,
-            artistSlug: artist.artistSlug,
-            avatarUrl: artist.avatarUrl,
-            coverUrl: artist.coverUrl,
-          },
-        });
+      // Filter to only public products and add artist info
+      for (const product of products) {
+        if (product.visibility === "public") {
+          feedItems.push({
+            ...product,
+            artist: {
+              _id: artist._id,
+              displayName: artist.displayName,
+              artistSlug: artist.artistSlug,
+              avatarUrl: artist.avatarUrl,
+              coverUrl: artist.coverUrl,
+            },
+          });
+        }
       }
     }
 

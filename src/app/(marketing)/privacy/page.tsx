@@ -288,7 +288,7 @@ export default function PrivacyPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xl">📍</span>
-                <span>BroLab Entertainment, [Address]</span>
+                <span>BroLab Entertainment, Fr</span>
               </div>
             </div>
           </section>

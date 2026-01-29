@@ -136,7 +136,7 @@ function getTypeDescription(type: "music" | "video" | undefined): string {
     return "Supported: MP3, WAV (max 50MB)";
   }
   if (type === "video") {
-    return "Supported: MP4 (max 200MB)";
+    return "Supported: MP4 (max 500MB)";
   }
   return "Choose the type of content";
 }

@@ -61,6 +61,9 @@ import { mutation, query } from "./_generated/server";
  * Get all purchases for the current fan user
  * Requirements: 10.1 - Display purchase history
  * 
+ * OPTIMIZED: Eliminates nested Promise.all pattern by batching all fetches at once.
+ * Performance: O(N + M + P) instead of O(N × M × P) where N = orders, M = items, P = products/artists
+ * 
  * Returns orders with their items, including product details
  */
 export const getMyPurchases = query({
@@ -88,49 +91,94 @@ export const getMyPurchases = query({
       .order("desc")
       .collect();
 
-    // For each order, get its items with product details
-    const purchasesWithDetails = await Promise.all(
-      orders.map(async (order) => {
-        const items = await ctx.db
-          .query("orderItems")
-          .withIndex("by_order", (q) => q.eq("orderId", order._id))
-          .collect();
+    if (orders.length === 0) {
+      return [];
+    }
 
-        // Get product and artist details for each item
-        const itemsWithDetails = await Promise.all(
-          items.map(async (item) => {
-            const product = await ctx.db.get(item.productId);
-            if (!product) return null;
-
-            const artist = await ctx.db.get(product.artistId);
-            if (!artist) return null;
-
-            return {
-              ...item,
-              product: {
-                _id: product._id,
-                title: product.title,
-                type: product.type,
-                coverImageUrl: product.coverImageUrl,
-              },
-              artist: {
-                _id: artist._id,
-                displayName: artist.displayName,
-                artistSlug: artist.artistSlug,
-              },
-            };
-          })
-        );
-
-        // Filter out null items
-        const validItems = itemsWithDetails.filter((item) => item !== null);
-
-        return {
-          order,
-          items: validItems,
-        };
-      })
+    // OPTIMIZATION 1: Batch fetch all order items in parallel (eliminates N sequential queries)
+    const orderItemsPromises = orders.map((order) =>
+      ctx.db
+        .query("orderItems")
+        .withIndex("by_order", (q) => q.eq("orderId", order._id))
+        .collect()
     );
+    const orderItemsResults = await Promise.all(orderItemsPromises);
+
+    // Create order → items mapping
+    const orderItemsMap = new Map();
+    orders.forEach((order, index) => {
+      orderItemsMap.set(order._id, orderItemsResults[index]);
+    });
+
+    // OPTIMIZATION 2: Collect all unique product IDs and artist IDs
+    const allItems = orderItemsResults.flat();
+    const uniqueProductIds = [...new Set(allItems.map((item) => item.productId))];
+
+    // OPTIMIZATION 3: Batch fetch all products in parallel
+    const productsPromises = uniqueProductIds.map((id) => ctx.db.get(id));
+    const productsResults = await Promise.all(productsPromises);
+
+    // Create product lookup map
+    const productsMap = new Map();
+    productsResults.forEach((product) => {
+      if (product) {
+        productsMap.set(product._id, product);
+      }
+    });
+
+    // OPTIMIZATION 4: Collect unique artist IDs and batch fetch
+    const uniqueArtistIds = [
+      ...new Set(
+        productsResults
+          .filter((p): p is NonNullable<typeof p> => p !== null)
+          .map((p) => p.artistId)
+      ),
+    ];
+    const artistsPromises = uniqueArtistIds.map((id) => ctx.db.get(id));
+    const artistsResults = await Promise.all(artistsPromises);
+
+    // Create artist lookup map
+    const artistsMap = new Map();
+    artistsResults.forEach((artist) => {
+      if (artist) {
+        artistsMap.set(artist._id, artist);
+      }
+    });
+
+    // OPTIMIZATION 5: Assemble results using lookup maps (O(1) access)
+    const purchasesWithDetails = orders.map((order) => {
+      const items = orderItemsMap.get(order._id) || [];
+
+      const itemsWithDetails = items
+        .map((item) => {
+          const product = productsMap.get(item.productId);
+          if (!product) return null;
+
+          const artist = artistsMap.get(product.artistId);
+          if (!artist) return null;
+
+          return {
+            ...item,
+            product: {
+              _id: product._id,
+              title: product.title,
+              type: product.type,
+              coverImageUrl: product.coverImageUrl,
+            },
+            artist: {
+              _id: artist._id,
+              displayName: artist.displayName,
+              artistSlug: artist.artistSlug,
+            },
+          };
+        })
+        .filter((item) => item !== null);
+
+      return {
+        order,
+        items: itemsWithDetails,
+      };
+    });
 
     return purchasesWithDetails;
   },

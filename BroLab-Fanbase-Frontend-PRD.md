@@ -134,7 +134,7 @@ BroLab Fanbase is a mobile-first platform enabling artists to create their perso
 **Products Page (`/dashboard/products`)**
 - `ProductItem` list - Cover, title, type, price, visibility
 - `AddProductDialog` - Form with file upload
-- File validation: audio ≤50MB, video ≤200MB
+- File validation: audio ≤50MB, video ≤500MB
 - Upload progress indicator
 
 **Billing Page (`/dashboard/billing`)**
@@ -251,7 +251,7 @@ const isFanRoute = ["/me/(.*)"];
 const ALLOWED_AUDIO = ["audio/mpeg", "audio/wav"];
 const ALLOWED_VIDEO = ["video/mp4"];
 const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 50MB
-const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 500MB
 ```
 
 ## Reserved Slugs

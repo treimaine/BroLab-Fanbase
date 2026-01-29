@@ -1,35 +1,67 @@
-import { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Terms of Service | BroLab Fanbase",
-  description: "Read the terms and conditions for using BroLab Fanbase platform.",
+import type { Variants } from "framer-motion";
+import { motion } from "framer-motion";
+import { AlertTriangle, Lock, Mail, MapPin, Shield } from "lucide-react";
+
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] as any },
+  },
 };
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      {/* Dynamic Background - matching landing page */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div className="absolute -left-[10%] top-[10%] h-[40%] w-[40%] rounded-full bg-primary/10 blur-[120px]" />
+        <div className="absolute -right-[10%] bottom-[20%] h-[35%] w-[35%] rounded-full bg-purple-500/5 blur-[100px]" />
+        <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
+      </div>
+
       {/* Trust signal banner */}
-      <div className="border-b border-border bg-muted/30">
+      <div className="relative z-10 border-b border-border bg-muted/30 backdrop-blur-sm">
         <div className="mx-auto max-w-4xl px-4 py-3 md:px-6">
-          <p className="text-center text-sm text-muted-foreground">
-            🔒 Legal document • Last updated: January 21, 2026
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center justify-center gap-2 text-center text-sm text-muted-foreground"
+          >
+            <Lock className="h-4 w-4 text-primary" />
+            Legal document • Last updated: January 21, 2026
+          </motion.p>
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-12 md:px-6 lg:py-20">
+      <div className="relative z-10 mx-auto max-w-4xl px-4 py-12 md:px-6 lg:py-20">
         {/* Hero section with clear hierarchy */}
-        <div className="mb-12 space-y-4 text-center">
+        <motion.div
+          variants={fadeInUp}
+          initial="hidden"
+          animate="visible"
+          className="mb-12 space-y-4 text-center"
+        >
           <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
             Terms of Service
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground md:text-xl">
             Please read these terms carefully before using BroLab Fanbase. By accessing our platform, you agree to be bound by these terms.
           </p>
-        </div>
+        </motion.div>
 
         {/* Quick navigation - reduce cognitive load */}
-        <nav className="mb-12 rounded-xl border border-border bg-card p-6">
+        <motion.nav
+          variants={fadeInUp}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.2 }}
+          className="mb-12 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5"
+        >
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">
             Quick Navigation
           </h2>
@@ -41,27 +73,47 @@ export default function TermsPage() {
             <a href="#prohibited" className="text-primary transition-colors hover:underline">6. Prohibited Activities</a>
             <a href="#termination" className="text-primary transition-colors hover:underline">8. Termination</a>
           </div>
-        </nav>
+        </motion.nav>
         
         <div className="space-y-12">
           {/* Section 1: Acceptance - Chunked for readability */}
-          <section id="acceptance" className="scroll-mt-20 space-y-4 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.3 }}
+            id="acceptance"
+            className="scroll-mt-20 space-y-4 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">1. Acceptance of Terms</h2>
             <p className="text-base leading-relaxed">
               By accessing or using BroLab Fanbase (&quot;the Platform&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, do not use the Platform.
             </p>
-          </section>
+          </motion.section>
 
           {/* Section 2: Eligibility */}
-          <section className="scroll-mt-20 space-y-4 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.35 }}
+            className="scroll-mt-20 space-y-4 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">2. Eligibility</h2>
             <p className="text-base leading-relaxed">
               You must be at least 13 years old to use the Platform. If you are under 18, you must have parental or guardian consent. By using the Platform, you represent that you meet these requirements.
             </p>
-          </section>
+          </motion.section>
 
           {/* Section 3: User Accounts - Visual hierarchy with cards */}
-          <section id="accounts" className="scroll-mt-20 space-y-6 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.4 }}
+            id="accounts"
+            className="scroll-mt-20 space-y-6 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">3. User Accounts</h2>
             
             <div className="space-y-6">
@@ -93,10 +145,17 @@ export default function TermsPage() {
                 </div>
               </div>
             </div>
-          </section>
+          </motion.section>
 
           {/* Section 4: Content - Chunked with visual separation */}
-          <section id="content" className="scroll-mt-20 space-y-6 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.45 }}
+            id="content"
+            className="scroll-mt-20 space-y-6 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">4. Content</h2>
             
             <div className="space-y-6">
@@ -141,17 +200,22 @@ export default function TermsPage() {
                 </p>
               </div>
             </div>
-          </section>
+          </motion.section>
 
           {/* Section 5: Payments - Trust signals with visual cards */}
-          <section id="payments" className="scroll-mt-20 space-y-6 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.5 }}
+            id="payments"
+            className="scroll-mt-20 space-y-6 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">5. Payments and Transactions</h2>
             
-            <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <p className="flex items-center gap-2 text-sm text-foreground">
-                <span className="text-lg">🔒</span>
-                <span className="font-medium">Secure payments powered by Stripe</span>
-              </p>
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <Shield className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">Secure payments powered by Stripe</span>
             </div>
 
             <div className="space-y-6">
@@ -176,62 +240,91 @@ export default function TermsPage() {
                 </p>
               </div>
             </div>
-          </section>
+          </motion.section>
 
           {/* Section 6: Prohibited Activities - Clear visual warnings */}
-          <section id="prohibited" className="scroll-mt-20 space-y-4 rounded-xl border border-destructive/20 bg-destructive/5 p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-foreground md:text-3xl">6. Prohibited Activities</h2>
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.55 }}
+            id="prohibited"
+            className="scroll-mt-20 space-y-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-6 backdrop-blur-xl shadow-lg shadow-destructive/5 md:p-8"
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+              <h2 className="text-2xl font-bold text-foreground md:text-3xl">6. Prohibited Activities</h2>
+            </div>
             <p className="text-base leading-relaxed">You agree not to:</p>
             <ul className="space-y-3 rounded-lg border border-border bg-background p-4">
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Use the Platform for any illegal purpose</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Impersonate others or provide false information</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Attempt to gain unauthorized access to the Platform</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Interfere with or disrupt the Platform&apos;s operation</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Use automated systems (bots) without permission</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Scrape or harvest data from the Platform</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 text-destructive">⚠️</span>
+                <AlertTriangle className="mt-1 h-4 w-4 text-destructive" />
                 <span>Circumvent payment systems or fees</span>
               </li>
             </ul>
-          </section>
+          </motion.section>
 
           {/* Section 7: Intellectual Property */}
-          <section className="scroll-mt-20 space-y-4 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.6 }}
+            className="scroll-mt-20 space-y-4 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">7. Intellectual Property</h2>
             <p className="text-base leading-relaxed">
               The Platform, including its design, features, and content (excluding Your Content), is owned by BroLab Entertainment and protected by copyright, trademark, and other intellectual property laws.
             </p>
-          </section>
+          </motion.section>
 
           {/* Section 8: Termination */}
-          <section id="termination" className="scroll-mt-20 space-y-4 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.65 }}
+            id="termination"
+            className="scroll-mt-20 space-y-4 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">8. Termination</h2>
             <p className="text-base leading-relaxed">
               We may suspend or terminate your account at any time for violation of these Terms or for any other reason. You may delete your account at any time through your account settings.
             </p>
-          </section>
+          </motion.section>
 
           {/* Legal sections grouped for better scanning */}
-          <div className="space-y-6 rounded-xl border border-border bg-card p-6 md:p-8">
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.7 }}
+            className="space-y-6 rounded-2xl border border-border bg-card/50 p-6 backdrop-blur-xl shadow-lg shadow-primary/5 md:p-8"
+          >
             <section className="scroll-mt-20 space-y-3">
               <h2 className="text-2xl font-bold text-foreground md:text-3xl">9. Disclaimers</h2>
               <p className="text-base leading-relaxed">
@@ -283,27 +376,33 @@ export default function TermsPage() {
                 </p>
               </section>
             </div>
-          </div>
+          </motion.div>
 
           {/* Contact section - Trust signal with clear CTA */}
-          <section className="scroll-mt-20 rounded-xl border border-primary/20 bg-primary/5 p-6 md:p-8">
+          <motion.section
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.75 }}
+            className="scroll-mt-20 rounded-2xl border border-primary/20 bg-primary/5 p-6 backdrop-blur-xl shadow-lg shadow-primary/10 md:p-8"
+          >
             <h2 className="mb-4 text-2xl font-bold text-foreground md:text-3xl">15. Contact Information</h2>
             <p className="mb-4 text-base leading-relaxed">
               For questions about these Terms, contact us:
             </p>
             <div className="space-y-3 rounded-lg border border-border bg-background p-4">
               <div className="flex items-center gap-3">
-                <span className="text-xl">📧</span>
+                <Mail className="h-5 w-5 text-primary" />
                 <a href="mailto:legal@brolabentertainment.com" className="font-medium text-primary transition-colors hover:underline">
                   legal@brolabentertainment.com
                 </a>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xl">📍</span>
-                <span>BroLab Entertainment, [Address]</span>
+                <MapPin className="h-5 w-5 text-primary" />
+                <span>BroLab Entertainment, Fr</span>
               </div>
             </div>
-          </section>
+          </motion.section>
         </div>
       </div>
     </div>

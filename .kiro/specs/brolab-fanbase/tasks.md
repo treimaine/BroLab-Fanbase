@@ -459,7 +459,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - [x] 13.3 Créer la validation fichiers (client-side)
     - src/lib/validations.ts: validateFileUpload()
     - Types autorisés: mp3, wav (audio), mp4 (video)
-    - Tailles max: audio <= 50MB, video <= 200MB
+    - Tailles max: audio <= 50MB, video <= 500MB
     - Retourner erreur claire si invalide
     - _Requirements: 16.4, Upload Limits (MVP)_
 

@@ -84,7 +84,7 @@ BroLab Fanbase est une plateforme mobile-first permettant aux artistes de créer
 #### Products
 - Upload produits digitaux (music/video)
 - Champs: title, description, type, price, coverImage
-- File upload vers Convex Storage (≤50MB audio, ≤200MB video)
+- File upload vers Convex Storage (≤50MB audio, ≤500MB video)
 - Visibility: public/private
 - Preview et lecture dans player global
 - Delete avec confirmation

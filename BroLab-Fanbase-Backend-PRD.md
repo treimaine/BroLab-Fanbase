@@ -593,7 +593,7 @@ await ctx.runMutation(internal.stripe.markProcessed, { eventId });
 ```typescript
 // Before upload:
 // 1. Check file type (mp3, wav, mp4)
-// 2. Check file size (audio ≤50MB, video ≤200MB)
+// 2. Check file size (audio ≤50MB, video ≤500MB)
 // 3. Show error if invalid
 ```
 

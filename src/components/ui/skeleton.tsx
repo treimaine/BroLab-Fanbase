@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function Skeleton({
   className,
@@ -12,4 +12,12 @@ function Skeleton({
   )
 }
 
-export { Skeleton }
+export { Skeleton };
+
+// Re-export specialized skeletons
+export { DashboardSkeleton } from "./dashboard-skeleton";
+export { ErrorBoundary } from "./error-boundary";
+export { FeedSkeleton } from "./feed-skeleton";
+export { HubSkeleton } from "./hub-skeleton";
+export { SuspenseWrapper } from "./suspense-wrapper";
+

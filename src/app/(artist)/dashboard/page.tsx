@@ -1,43 +1,32 @@
 "use client";
 
-import { CreateContentCard } from "@/components/dashboard/create-content-card";
-import { SetupChecklist } from "@/components/dashboard/setup-checklist";
-import { StatsCard } from "@/components/dashboard/stats-card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency } from "@/lib/utils";
-import { useQuery } from "convex/react";
-import { Calendar, DollarSign, ExternalLink, Users } from "lucide-react";
-import Link from "next/link";
-import { api } from "../../../../convex/_generated/api";
-
 /**
- * Artist Dashboard Overview Page
+ * Artist Dashboard Overview Page (Refactored with Suspense)
  * Requirements: 4.1-4.4, R-ART-DASH-STAT-1, R-ART-DASH-STAT-2, R-ART-DASH-STAT-3
  * 
- * - 3 StatsCards: Followers (real), Revenue (real), Events (real)
- * - SetupChecklist with progress
- * - CreateContentCard for quick actions
- * - "View Public Hub" link
+ * UX Improvements:
+ * - Suspense boundaries for stats loading
+ * - Reduced cognitive complexity via component extraction
+ * - Better loading states with dedicated skeletons
  */
+
+import { api } from "@/../convex/_generated/api";
+import { CreateContentCard } from "@/components/dashboard/create-content-card";
+import { SetupChecklist } from "@/components/dashboard/setup-checklist";
+import { Button } from "@/components/ui/button";
+import { DashboardSkeleton, SuspenseWrapper } from "@/components/ui/skeleton";
+import { useQuery } from "convex/react";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { DashboardStats } from "./components/dashboard-stats";
+
 export default function DashboardPage() {
   const artist = useQuery(api.artists.getCurrentArtist);
   const products = useQuery(api.products.getCurrentArtistProducts);
-  
-  // Real stats queries (R-ART-DASH-STAT-1, R-ART-DASH-STAT-2, R-ART-DASH-STAT-3)
-  const followersCount = useQuery(
-    api.follows.countByArtist,
-    artist ? { artistId: artist._id } : "skip"
-  );
-  const billingSummary = useQuery(api.artistBilling.getSummary);
-  const upcomingEventsCount = useQuery(
-    api.events.countUpcomingByArtist,
-    artist ? { artistId: artist._id } : "skip"
-  );
 
   const isLoading = artist === undefined || products === undefined;
 
-  // Calculate setup checklist items based on artist data
+  // Calculate setup checklist items
   const checklistItems = [
     {
       id: "profile",
@@ -72,7 +61,7 @@ export default function DashboardPage() {
   ];
 
   if (isLoading) {
-    return <DashboardSkeleton />;
+    return <DashboardSkeleton variant="overview" />;
   }
 
   return (
@@ -83,9 +72,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
             Welcome back{artist?.displayName ? `, ${artist.displayName}` : ""}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Here&apos;s what&apos;s happening with your hub
-          </p>
+          <p className="text-muted-foreground mt-1">Here&apos;s what&apos;s happening with your hub</p>
         </div>
         {artist?.artistSlug && (
           <Link href={`/${artist.artistSlug}`} target="_blank">
@@ -97,43 +84,20 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Stats Grid - Real Data (R-ART-DASH-STAT-1, R-ART-DASH-STAT-2, R-ART-DASH-STAT-3, R-ART-DASH-STAT-4) */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Followers stat with loading state */}
-        {followersCount === undefined ? (
-          <Skeleton className="h-28 rounded-xl" />
-        ) : (
-          <StatsCard
-            title="Followers"
-            value={followersCount.toString()}
-            change={{ value: 0, type: "neutral" }}
-            icon={Users}
-          />
-        )}
-
-        {/* Revenue stat with loading state */}
-        {billingSummary === undefined ? (
-          <Skeleton className="h-28 rounded-xl" />
-        ) : (
-          <StatsCard
-            title="Revenue"
-            value={formatCurrency(billingSummary.availableBalance)}
-            change={{ value: 0, type: "neutral" }}
-            icon={DollarSign}
-          />
-        )}
-
-        {/* Upcoming Events stat with loading state */}
-        {upcomingEventsCount === undefined ? (
-          <Skeleton className="h-28 rounded-xl" />
-        ) : (
-          <StatsCard
-            title="Upcoming Events"
-            value={upcomingEventsCount.toString()}
-            icon={Calendar}
-          />
-        )}
-      </div>
+      {/* Stats Grid with Suspense */}
+      {artist && (
+        <SuspenseWrapper
+          fallback={
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-28 rounded-xl animate-pulse bg-primary/10" />
+              ))}
+            </div>
+          }
+        >
+          <DashboardStats artistId={artist._id} />
+        </SuspenseWrapper>
+      )}
 
       {/* Setup & Actions Grid */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -153,34 +117,6 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
-    </div>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header skeleton */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        <Skeleton className="h-10 w-36" />
-      </div>
-
-      {/* Stats skeleton */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-28 rounded-xl" />
-        ))}
-      </div>
-
-      {/* Cards skeleton */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-64 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
     </div>
   );
 }

@@ -11,31 +11,24 @@
  * 
  * 1. Subscription data is stored in Clerk's publicMetadata.subscription
  * 2. The subscription object contains: { plan, status, currentPeriodEnd }
- * 3. Plans: "free", "pro", "premium"
+ * 3. Plans: "free", "premium"
  * 4. Status: "active", "canceled", "past_due", "trialing", "none"
  * 
  * ## Feature Limits by Plan
  * 
  * ### Free Plan
- * - Max 3 products
+ * - Max 5 products
  * - Max 5 events
  * - Max 5 custom links
  * - No video uploads (audio only)
- * - Max file size: 10MB
- * 
- * ### Pro Plan
- * - Max 20 products
- * - Max 20 events
- * - Max 15 custom links
- * - Video uploads enabled
  * - Max file size: 50MB
  * 
- * ### Premium Plan
+ * ### Premium Plan ($19.99/month)
  * - Unlimited products
  * - Unlimited events
  * - Unlimited custom links
  * - Video uploads enabled
- * - Max file size: 200MB
+ * - Max file size: 500MB
  * 
  * ## Usage in Mutations
  * 
@@ -67,7 +60,7 @@ import { MutationCtx, QueryCtx, query } from "./_generated/server";
 /**
  * Subscription plans
  */
-export type SubscriptionPlan = "free" | "pro" | "premium";
+export type SubscriptionPlan = "free" | "premium";
 
 /**
  * Subscription status from Clerk
@@ -85,17 +78,10 @@ export interface SubscriptionStatus {
  */
 export const PLAN_LIMITS = {
   free: {
-    maxProducts: 3,
+    maxProducts: 5,
     maxEvents: 5,
     maxLinks: 5,
     canUploadVideo: false,
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-  },
-  pro: {
-    maxProducts: 20,
-    maxEvents: 20,
-    maxLinks: 15,
-    canUploadVideo: true,
     maxFileSize: 50 * 1024 * 1024, // 50MB
   },
   premium: {
@@ -103,7 +89,7 @@ export const PLAN_LIMITS = {
     maxEvents: Infinity,
     maxLinks: Infinity,
     canUploadVideo: true,
-    maxFileSize: 200 * 1024 * 1024, // 200MB
+    maxFileSize: 500 * 1024 * 1024, // 500MB
   },
 } as const;
 
@@ -156,7 +142,7 @@ export async function getSubscriptionStatus(
  * Requirements: R-CLERK-SUB-1.2 - Server-side gating
  * 
  * @param ctx - Query or Mutation context
- * @returns true if user has active subscription (pro or premium)
+ * @returns true if user has active premium subscription
  */
 export async function hasActiveSubscription(
   ctx: QueryCtx | MutationCtx
@@ -167,8 +153,8 @@ export async function hasActiveSubscription(
     return false;
   }
 
-  // Active subscription = pro or premium plan with active/trialing status
-  const isActivePlan = subscription.plan === "pro" || subscription.plan === "premium";
+  // Active subscription = premium plan with active/trialing status
+  const isActivePlan = subscription.plan === "premium";
   const isActiveStatus = subscription.status === "active" || subscription.status === "trialing";
 
   return isActivePlan && isActiveStatus;

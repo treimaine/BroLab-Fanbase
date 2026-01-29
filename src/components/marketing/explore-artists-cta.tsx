@@ -26,7 +26,7 @@ export function ExploreArtistsCta() {
             
             <h2 className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
               Ready to meet your <br />
-              <span className="italic text-muted-foreground">superfans?</span>
+              <span className="italic text-primary">superfans?</span>
             </h2>
             
             <p className="mt-8 text-xl text-muted-foreground">
