@@ -1739,7 +1739,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.1 API Routes (Clerk Billing Integration)
 
-- [ ] 8.1.1 Create checkout route
+- [x] 8.1.1 Create checkout route
   - File: `src/app/api/billing/checkout/route.ts`
   - Handler: GET request
   - Logic:
@@ -1750,7 +1750,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Error handling: 401 if not authenticated, 403 if not artist
   - _Requirements: R-ART-SUB-1.1, R-ART-SUB-1.2_
 
-- [ ] 8.1.2 Create manage route
+- [x] 8.1.2 Create manage route
   - File: `src/app/api/billing/manage/route.ts`
   - Handler: GET request
   - Logic:
@@ -1761,7 +1761,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Error handling: 401 if not authenticated, 403 if not artist
   - _Requirements: R-ART-SUB-2.1, R-ART-SUB-2.2_
 
-- [ ] 8.1.3 Handle return URLs
+- [x] 8.1.3 Handle return URLs
   - Success URL: `/dashboard/billing?success=true`
   - Cancel URL: `/dashboard/billing?canceled=true`
   - Display toast notifications based on URL params
@@ -1770,14 +1770,14 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.2 UI Components Update
 
-- [ ] 8.2.1 Update SubscriptionBadge component
+- [x] 8.2.1 Update SubscriptionBadge component
   - File: `src/components/dashboard/subscription-badge.tsx`
   - Wire "Upgrade to Premium" button to `/api/billing/checkout`
   - Add loading state during redirect
   - Track `upgrade_click` event on button click
   - _Requirements: R-ART-SUB-1.1, R-ART-SUB-6.1_
 
-- [ ] 8.2.2 Create SubscriptionCard component
+- [x] 8.2.2 Create SubscriptionCard component
   - File: `src/components/dashboard/subscription-card.tsx`
   - Display: Current plan badge, description, next billing date (if Premium)
   - States: Free, Premium (Active), Premium (Trialing), Premium (Canceling), Premium (Past Due)
@@ -1789,14 +1789,14 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Track `manage_click` event on manage button click
   - _Requirements: R-ART-SUB-4.1, R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.2_
 
-- [ ] 8.2.3 Create UsageStatsCard component
+- [x] 8.2.3 Create UsageStatsCard component
   - File: `src/components/dashboard/usage-stats-card.tsx`
   - Display: Products, Events, Links, Video Uploads (current/limit)
   - Progress bars: Green (safe), Yellow (80%+), Red (at limit)
   - Visual treatment: Lock icon for disabled features, check icon for enabled
   - _Requirements: R-ART-SUB-4.6_
 
-- [ ] 8.2.4 Update Billing page layout
+- [x] 8.2.4 Update Billing page layout
   - File: `src/app/(artist)/dashboard/billing/page.tsx`
   - Add Section A: Subscription (above existing Earnings section)
   - Layout: SubscriptionCard + UsageStatsCard
