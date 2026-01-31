@@ -23,12 +23,12 @@ import { Calendar, Music } from "lucide-react";
 import { useCallback } from "react";
 
 interface HubContentProps {
-  artistId: Id<"artists">;
-  artistName: string;
-  artistSlug: string;
+  readonly artistId: Id<"artists">;
+  readonly artistName: string;
+  readonly artistSlug: string;
 }
 
-export function HubContent({ artistId, artistName, artistSlug }: HubContentProps) {
+export function HubContent({ artistId, artistName, artistSlug }: Readonly<HubContentProps>) {
   const products = useQuery(api.products.getPublicByArtist, { artistId });
   const events = useQuery(api.events.getByArtist, { artistId });
 

@@ -19,10 +19,10 @@ import { useQuery } from "convex/react";
 import { Calendar, DollarSign, Users } from "lucide-react";
 
 interface DashboardStatsProps {
-  artistId: Id<"artists">;
+  readonly artistId: Id<"artists">;
 }
 
-export function DashboardStats({ artistId }: DashboardStatsProps) {
+export function DashboardStats({ artistId }: Readonly<DashboardStatsProps>) {
   const followersCount = useQuery(api.follows.countByArtist, { artistId });
   const billingSummary = useQuery(api.artistBilling.getSummary);
   const upcomingEventsCount = useQuery(api.events.countUpcomingByArtist, { artistId });

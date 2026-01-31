@@ -677,7 +677,95 @@ THE Landing page SHALL aim for these conversion metrics:
 
 ---
 
-## Artist subscriptions — Clerk Billing (source of truth)
+## Artist Subscription (Clerk Billing) — Platform Revenue Model
+
+### Business Context
+- **Platform Revenue**: Artist subscriptions (Clerk Billing: Free/Premium)
+- **Fan Payments**: Direct to artists via Stripe Connect (0% platform fee)
+- **Subscription Plans**: Free (limited) / Premium ($19.99/month, unlimited)
+
+### R-ART-SUB-1: Upgrade Flow (Free → Premium)
+THE System SHALL provide a real Clerk Billing checkout flow for artists to upgrade from Free to Premium:
+
+- **R-ART-SUB-1.1**: WHEN an artist clicks "Upgrade to Premium", THE System SHALL redirect to Clerk Billing checkout (not mock/placeholder)
+- **R-ART-SUB-1.2**: THE checkout SHALL be handled by Clerk Billing (hosted UI)
+- **R-ART-SUB-1.3**: AFTER successful payment, Clerk SHALL automatically update `publicMetadata.subscription` with plan="premium", status="active"
+- **R-ART-SUB-1.4**: THE System SHALL display success confirmation and updated plan status immediately after redirect back
+
+### R-ART-SUB-2: Manage/Cancel Flow
+THE System SHALL provide a real Clerk Billing portal for subscription management:
+
+- **R-ART-SUB-2.1**: WHEN an artist clicks "Manage Subscription", THE System SHALL redirect to Clerk Billing portal (not mock/placeholder)
+- **R-ART-SUB-2.2**: THE portal SHALL allow: cancel subscription, update payment method, view invoices
+- **R-ART-SUB-2.3**: WHEN an artist cancels, Clerk SHALL update `publicMetadata.subscription.status` to "canceled"
+- **R-ART-SUB-2.4**: THE canceled subscription SHALL remain active until `currentPeriodEnd` (no immediate downgrade)
+
+### R-ART-SUB-3: Source of Truth (Clerk Metadata)
+THE System SHALL use Clerk `publicMetadata.subscription` as the single source of truth:
+
+- **R-ART-SUB-3.1**: Subscription data SHALL be stored in Clerk `publicMetadata.subscription` with fields: `{ plan, status, currentPeriodEnd }`
+- **R-ART-SUB-3.2**: Plans: `"free"` (default) | `"premium"`
+- **R-ART-SUB-3.3**: Status: `"none"` (free) | `"active"` (paid) | `"trialing"` (trial) | `"canceled"` (canceling) | `"past_due"` (payment failed)
+- **R-ART-SUB-3.4**: Convex queries SHALL read subscription status via `ctx.auth.getUserIdentity().publicMetadata.subscription`
+- **R-ART-SUB-3.5**: Feature limits SHALL be enforced server-side in Convex mutations (not client-side only)
+
+### R-ART-SUB-4: UI Status Display
+THE UI SHALL display subscription status accurately:
+
+- **R-ART-SUB-4.1**: WHEN plan="free" AND status="none", display "Free Plan" with upgrade CTA
+- **R-ART-SUB-4.2**: WHEN plan="premium" AND status="active", display "Premium Plan" with manage CTA
+- **R-ART-SUB-4.3**: WHEN plan="premium" AND status="trialing", display "Premium Plan (Trial)" with trial end date
+- **R-ART-SUB-4.4**: WHEN plan="premium" AND status="canceled", display "Premium Plan (Canceling on [date])" with reactivate option
+- **R-ART-SUB-4.5**: WHEN plan="premium" AND status="past_due", display "Payment Failed" with update payment method CTA
+- **R-ART-SUB-4.6**: THE UI SHALL display usage stats (current/limit) for: products, events, links, storage
+
+### R-ART-SUB-5: Downgrade Policy (Soft-Lock)
+THE System SHALL implement soft-lock downgrade policy (never delete user data):
+
+- **R-ART-SUB-5.1**: WHEN an artist downgrades from Premium to Free, existing content SHALL remain visible (not deleted)
+- **R-ART-SUB-5.2**: IF artist has >5 products after downgrade, THE System SHALL block creation of new products
+- **R-ART-SUB-5.3**: IF artist has >5 events after downgrade, THE System SHALL block creation of new events
+- **R-ART-SUB-5.4**: IF artist has >5 links after downgrade, THE System SHALL block creation of new links
+- **R-ART-SUB-5.5**: IF artist tries to upload video after downgrade, THE System SHALL block upload with error message
+- **R-ART-SUB-5.6**: THE blocking message SHALL include "Upgrade to Premium" CTA with clear explanation
+- **R-ART-SUB-5.7**: Existing items SHALL remain editable (title, description, price, etc.) even if over quota
+
+### R-ART-SUB-6: Tracking Events
+THE System SHALL track subscription-related events for analytics:
+
+- **R-ART-SUB-6.1**: Track `upgrade_click` when artist clicks "Upgrade to Premium"
+- **R-ART-SUB-6.2**: Track `manage_click` when artist clicks "Manage Subscription"
+- **R-ART-SUB-6.3**: Track `upgrade_success` when artist completes checkout (redirect back with success param)
+- **R-ART-SUB-6.4**: Track `cancel_success` when artist cancels subscription (redirect back from portal)
+- **R-ART-SUB-6.5**: Track `limit_hit` when artist hits quota limit (product/event/link/storage)
+- **R-ART-SUB-6.6**: Events SHALL include metadata: `{ plan, status, limitType }` (if applicable)
+
+### R-ART-SUB-7: Feature Limits (Enforcement)
+THE System SHALL enforce these limits server-side in Convex mutations:
+
+**Free Plan Limits:**
+- Max 5 products
+- Max 5 events
+- Max 5 custom links
+- No video uploads (audio only)
+- Max file size: 50MB
+
+**Premium Plan Limits:**
+- Unlimited products
+- Unlimited events
+- Unlimited custom links
+- Video uploads enabled
+- Max file size: 500MB
+
+**Enforcement Rules:**
+- **R-ART-SUB-7.1**: BEFORE creating product/event/link, query current count and check against limit
+- **R-ART-SUB-7.2**: IF limit exceeded, throw error with message: "You've reached the limit for [feature] on your current plan. Upgrade to create more."
+- **R-ART-SUB-7.3**: BEFORE file upload, check: file type (video requires Premium) and file size (50MB Free, 500MB Premium)
+- **R-ART-SUB-7.4**: IF file validation fails, throw error with upgrade CTA
+
+---
+
+## Artist subscriptions — Clerk Billing (source of truth) [DEPRECATED - See R-ART-SUB-* above]
 
 ### R-CLERK-SUB-1 — Subscription gating
 - **R-CLERK-SUB-1.1**: Les subscriptions artistes sont gérées par Clerk Billing (source of truth).

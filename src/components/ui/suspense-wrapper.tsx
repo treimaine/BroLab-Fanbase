@@ -13,10 +13,10 @@ import { Suspense, type ReactNode } from "react";
 import { ErrorBoundary } from "./error-boundary";
 
 interface SuspenseWrapperProps {
-  children: ReactNode;
-  fallback: ReactNode;
-  errorFallback?: ReactNode;
-  onError?: () => void;
+  readonly children: ReactNode;
+  readonly fallback: ReactNode;
+  readonly errorFallback?: ReactNode;
+  readonly onError?: () => void;
 }
 
 /**
@@ -34,7 +34,7 @@ export function SuspenseWrapper({
   fallback,
   errorFallback,
   onError,
-}: SuspenseWrapperProps) {
+}: Readonly<SuspenseWrapperProps>) {
   return (
     <ErrorBoundary fallback={errorFallback} onReset={onError}>
       <Suspense fallback={fallback}>{children}</Suspense>

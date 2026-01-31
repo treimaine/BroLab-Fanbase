@@ -20,7 +20,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface ProfileContentProps {
-  artist: {
+  readonly artist: {
     _id: Id<"artists">;
     displayName: string;
     artistSlug: string;
@@ -30,7 +30,7 @@ interface ProfileContentProps {
   } | null;
 }
 
-export function ProfileContent({ artist }: ProfileContentProps) {
+export function ProfileContent({ artist }: Readonly<ProfileContentProps>) {
   const updateArtist = useMutation(api.artists.update);
 
   const [socials, setSocials] = useState<SocialLink[]>([]);

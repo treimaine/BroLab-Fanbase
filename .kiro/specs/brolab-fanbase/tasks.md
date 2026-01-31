@@ -1720,3 +1720,289 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - **Accessibility:** WCAG 2.1 AA compliance is mandatory
 - **Analytics:** Privacy-first approach (no Google Analytics)
 - **Success criteria:** 3% artist sign-up conversion rate within 30 days
+
+---
+
+## Phase 8 — Artist Subscription (Clerk Billing) — Production Ready
+
+**Context:**
+- Platform revenue = artist subscriptions (Clerk Billing: Free/Premium)
+- Fans pay artists directly via Stripe Connect (0% platform fee)
+- Subscription gating already enforced server-side in Convex via `publicMetadata.subscription`
+- GAP: "Upgrade to Premium" CTA has no handler, no real checkout/portal flow
+
+**Objective:**
+- Wire up real Clerk Billing checkout and portal flows
+- Update UI to display subscription status accurately
+- Implement soft-lock downgrade policy (never delete user data)
+- Add tracking events for analytics
+
+### 8.1 API Routes (Clerk Billing Integration)
+
+- [ ] 8.1.1 Create checkout route
+  - File: `src/app/api/billing/checkout/route.ts`
+  - Handler: GET request
+  - Logic:
+    1. Verify authenticated user (Clerk `auth()`)
+    2. Verify user role = "artist"
+    3. Generate Clerk Billing checkout URL for Premium plan
+    4. Redirect to Clerk Billing checkout
+  - Error handling: 401 if not authenticated, 403 if not artist
+  - _Requirements: R-ART-SUB-1.1, R-ART-SUB-1.2_
+
+- [ ] 8.1.2 Create manage route
+  - File: `src/app/api/billing/manage/route.ts`
+  - Handler: GET request
+  - Logic:
+    1. Verify authenticated user (Clerk `auth()`)
+    2. Verify user role = "artist"
+    3. Generate Clerk Billing portal URL
+    4. Redirect to Clerk Billing portal
+  - Error handling: 401 if not authenticated, 403 if not artist
+  - _Requirements: R-ART-SUB-2.1, R-ART-SUB-2.2_
+
+- [ ] 8.1.3 Handle return URLs
+  - Success URL: `/dashboard/billing?success=true`
+  - Cancel URL: `/dashboard/billing?canceled=true`
+  - Display toast notifications based on URL params
+  - Track events: `upgrade_success`, `cancel_success`
+  - _Requirements: R-ART-SUB-1.4, R-ART-SUB-6.3, R-ART-SUB-6.4_
+
+### 8.2 UI Components Update
+
+- [ ] 8.2.1 Update SubscriptionBadge component
+  - File: `src/components/dashboard/subscription-badge.tsx`
+  - Wire "Upgrade to Premium" button to `/api/billing/checkout`
+  - Add loading state during redirect
+  - Track `upgrade_click` event on button click
+  - _Requirements: R-ART-SUB-1.1, R-ART-SUB-6.1_
+
+- [ ] 8.2.2 Create SubscriptionCard component
+  - File: `src/components/dashboard/subscription-card.tsx`
+  - Display: Current plan badge, description, next billing date (if Premium)
+  - States: Free, Premium (Active), Premium (Trialing), Premium (Canceling), Premium (Past Due)
+  - CTAs:
+    - Free: "Upgrade to Premium — $19.99/month" → `/api/billing/checkout`
+    - Premium (Active): "Manage Subscription" → `/api/billing/manage`
+    - Premium (Canceling): "Reactivate Premium" → `/api/billing/manage`
+    - Premium (Past Due): "Update Payment Method" → `/api/billing/manage`
+  - Track `manage_click` event on manage button click
+  - _Requirements: R-ART-SUB-4.1, R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.2_
+
+- [ ] 8.2.3 Create UsageStatsCard component
+  - File: `src/components/dashboard/usage-stats-card.tsx`
+  - Display: Products, Events, Links, Video Uploads (current/limit)
+  - Progress bars: Green (safe), Yellow (80%+), Red (at limit)
+  - Visual treatment: Lock icon for disabled features, check icon for enabled
+  - _Requirements: R-ART-SUB-4.6_
+
+- [ ] 8.2.4 Update Billing page layout
+  - File: `src/app/(artist)/dashboard/billing/page.tsx`
+  - Add Section A: Subscription (above existing Earnings section)
+  - Layout: SubscriptionCard + UsageStatsCard
+  - Add visual separator (divider or spacing) between Subscription and Earnings
+  - _Requirements: Design.md — Billing Page IA_
+
+### 8.3 Data Layer (Convex Queries)
+
+- [ ] 8.3.1 Verify subscription queries exist
+  - File: `convex/subscriptions.ts`
+  - Queries:
+    - `getCurrentSubscription`: Returns plan, status, currentPeriodEnd, limits
+    - `getCurrentUsage`: Returns productsCount, eventsCount, linksCount
+  - If missing, implement according to existing patterns
+  - _Requirements: R-ART-SUB-3.4_
+
+- [ ] 8.3.2 Test subscription queries
+  - Test with Free plan user
+  - Test with Premium plan user
+  - Test with canceled Premium user (before currentPeriodEnd)
+  - Test with expired Premium user (after currentPeriodEnd)
+  - Verify limits returned correctly for each plan
+  - _Requirements: R-ART-SUB-3.1, R-ART-SUB-3.2, R-ART-SUB-3.3_
+
+### 8.4 Downgrade Soft-Lock Implementation
+
+- [ ] 8.4.1 Update createProduct mutation
+  - File: `convex/products.ts`
+  - Before creating product:
+    1. Query current products count
+    2. Get user's subscription limits via `getFeatureLimits(ctx)`
+    3. Check if count < maxProducts
+    4. If limit exceeded, throw error: "You've reached the limit for products on your current plan. Upgrade to create more."
+  - _Requirements: R-ART-SUB-5.2, R-ART-SUB-7.1, R-ART-SUB-7.2_
+
+- [ ] 8.4.2 Update createEvent mutation
+  - File: `convex/events.ts`
+  - Same logic as createProduct
+  - Error message: "You've reached the limit for events on your current plan. Upgrade to create more."
+  - _Requirements: R-ART-SUB-5.3, R-ART-SUB-7.1, R-ART-SUB-7.2_
+
+- [ ] 8.4.3 Update createLink mutation
+  - File: `convex/links.ts`
+  - Same logic as createProduct
+  - Error message: "You've reached the limit for links on your current plan. Upgrade to create more."
+  - _Requirements: R-ART-SUB-5.4, R-ART-SUB-7.1, R-ART-SUB-7.2_
+
+- [ ] 8.4.4 Update file upload validation
+  - File: `convex/files.ts` (generateUploadUrl action)
+  - Before generating upload URL:
+    1. Check file type (video requires Premium)
+    2. Check file size (50MB Free, 500MB Premium)
+    3. If video upload on Free plan, throw error: "Video uploads require Premium. Upgrade to unlock."
+    4. If file size exceeds limit, throw error: "File size exceeds your plan limit ([limit]MB). Upgrade to upload larger files."
+  - _Requirements: R-ART-SUB-5.5, R-ART-SUB-7.3, R-ART-SUB-7.4_
+
+- [ ] 8.4.5 Add blocking UI feedback
+  - When mutation throws limit error, display toast with:
+    - Error message from mutation
+    - "Upgrade to Premium" button (inline in toast)
+    - Button redirects to `/api/billing/checkout`
+  - Track `limit_hit` event with metadata: `{ limitType: 'products' | 'events' | 'links' | 'video' | 'fileSize' }`
+  - _Requirements: R-ART-SUB-5.6, R-ART-SUB-6.5_
+
+- [ ] 8.4.6 Verify existing items remain editable
+  - Test: Downgrade Premium artist with 10 products to Free
+  - Verify: All 10 products remain visible in dashboard
+  - Verify: Can edit existing products (title, description, price)
+  - Verify: Cannot create 11th product (blocked with upgrade CTA)
+  - _Requirements: R-ART-SUB-5.1, R-ART-SUB-5.7_
+
+### 8.5 Tracking Events (Analytics)
+
+- [ ] 8.5.1 Add tracking helper
+  - File: `src/lib/analytics.ts`
+  - Function: `trackSubscriptionEvent(eventName, metadata?)`
+  - Events:
+    - `upgrade_click`: When "Upgrade to Premium" clicked
+    - `manage_click`: When "Manage Subscription" clicked
+    - `upgrade_success`: When redirected back with `?success=true`
+    - `cancel_success`: When redirected back from portal (detect via metadata change)
+    - `limit_hit`: When user hits quota limit
+  - Metadata: `{ plan, status, limitType }` (if applicable)
+  - _Requirements: R-ART-SUB-6.1, R-ART-SUB-6.2, R-ART-SUB-6.3, R-ART-SUB-6.4, R-ART-SUB-6.5, R-ART-SUB-6.6_
+
+- [ ] 8.5.2 Wire tracking events
+  - SubscriptionCard: Track `upgrade_click` and `manage_click`
+  - Billing page: Track `upgrade_success` on mount if `?success=true`
+  - Mutation errors: Track `limit_hit` in catch blocks
+  - _Requirements: R-ART-SUB-6_
+
+### 8.6 QA Checklist (Manual Testing)
+
+- [ ] 8.6.1 Test Free → Upgrade → Premium flow
+  - Sign in as Free artist
+  - Navigate to `/dashboard/billing`
+  - Verify "Upgrade to Premium" button visible
+  - Click button
+  - Verify redirect to Clerk Billing checkout (check URL contains `clerk` or `billing`)
+  - Complete checkout with test card (use Clerk test mode)
+  - Verify redirect back to `/dashboard/billing?success=true`
+  - Verify toast "Welcome to Premium! 🎉" displays
+  - Verify plan badge changes to "Premium"
+  - Verify usage stats show "∞" limits
+  - Verify "Manage Subscription" button visible
+  - _Requirements: R-ART-SUB-1_
+
+- [ ] 8.6.2 Test Premium → Manage → Cancel flow
+  - Sign in as Premium artist
+  - Navigate to `/dashboard/billing`
+  - Verify "Manage Subscription" button visible
+  - Click button
+  - Verify redirect to Clerk Billing portal
+  - Click "Cancel subscription" in portal
+  - Confirm cancellation
+  - Verify redirect back to `/dashboard/billing`
+  - Verify plan badge changes to "Canceling"
+  - Verify message "Your plan will downgrade to Free on [date]"
+  - Verify "Reactivate Premium" button visible
+  - _Requirements: R-ART-SUB-2_
+
+- [ ] 8.6.3 Test over-quota blocking (Free plan)
+  - Sign in as Free artist with 5 products
+  - Navigate to `/dashboard/products`
+  - Click "Add Product"
+  - Fill form and submit
+  - Verify error toast: "You've reached the limit for products on your current plan. Upgrade to create more."
+  - Verify "Upgrade to Premium" button in toast
+  - Click upgrade button
+  - Verify redirect to Clerk Billing checkout
+  - _Requirements: R-ART-SUB-5.2, R-ART-SUB-5.6_
+
+- [ ] 8.6.4 Test video upload blocking (Free plan)
+  - Sign in as Free artist
+  - Navigate to `/dashboard/products`
+  - Click "Add Product"
+  - Select type "Video"
+  - Upload video file
+  - Verify error toast: "Video uploads require Premium. Upgrade to unlock."
+  - Verify "Upgrade to Premium" button in toast
+  - _Requirements: R-ART-SUB-5.5, R-ART-SUB-7.3_
+
+- [ ] 8.6.5 Test downgrade soft-lock
+  - Sign in as Premium artist with 10 products
+  - Cancel subscription via Clerk Billing portal
+  - Wait for currentPeriodEnd to pass (or manually update Clerk metadata for testing)
+  - Verify plan downgrades to Free
+  - Navigate to `/dashboard/products`
+  - Verify all 10 products still visible
+  - Verify can edit existing products
+  - Click "Add Product"
+  - Verify error toast: "You've reached the limit for products on your current plan. Upgrade to create more."
+  - _Requirements: R-ART-SUB-5.1, R-ART-SUB-5.2, R-ART-SUB-5.7_
+
+- [ ] 8.6.6 Test all subscription states
+  - Free (Active): Badge "Free", Upgrade CTA visible
+  - Premium (Active): Badge "Premium", Manage CTA visible, next billing date shown
+  - Premium (Trialing): Badge "Premium (Trial)", trial end date shown
+  - Premium (Canceling): Badge "Canceling", downgrade date shown, Reactivate CTA visible
+  - Premium (Past Due): Badge "Payment Failed", Update Payment CTA visible
+  - _Requirements: R-ART-SUB-4_
+
+- [ ] 8.6.7 Verify no mock data visible
+  - Navigate to `/dashboard/billing`
+  - Verify subscription section shows real plan from Clerk metadata
+  - Verify usage stats show real counts from Convex
+  - Verify no "Coming Soon" badges
+  - Verify no placeholder text like "Your plan: —"
+  - _Requirements: R-PROD-0.1, R-PROD-0.2_
+
+- [ ] 8.6.8 Test tracking events
+  - Open browser DevTools → Network tab
+  - Click "Upgrade to Premium"
+  - Verify `upgrade_click` event sent (check network requests or analytics dashboard)
+  - Complete checkout
+  - Verify `upgrade_success` event sent on redirect back
+  - Click "Manage Subscription"
+  - Verify `manage_click` event sent
+  - Hit quota limit (create 6th product on Free plan)
+  - Verify `limit_hit` event sent with metadata `{ limitType: 'products' }`
+  - _Requirements: R-ART-SUB-6_
+
+### 8.7 Documentation Updates
+
+- [ ] 8.7.1 Update README.md
+  - Add section: "Artist Subscriptions (Clerk Billing)"
+  - Document: Plans (Free/Premium), pricing ($19.99/month), limits
+  - Document: Upgrade/manage flows, soft-lock policy
+  - _Requirements: Documentation_
+
+- [ ] 8.7.2 Update .env.example
+  - Add Clerk Billing environment variables (if any)
+  - Document: How to set up Clerk Billing in Clerk Dashboard
+  - _Requirements: Setup documentation_
+
+- [ ] 8.7.3 Curate knowledge in ByteRover
+  - Run: `brv curate "Artist subscription implementation via Clerk Billing with soft-lock downgrade policy" --files src/app/api/billing/checkout/route.ts --files src/app/api/billing/manage/route.ts --files src/components/dashboard/subscription-card.tsx --files convex/subscriptions.ts`
+  - _Requirements: ByteRover workflow_
+
+---
+
+## Notes on Phase 8
+
+- **No landing/home changes:** Focus only on artist dashboard billing page
+- **Platform revenue model:** Subscriptions only (0% commission on sales)
+- **Soft-lock policy:** Never delete user data on downgrade
+- **Real flows only:** No mock/placeholder data, real Clerk Billing checkout/portal
+- **Tracking:** All subscription events tracked for analytics
+- **Testing:** Manual QA via Playwright MCP for all flows and states

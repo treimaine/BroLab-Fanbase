@@ -1709,3 +1709,299 @@ const UseCases = dynamic(() => import('@/components/marketing/use-cases'), {
 - Analytics: Posthog or Plausible (privacy-first)
 - Performance: Vercel Analytics + Lighthouse CI
 - Heatmaps: Optional (Hotjar/Clarity) for UX insights
+
+---
+
+## Artist Billing Page — Subscription + Earnings (Dual Purpose)
+
+### Overview
+
+The Artist Billing page serves TWO distinct purposes:
+1. **Subscription Management** (Clerk Billing) — Platform revenue
+2. **Earnings Management** (Stripe Connect) — Artist revenue from fan purchases
+
+**Business Model Clarity:**
+- Platform earns from artist subscriptions (Clerk Billing: Free/Premium)
+- Artists earn from fan purchases (Stripe Connect: 0% platform fee)
+- Payouts are automatic (Stripe managed schedule, no manual withdraw)
+
+### Page Structure (Information Architecture)
+
+```
+/dashboard/billing
+├── Section A: Subscription (Clerk Billing)
+│   ├── Current Plan Card
+│   ├── Usage Stats Card
+│   ├── Upgrade/Manage CTA
+│   └── Status Messaging
+└── Section B: Earnings (Stripe Connect)
+    ├── Connect Status Card
+    ├── Balance Card (if connected)
+    ├── Payout Method Card (if connected)
+    └── Transactions List (if connected)
+```
+
+**Visual Hierarchy:**
+- Section A (Subscription) is TOP priority (above fold on desktop)
+- Section B (Earnings) follows below
+- Clear visual separation between sections (divider or spacing)
+
+### Section A: Subscription (Clerk Billing)
+
+#### Current Plan Card
+
+**States:**
+
+1. **Free Plan (Active)**
+   - Badge: "Free" (gray)
+   - Title: "Free Plan"
+   - Description: "Limited features. Upgrade to unlock unlimited content."
+   - CTA: "Upgrade to Premium — $19.99/month" (primary button, full width)
+
+2. **Premium Plan (Active)**
+   - Badge: "Premium" (purple/lavender)
+   - Title: "Premium Plan"
+   - Description: "Unlimited products, events, links, and video uploads."
+   - CTA: "Manage Subscription" (secondary button, full width)
+   - Next billing date: "Next billing: Feb 15, 2026"
+
+3. **Premium Plan (Trialing)**
+   - Badge: "Premium (Trial)" (purple/lavender)
+   - Title: "Premium Plan — Trial"
+   - Description: "Your trial ends on [date]. No charge until then."
+   - CTA: "Manage Subscription" (secondary button)
+
+4. **Premium Plan (Canceling)**
+   - Badge: "Canceling" (orange/warning)
+   - Title: "Premium Plan — Canceling"
+   - Description: "Your plan will downgrade to Free on [currentPeriodEnd]. Reactivate anytime."
+   - CTA: "Reactivate Premium" (primary button)
+
+5. **Premium Plan (Past Due)**
+   - Badge: "Payment Failed" (red/destructive)
+   - Title: "Premium Plan — Payment Failed"
+   - Description: "Update your payment method to keep Premium features."
+   - CTA: "Update Payment Method" (destructive button)
+
+#### Usage Stats Card
+
+**Layout:**
+- 4 rows: Products, Events, Custom Links, Video Uploads
+- Each row: Label | Current/Limit | Progress bar (if applicable)
+
+**Example (Free Plan):**
+```
+Products:        3 / 5        [====------]
+Events:          2 / 5        [===-------]
+Custom Links:    4 / 5        [=====-----]
+Video Uploads:   Disabled     [Upgrade to enable]
+```
+
+**Example (Premium Plan):**
+```
+Products:        12 / ∞       [No limit]
+Events:          8 / ∞        [No limit]
+Custom Links:    6 / ∞        [No limit]
+Video Uploads:   Enabled      [Up to 500MB per file]
+```
+
+**Visual Treatment:**
+- Progress bars: Green (safe), Yellow (warning 80%+), Red (at limit)
+- "Disabled" state: Muted text + lock icon
+- "Enabled" state: Success text + check icon
+
+#### Status Messaging (Contextual)
+
+**Over Quota (Free Plan):**
+- Alert banner (warning): "You've reached your limit for [feature]. Upgrade to Premium to create more."
+- CTA: "Upgrade Now" (inline button)
+
+**Trial Ending Soon:**
+- Alert banner (info): "Your trial ends in 3 days. Add a payment method to continue Premium."
+- CTA: "Add Payment Method" (inline button)
+
+**Payment Failed:**
+- Alert banner (destructive): "Your payment failed. Update your payment method to avoid losing Premium features."
+- CTA: "Update Payment" (inline button)
+
+### Section B: Earnings (Stripe Connect)
+
+#### Connect Status Card
+
+**States:**
+
+1. **Not Connected**
+   - Icon: Stripe logo (muted)
+   - Title: "Connect Stripe to Receive Payments"
+   - Description: "Fans pay you directly via Stripe Connect. We take 0% commission on sales. Payouts are automatic."
+   - CTA: "Connect Stripe" (primary button, full width)
+   - Helper text: "Secure onboarding via Stripe. Takes ~5 minutes."
+
+2. **Pending (Requirements Due)**
+   - Icon: Stripe logo (warning)
+   - Title: "Complete Your Stripe Setup"
+   - Description: "You're almost done! Complete these requirements to start receiving payments:"
+   - Requirements list:
+     - "✓ Business details" (completed)
+     - "⚠ Bank account" (pending)
+     - "⚠ Identity verification" (pending)
+   - CTA: "Continue Setup" (primary button)
+
+3. **Connected**
+   - Icon: Stripe logo (success)
+   - Title: "Stripe Connected"
+   - Description: "You're all set to receive payments. Payouts are automatic."
+   - Status indicators:
+     - "✓ Charges enabled"
+     - "✓ Payouts enabled"
+   - CTA: "Manage Payouts on Stripe" (secondary button, opens Express dashboard)
+
+#### Balance Card (Connected Only)
+
+**Layout:**
+```
+┌─────────────────────────────────────┐
+│ Available Balance                   │
+│ $1,234.56                          │
+│                                     │
+│ Pending Balance                     │
+│ $567.89                            │
+│                                     │
+│ Last Payout                         │
+│ $890.12 on Jan 28, 2026            │
+└─────────────────────────────────────┘
+```
+
+**States:**
+- Loading: Skeleton loaders
+- Empty: "$0.00" (not "—" or "N/A")
+- Error: "Unable to load balance. Try again."
+
+**Note:** Balance data comes from Convex deterministic read-model (webhook-driven) or transaction totals (Palier A fallback).
+
+#### Payout Method Card (Connected Only)
+
+**Layout:**
+```
+┌─────────────────────────────────────┐
+│ Payout Method                       │
+│ Bank Account: •••• 1234             │
+│ Automatic payouts enabled           │
+│                                     │
+│ [Manage Payouts on Stripe] →       │
+└─────────────────────────────────────┘
+```
+
+**Important:**
+- NO "Withdraw Funds" button (payouts are automatic)
+- "Manage Payouts on Stripe" opens Stripe Express dashboard in new tab
+- Helper text: "Payouts are processed automatically by Stripe. Manage your schedule and bank details on Stripe."
+
+#### Transactions List (Connected Only)
+
+**Layout:**
+- Table or card list (responsive)
+- Columns: Product, Fan, Amount, Date, Status
+- Pagination: "Load more" button (if >10 items)
+
+**Example Row:**
+```
+[Cover] "Midnight Dreams" (Music)
+        Fan: @johndoe
+        $9.99 • Jan 30, 2026 • Paid
+```
+
+**States:**
+- Loading: Skeleton rows (3x)
+- Empty: "No sales yet. Share your products with fans!" (with illustration)
+- Error: "Unable to load transactions. Try again."
+
+**Data Source:**
+- Real sales from Convex `orders`/`orderItems` filtered by artistId
+- NO mock/placeholder data
+
+### Copy Guidelines (English Only)
+
+**Tone:**
+- Clear and direct (not cryptic)
+- Benefit-focused (not feature-focused)
+- Supportive (not salesy)
+
+**Subscription Section:**
+- Headline: "Your Subscription"
+- Subheadline: "Manage your plan and usage limits."
+- Upgrade CTA: "Upgrade to Premium — $19.99/month"
+- Manage CTA: "Manage Subscription"
+
+**Earnings Section:**
+- Headline: "Your Earnings"
+- Subheadline: "Track sales and manage payouts."
+- Connect CTA: "Connect Stripe"
+- Manage CTA: "Manage Payouts on Stripe"
+
+**Helper Text Examples:**
+- "We take 0% commission on sales. Platform revenue comes from subscriptions."
+- "Payouts are automatic. No manual withdrawals needed."
+- "Your earnings go directly to your Stripe account."
+
+### UX States Summary
+
+| State | Subscription Section | Earnings Section |
+|-------|---------------------|------------------|
+| New Artist (Free, Not Connected) | Show Free plan + Upgrade CTA | Show Connect CTA |
+| Free Artist (Connected) | Show Free plan + Upgrade CTA | Show balance + transactions |
+| Premium Artist (Not Connected) | Show Premium plan + Manage CTA | Show Connect CTA |
+| Premium Artist (Connected) | Show Premium plan + Manage CTA | Show balance + transactions |
+| Premium Canceling (Connected) | Show Canceling status + Reactivate CTA | Show balance + transactions |
+| Premium Past Due (Connected) | Show Payment Failed + Update CTA | Show balance + transactions |
+
+### Responsive Behavior
+
+**Mobile (<768px):**
+- Single column layout
+- Subscription section first (above fold)
+- Earnings section below
+- Full-width CTAs
+- Stacked cards
+
+**Desktop (≥768px):**
+- Two-column layout (optional, or keep single column for clarity)
+- Subscription section left/top
+- Earnings section right/bottom
+- Side-by-side CTAs (if space allows)
+
+### Accessibility
+
+- Semantic HTML (section, article, aside)
+- ARIA labels for status badges
+- Focus indicators on all interactive elements
+- Keyboard navigation support
+- Screen reader friendly status messages
+
+### No Mock Data Rule
+
+**CRITICAL:**
+- NO placeholder/mock data visible in Subscription or Earnings sections
+- NO "Coming Soon" badges without real state
+- NO fake transactions or balances
+- Empty states must be honest: "No sales yet" (not fake data)
+- Loading states must be clear: Skeleton loaders (not fake data)
+
+### Component Checklist
+
+**Before delivery, verify:**
+
+- [ ] Subscription section displays real plan from Clerk metadata
+- [ ] Usage stats display real counts from Convex
+- [ ] Upgrade CTA redirects to Clerk Billing checkout (not mock)
+- [ ] Manage CTA redirects to Clerk Billing portal (not mock)
+- [ ] Connect CTA redirects to Stripe Connect onboarding (not mock)
+- [ ] Balance displays real data (or transaction totals fallback)
+- [ ] Transactions list displays real sales (or empty state)
+- [ ] NO "Withdraw Funds" button exists
+- [ ] "Manage Payouts on Stripe" opens Express dashboard
+- [ ] All states tested: Free, Premium, Trialing, Canceling, Past Due
+- [ ] All states tested: Not Connected, Pending, Connected
+- [ ] Over-quota blocking works with upgrade CTA
+- [ ] Mobile responsive (single column, full-width CTAs)
+- [ ] Accessibility: keyboard nav, screen reader, focus indicators

@@ -10,14 +10,14 @@
 import { Skeleton } from "./skeleton";
 
 interface FeedSkeletonProps {
-  count?: number;
+  readonly count?: number;
 }
 
-export function FeedSkeleton({ count = 3 }: FeedSkeletonProps) {
+export function FeedSkeleton({ count = 3 }: Readonly<FeedSkeletonProps>) {
   return (
     <div className="space-y-6">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-2xl border bg-card p-6">
+      {Array.from({ length: count }, (_, i) => i).map((index) => (
+        <div key={`feed-skeleton-${index}`} className="rounded-2xl border bg-card p-6">
           {/* Header */}
           <div className="mb-4 flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-full" />
