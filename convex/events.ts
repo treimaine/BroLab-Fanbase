@@ -456,6 +456,7 @@ export const update = mutation({
     venue: v.optional(v.string()),
     ticketUrl: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    imageStorageId: v.optional(v.id("_storage")),
     status: v.optional(
       v.union(v.literal("upcoming"), v.literal("sold-out"), v.literal("past"))
     ),
@@ -514,6 +515,13 @@ export const update = mutation({
 
     // Apply URL field updates
     applyUrlUpdates(updates, args);
+
+    // Handle imageStorageId update (prioritize over imageUrl)
+    if (args.imageStorageId !== undefined) {
+      updates.imageStorageId = args.imageStorageId;
+      // Clear imageUrl if imageStorageId is provided
+      updates.imageUrl = undefined;
+    }
 
     // Apply explicit status update
     if (args.status !== undefined) {

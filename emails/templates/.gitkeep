@@ -1,0 +1,9 @@
+# Email Templates
+
+This directory contains email template components for different notification types.
+
+Examples:
+- WelcomeEmail.tsx
+- OrderConfirmationEmail.tsx
+- DownloadReadyEmail.tsx
+- FollowNotificationEmail.tsx

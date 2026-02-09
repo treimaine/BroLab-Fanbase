@@ -4,6 +4,7 @@ import { AddProductDialog, type AddProductData } from "@/components/forms/add-pr
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { SuspenseWrapper } from "@/components/ui/suspense-wrapper";
 import { useFileUpload } from "@/lib/hooks/use-file-upload";
+import { handleMutationError } from "@/lib/limit-toast";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
@@ -34,9 +35,24 @@ export default function ProductsPage() {
       let fileStorageId: Id<"_storage"> | undefined;
       let contentType: string | undefined;
       let fileSize: number | undefined;
+      let coverImageStorageId: Id<"_storage"> | undefined;
 
-      if (data.file) {
+      // Upload cover image if provided
+      if (data.coverImageFile) {
         onProgress?.(5);
+        const coverUploadResult = await uploadFile(data.coverImageFile, "image");
+
+        if (!coverUploadResult) {
+          throw new Error("Cover image upload failed");
+        }
+
+        coverImageStorageId = coverUploadResult.storageId;
+        onProgress?.(20);
+      }
+
+      // Upload media file if provided
+      if (data.file) {
+        onProgress?.(data.coverImageFile ? 30 : 5);
         const uploadResult = await uploadFile(data.file, data.type);
 
         if (!uploadResult) {
@@ -57,6 +73,7 @@ export default function ProductsPage() {
         priceUSD: data.priceUSD,
         visibility: data.visibility,
         coverImageUrl: data.coverImageUrl,
+        coverImageStorageId,
         fileStorageId,
         contentType,
         fileSize,
@@ -65,9 +82,8 @@ export default function ProductsPage() {
       onProgress?.(100);
       toast.success("Product created successfully");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to create product";
-      toast.error(message);
+      // Handle limit errors with upgrade toast (R-ART-SUB-5.6, R-ART-SUB-6.5)
+      handleMutationError(error, "Failed to create product", "products");
       throw error;
     }
   }

@@ -12,8 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useQuery } from "convex/react";
 import { Calendar, DollarSign, MapPin, Settings, Ticket } from "lucide-react";
 import Image from "next/image";
+import { api } from "../../../convex/_generated/api";
 
 /**
  * Event status configuration
@@ -45,6 +47,7 @@ export interface EventItemData {
   venue: string;
   city: string;
   imageUrl?: string;
+  imageStorageId?: string;
   ticketsSold: number;
   revenue: number;
   status: EventStatus;
@@ -94,6 +97,15 @@ function formatNumber(num: number): string {
 export function EventItem({ event, onManage, disabled = false }: EventItemProps) {
   const config = statusConfig[event.status];
   const formattedDate = formatEventDate(event.date);
+  
+  // Get image URL from Convex Storage if imageStorageId exists
+  const storageImageUrl = useQuery(
+    api.files.getImageUrl,
+    event.imageStorageId ? { storageId: event.imageStorageId as any } : "skip"
+  );
+  
+  // Prioritize storage image over URL
+  const displayImageUrl = storageImageUrl || event.imageUrl;
 
   return (
     <div
@@ -104,9 +116,9 @@ export function EventItem({ event, onManage, disabled = false }: EventItemProps)
     >
       {/* Event Image */}
       <div className="relative h-24 w-full sm:h-20 sm:w-28 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-        {event.imageUrl ? (
+        {displayImageUrl ? (
           <Image
-            src={event.imageUrl}
+            src={displayImageUrl}
             alt={event.title}
             fill
             className="object-cover"

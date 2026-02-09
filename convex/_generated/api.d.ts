@@ -12,6 +12,8 @@ import type * as artistBilling from "../artistBilling.js";
 import type * as artists from "../artists.js";
 import type * as downloads from "../downloads.js";
 import type * as downloads_helpers from "../downloads_helpers.js";
+import type * as emails from "../emails.js";
+import type * as emails_helpers from "../emails_helpers.js";
 import type * as events from "../events.js";
 import type * as feed from "../feed.js";
 import type * as files from "../files.js";
@@ -39,6 +41,8 @@ declare const fullApi: ApiFromModules<{
   artists: typeof artists;
   downloads: typeof downloads;
   downloads_helpers: typeof downloads_helpers;
+  emails: typeof emails;
+  emails_helpers: typeof emails_helpers;
   events: typeof events;
   feed: typeof feed;
   files: typeof files;

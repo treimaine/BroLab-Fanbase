@@ -1,0 +1,148 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e9]:
+    - complementary [ref=e10]:
+      - link "BroLab Fanbase" [ref=e12] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e13]: BroLab Fanbase
+      - navigation [ref=e14]:
+        - list [ref=e15]:
+          - listitem [ref=e16]:
+            - link "Overview" [ref=e17] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e18]
+              - text: Overview
+          - listitem [ref=e23]:
+            - link "Profile & Bio" [ref=e24] [cursor=pointer]:
+              - /url: /dashboard/profile
+              - img [ref=e25]
+              - text: Profile & Bio
+          - listitem [ref=e28]:
+            - link "Custom Links" [ref=e29] [cursor=pointer]:
+              - /url: /dashboard/links
+              - img [ref=e30]
+              - text: Custom Links
+          - listitem [ref=e33]:
+            - link "Events" [ref=e34] [cursor=pointer]:
+              - /url: /dashboard/events
+              - img [ref=e35]
+              - text: Events
+          - listitem [ref=e37]:
+            - link "Products" [ref=e38] [cursor=pointer]:
+              - /url: /dashboard/products
+              - img [ref=e39]
+              - text: Products
+          - listitem [ref=e43]:
+            - link "Billing" [ref=e44] [cursor=pointer]:
+              - /url: /dashboard/billing
+              - img [ref=e45]
+              - text: Billing
+      - generic [ref=e49]:
+        - generic [ref=e50]: Theme
+        - button "Toggle theme" [ref=e51] [cursor=pointer]:
+          - img
+          - generic [ref=e52]: Toggle theme
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img "Steve LEMBA" [ref=e56]
+          - generic [ref=e57]:
+            - paragraph [ref=e58]: Steve LEMBA
+            - paragraph [ref=e59]: artist
+        - button "Sign out" [ref=e60] [cursor=pointer]:
+          - img
+          - text: Sign out
+    - main [ref=e61]:
+      - generic [ref=e63]:
+        - generic [ref=e65]:
+          - heading "Billing" [level=1] [ref=e66]
+          - paragraph [ref=e67]: Manage your subscription and earnings
+        - region "Subscription" [ref=e68]:
+          - heading "Subscription" [level=2] [ref=e69]
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - generic [ref=e73]:
+                  - generic [ref=e74]:
+                    - img [ref=e75]
+                    - text: Subscription
+                  - generic [ref=e77]: Premium
+                - generic [ref=e78]:
+                  - img [ref=e79]
+                  - generic [ref=e81]: Your subscription renews on March 1, 2026.
+              - button "Manage Subscription" [ref=e83] [cursor=pointer]
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - generic [ref=e86]:
+                  - img [ref=e87]
+                  - text: Usage
+                - generic [ref=e91]: Your current usage across features
+              - generic [ref=e92]:
+                - generic [ref=e94]:
+                  - generic [ref=e95]:
+                    - img [ref=e96]
+                    - generic [ref=e100]: Products
+                  - generic [ref=e101]: 3 / ∞
+                - generic [ref=e105]:
+                  - generic [ref=e106]:
+                    - img [ref=e107]
+                    - generic [ref=e109]: Events
+                  - generic [ref=e110]: 4 / ∞
+                - generic [ref=e114]:
+                  - generic [ref=e115]:
+                    - img [ref=e116]
+                    - generic [ref=e119]: Custom Links
+                  - generic [ref=e120]: 2 / ∞
+                - generic [ref=e124]:
+                  - generic [ref=e125]:
+                    - img [ref=e126]
+                    - generic [ref=e129]: Video Uploads
+                  - generic [ref=e130]:
+                    - img [ref=e131]
+                    - generic [ref=e134]: Enabled
+        - region "Earnings & Payouts" [ref=e135]:
+          - heading "Earnings & Payouts" [level=2] [ref=e136]
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - generic [ref=e141]:
+                - img [ref=e142]
+                - paragraph [ref=e145]: Available Balance
+              - paragraph [ref=e146]: $0.00
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - generic [ref=e149]:
+                  - img [ref=e150]
+                  - paragraph [ref=e153]: Pending
+                - paragraph [ref=e154]: $0.00
+              - generic [ref=e155]:
+                - generic [ref=e156]:
+                  - img [ref=e157]
+                  - paragraph [ref=e160]: Last Payout
+                - paragraph [ref=e161]: No payouts yet
+          - generic [ref=e162]:
+            - generic [ref=e163]:
+              - generic [ref=e165]:
+                - img [ref=e166]
+                - text: Payout Method
+              - generic [ref=e168]:
+                - generic [ref=e169]:
+                  - img [ref=e170]
+                  - generic [ref=e173]:
+                    - paragraph [ref=e174]: Stripe Connected
+                    - paragraph [ref=e175]: Your account is active. Payouts are automatic.
+                - generic [ref=e176]:
+                  - generic [ref=e177]:
+                    - generic [ref=e178]: Charges
+                    - generic [ref=e179]: Enabled
+                  - generic [ref=e180]:
+                    - generic [ref=e181]: Payouts
+                    - generic [ref=e182]: Enabled
+                - button "Manage Payouts on Stripe" [ref=e183] [cursor=pointer]:
+                  - img
+                  - text: Manage Payouts on Stripe
+                - paragraph [ref=e184]: Payouts are processed automatically by Stripe
+            - generic [ref=e185]:
+              - generic [ref=e187]:
+                - img [ref=e188]
+                - text: Recent Transactions
+              - paragraph [ref=e193]: No sales yet. Share your products with fans!
+  - region "Notifications alt+T"
+  - alert [ref=e194]

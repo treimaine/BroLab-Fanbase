@@ -1,71 +1,66 @@
 "use client";
 
 /**
- * AddProductDialog Component
- * Requirements: 16.2, 16.3 - Create product with form validation and file upload
+ * EditProductDialog Component
+ * Edit existing product with form validation
  *
  * Features:
- * - Title input field
- * - Description textarea
- * - Type selector (music/video)
- * - Price input field
- * - Visibility selector (public/private)
- * - Cover image URL input
- * - File upload input with client-side validation
+ * - Pre-filled form with existing product data
+ * - Title, description, type, price, visibility, cover image editing
+ * - Optional file replacement
  * - Progress indicator during upload
  * - Inline validation with FormMessage
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Music, Plus, Upload, Video, X } from "lucide-react";
+import { Loader2, Music, Pencil, Upload, Video, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
-  ALLOWED_AUDIO_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  MAX_AUDIO_SIZE,
-  MAX_VIDEO_SIZE,
-  validateFileUpload,
-  type FileType,
+    ALLOWED_AUDIO_TYPES,
+    ALLOWED_VIDEO_TYPES,
+    MAX_AUDIO_SIZE,
+    MAX_VIDEO_SIZE,
+    validateFileUpload,
+    type FileType,
 } from "@/lib/validations";
 
 /**
  * Product form validation schema
- * Requirements: 16.2, 16.3 - Form validation for product fields
  */
-const addProductFormSchema = z.object({
+const editProductFormSchema = z.object({
   title: z
     .string()
     .min(1, "Title is required")
@@ -107,9 +102,9 @@ const addProductFormSchema = z.object({
     ),
 });
 
-type AddProductFormValues = z.infer<typeof addProductFormSchema>;
+type EditProductFormValues = z.infer<typeof editProductFormSchema>;
 
-export interface AddProductData {
+export interface EditProductData {
   title: string;
   description?: string;
   type: "music" | "video";
@@ -120,11 +115,25 @@ export interface AddProductData {
   file?: File;
 }
 
-interface AddProductDialogProps {
-  readonly onAddProduct: (
-    data: AddProductData,
+export interface ProductData {
+  id: string;
+  title: string;
+  description?: string;
+  type: "music" | "video";
+  priceUSD: number;
+  visibility: "public" | "private";
+  coverImageUrl?: string;
+}
+
+interface EditProductDialogProps {
+  readonly product: ProductData;
+  readonly onEditProduct: (
+    productId: string,
+    data: EditProductData,
     onProgress?: (progress: number) => void
   ) => Promise<void>;
+  readonly open?: boolean;
+  readonly onOpenChange?: (open: boolean) => void;
   readonly trigger?: React.ReactNode;
   readonly disabled?: boolean;
 }
@@ -170,12 +179,15 @@ function getMaxSize(type: FileType): number {
   return type === "music" ? MAX_AUDIO_SIZE : MAX_VIDEO_SIZE;
 }
 
-export function AddProductDialog({
-  onAddProduct,
+export function EditProductDialog({
+  product,
+  onEditProduct,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   trigger,
   disabled = false,
-}: AddProductDialogProps) {
-  const [open, setOpen] = useState(false);
+}: EditProductDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedCoverImage, setSelectedCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
@@ -186,15 +198,19 @@ export function AddProductDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverImageInputRef = useRef<HTMLInputElement>(null);
 
-  const form = useForm<AddProductFormValues>({
-    resolver: zodResolver(addProductFormSchema),
+  // Use controlled state if provided, otherwise use internal state
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+
+  const form = useForm<EditProductFormValues>({
+    resolver: zodResolver(editProductFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      type: undefined,
-      priceUSD: "",
-      visibility: "public",
-      coverImageUrl: "",
+      title: product.title,
+      description: product.description || "",
+      type: product.type,
+      priceUSD: product.priceUSD.toString(),
+      visibility: product.visibility,
+      coverImageUrl: product.coverImageUrl || "",
     },
     mode: "onChange",
   });
@@ -311,12 +327,13 @@ export function AddProductDialog({
   /**
    * Handle form submission
    */
-  async function onSubmit(data: AddProductFormValues) {
+  async function onSubmit(data: EditProductFormValues) {
     try {
       setIsUploading(true);
       setUploadProgress(0);
 
-      await onAddProduct(
+      await onEditProduct(
+        product.id,
         {
           title: data.title,
           description: data.description?.trim() || undefined,
@@ -332,8 +349,7 @@ export function AddProductDialog({
         }
       );
 
-      // Reset form and close dialog on success
-      form.reset();
+      // Reset and close on success
       setSelectedFile(null);
       setSelectedCoverImage(null);
       setCoverImagePreview(null);
@@ -371,19 +387,19 @@ export function AddProductDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button disabled={disabled} className="rounded-full">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
+          <Button variant="ghost" size="icon" disabled={disabled}>
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Edit product</span>
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl">
-            Add New Product
+            Edit Product
           </DialogTitle>
           <DialogDescription>
-            Upload music or video content for your fans to purchase.
+            Update your product details and media file.
           </DialogDescription>
         </DialogHeader>
 
@@ -630,13 +646,13 @@ export function AddProductDialog({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Upload a cover image or provide a URL above
+                Upload a new cover image or provide a URL above
               </p>
             </div>
 
             {/* File Upload */}
             <div className="space-y-2">
-              <Label>Media File (Optional)</Label>
+              <Label>Replace Media File (Optional)</Label>
               <div className="space-y-2">
                 {/* File Input */}
                 {!selectedFile && (
@@ -660,7 +676,7 @@ export function AddProductDialog({
                       className={`text-sm ${watchedType ? "text-muted-foreground" : "text-muted-foreground/50"} pointer-events-none`}
                     >
                       {watchedType
-                        ? "Click to select a file"
+                        ? "Click to select a new file"
                         : "Select a product type first"}
                     </p>
                     {watchedType && (
@@ -733,7 +749,7 @@ export function AddProductDialog({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Upload the media file fans will receive after purchase
+                Leave empty to keep the current file
               </p>
             </div>
 
@@ -755,10 +771,10 @@ export function AddProductDialog({
                 {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isUploading ? "Uploading..." : "Creating..."}
+                    {isUploading ? "Uploading..." : "Saving..."}
                   </>
                 ) : (
-                  "Add Product"
+                  "Save Changes"
                 )}
               </Button>
             </DialogFooter>

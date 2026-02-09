@@ -3,6 +3,7 @@
 import { CreateEventDialog, type CreateEventData } from "@/components/forms/create-event-dialog";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { SuspenseWrapper } from "@/components/ui/suspense-wrapper";
+import { handleMutationError } from "@/lib/limit-toast";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
@@ -33,8 +34,8 @@ export default function EventsPage() {
       });
       toast.success("Event created successfully");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create event";
-      toast.error(message);
+      // Handle limit errors with upgrade toast (R-ART-SUB-5.6, R-ART-SUB-6.5)
+      handleMutationError(error, "Failed to create event", "events");
       throw error;
     }
   }

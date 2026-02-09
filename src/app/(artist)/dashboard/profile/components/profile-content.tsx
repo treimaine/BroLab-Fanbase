@@ -25,6 +25,7 @@ interface ProfileContentProps {
     displayName: string;
     artistSlug: string;
     avatarUrl?: string;
+    avatarStorageId?: Id<"_storage">;
     bio?: string;
     socials?: SocialLink[];
   } | null;
@@ -88,6 +89,7 @@ export function ProfileContent({ artist }: Readonly<ProfileContentProps>) {
           artist
             ? {
                 avatarUrl: artist.avatarUrl ?? "",
+                avatarStorageId: artist.avatarStorageId,
                 displayName: artist.displayName,
                 artistSlug: artist.artistSlug,
                 bio: artist.bio ?? "",

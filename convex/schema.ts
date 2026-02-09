@@ -51,7 +51,9 @@ export default defineSchema({
     displayName: v.string(),
     bio: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    avatarStorageId: v.optional(v.id("_storage")), // Direct upload avatar
     coverUrl: v.optional(v.string()),
+    coverStorageId: v.optional(v.id("_storage")), // Direct upload cover
     socials: v.array(
       v.object({
         platform: v.string(),
@@ -100,6 +102,7 @@ export default defineSchema({
     city: v.string(),
     ticketUrl: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    imageStorageId: v.optional(v.id("_storage")), // Direct upload event image
     ticketsSold: v.number(),
     revenue: v.number(),
     status: v.union(
@@ -119,6 +122,7 @@ export default defineSchema({
     type: v.union(v.literal("music"), v.literal("video")),
     priceUSD: v.number(),
     coverImageUrl: v.optional(v.string()),
+    coverImageStorageId: v.optional(v.id("_storage")), // Direct upload cover image
     visibility: v.union(v.literal("public"), v.literal("private")),
     fileStorageId: v.optional(v.id("_storage")),
     contentType: v.optional(v.string()),
@@ -183,6 +187,22 @@ export default defineSchema({
     orderId: v.id("orders"),
     timestamp: v.number(),
   }).index("by_fan", ["fanUserId"]),
+
+  // Email events (idempotency tracking)
+  // Requirements: R-EMAIL-6 - Idempotency for email sending
+  // Option B: Dedicated table for better observability and separation from Stripe events
+  emailEvents: defineTable({
+    idempotencyKey: v.string(), // Unique key (e.g., "waitlist_confirmation:<email>")
+    templateId: v.string(), // Email template identifier
+    recipient: v.string(), // Email address
+    status: v.union(
+      v.literal("sent"),
+      v.literal("failed")
+    ),
+    providerMessageId: v.optional(v.string()), // Resend message ID
+    errorMessage: v.optional(v.string()), // Error message if failed
+    sentAt: v.number(), // Timestamp
+  }).index("by_idempotency_key", ["idempotencyKey"]),
 
   // Payment methods (Stripe)
   // Requirements: R-FAN-PM-3.3, R-FAN-PM-3.4 - Deterministic read model for payment methods

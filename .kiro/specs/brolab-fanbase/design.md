@@ -1263,7 +1263,349 @@ const session = await stripe.checkout.sessions.create({
 - **Premium but clear**: Not cryptic or overly clever
 - **Direct and benefit-focused**: "You earn more" not "We have features"
 - **Artist-first perspective**: "Your earnings" not "Our platform"
-- **Active voice**: "Fans pay you" not "Payments are received"
+- **Active voice**
+
+---
+
+## Emails — Transactional System (Resend)
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    EMAIL SENDING FLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│  UI Trigger (mutation)                                          │
+│  ├─ e.g., waitlist.submit(), orders.create()                   │
+│  └─ ctx.scheduler.runAfter(0, internal.emails.send, {...})     │
+├─────────────────────────────────────────────────────────────────┤
+│  Convex Internal Action: emails.send                           │
+│  ├─ Check idempotency (processedEvents or emailEvents)         │
+│  ├─ Render template: renderEmail(templateId, props)            │
+│  ├─ Call Resend API: resend.emails.send({...})                 │
+│  ├─ Log result (success/failure)                               │
+│  └─ Mark event as processed                                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Resend API                                                     │
+│  ├─ Validates sender domain (SPF/DKIM/DMARC)                   │
+│  ├─ Delivers email to recipient                                │
+│  └─ Returns messageId for tracking                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Principles
+
+1. **No Resend calls in queries**: Only internal actions (`"use node"`) can call Resend API
+2. **Async dispatch**: Use `ctx.scheduler.runAfter(0, ...)` to not block mutations
+3. **Idempotency**: Check before sending to avoid duplicate emails
+4. **Observability**: Log every send attempt with status and provider messageId
+
+### Template System (Recommended: React Email)
+
+#### Directory Structure
+
+```
+emails/
+├── components/
+│   ├── Layout.tsx          # Shared header + footer wrapper
+│   ├── Button.tsx          # CTA button (gradient lavender)
+│   ├── Text.tsx            # Typography (heading, body, muted)
+│   ├── Footer.tsx          # Standard footer (support contact, copyright)
+│   └── Divider.tsx         # Horizontal separator
+├── templates/
+│   ├── WaitlistConfirmation.tsx
+│   ├── PurchaseReceipt.tsx       # (future)
+│   ├── ArtistStripeConnected.tsx # (future)
+│   └── ArtistStripePending.tsx   # (future)
+└── render.ts               # renderEmail(templateId, props) registry
+```
+
+#### Template Registry (`emails/render.ts`)
+
+```typescript
+import { render } from '@react-email/render';
+import WaitlistConfirmation from './templates/WaitlistConfirmation';
+import PurchaseReceipt from './templates/PurchaseReceipt';
+// ... other templates
+
+export type TemplateId = 
+  | 'waitlist_confirmation'
+  | 'purchase_receipt'
+  | 'artist_stripe_connected'
+  | 'artist_stripe_pending';
+
+interface RenderResult {
+  subject: string;
+  html: string;
+  text?: string;
+}
+
+export function renderEmail(templateId: TemplateId, props: Record<string, unknown>): RenderResult {
+  switch (templateId) {
+    case 'waitlist_confirmation':
+      return {
+        subject: "You're on the BroLab Waitlist! 🎵",
+        html: render(WaitlistConfirmation(props as WaitlistConfirmationProps)),
+        text: `Welcome to BroLab! You're on the waitlist...`, // fallback
+      };
+    case 'purchase_receipt':
+      return {
+        subject: `Receipt for your purchase - ${props.productTitle}`,
+        html: render(PurchaseReceipt(props as PurchaseReceiptProps)),
+      };
+    // ... other cases
+    default:
+      throw new Error(`Unknown template: ${templateId}`);
+  }
+}
+```
+
+### Design Tokens (Email-Safe)
+
+Emails use inline styles (no external CSS). Match brand identity:
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `background` | `#0a0a0a` | Email body background (dark) |
+| `card-bg` | `#141414` | Content card background |
+| `text-primary` | `#ffffff` | Headings, important text |
+| `text-muted` | `#a1a1aa` | Body text, descriptions |
+| `text-subtle` | `#71717a` | Footer, legal text |
+| `accent` | `linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)` | CTA buttons |
+| `border` | `#27272a` | Dividers, card borders |
+| `radius` | `8px` (buttons), `16px` (cards) | Border radius |
+
+### Shared Components
+
+#### Layout.tsx
+```tsx
+// Wraps all emails with consistent header/footer
+interface LayoutProps {
+  children: React.ReactNode;
+  previewText?: string;
+}
+
+export function Layout({ children, previewText }: LayoutProps) {
+  return (
+    <Html>
+      <Head />
+      {previewText && <Preview>{previewText}</Preview>}
+      <Body style={{ backgroundColor: '#0a0a0a', fontFamily: 'sans-serif' }}>
+        <Container style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px' }}>
+          {/* Header with logo */}
+          <Section style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffffff' }}>
+              BroLab
+            </Text>
+          </Section>
+          
+          {/* Content card */}
+          <Section style={{ backgroundColor: '#141414', borderRadius: '16px', padding: '40px' }}>
+            {children}
+          </Section>
+          
+          {/* Footer */}
+          <Footer />
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+```
+
+#### Button.tsx
+```tsx
+interface ButtonProps {
+  href: string;
+  children: React.ReactNode;
+}
+
+export function Button({ href, children }: ButtonProps) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: 'inline-block',
+        padding: '14px 32px',
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+        color: '#ffffff',
+        textDecoration: 'none',
+        fontWeight: '600',
+        fontSize: '16px',
+        borderRadius: '8px',
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+```
+
+#### Footer.tsx
+```tsx
+export function Footer() {
+  return (
+    <Section style={{ textAlign: 'center', marginTop: '32px', borderTop: '1px solid #27272a', paddingTop: '24px' }}>
+      <Text style={{ fontSize: '14px', color: '#71717a', margin: '0 0 8px' }}>
+        Your career isn't an algorithm.
+      </Text>
+      <Text style={{ fontSize: '12px', color: '#52525b', margin: '0 0 8px' }}>
+        Questions? Contact us at support@app.brolabentertainment.com
+      </Text>
+      <Text style={{ fontSize: '12px', color: '#52525b', margin: '0' }}>
+        © 2026 BroLab Entertainment. All rights reserved.
+      </Text>
+    </Section>
+  );
+}
+```
+
+### Email Types (Transactional Roadmap)
+
+| Template ID | Trigger | Recipient | Status |
+|-------------|---------|-----------|--------|
+| `waitlist_confirmation` | `waitlist.submit()` | Waitlist email | ✅ Exists (needs refactor) |
+| `purchase_receipt` | `checkout.session.completed` webhook | Fan email | 📋 Planned |
+| `artist_stripe_connected` | `account.updated` webhook (connected) | Artist email | 📋 Planned |
+| `artist_stripe_pending` | `account.updated` webhook (pending) | Artist email | 📋 Planned |
+| `artist_new_sale` | `checkout.session.completed` webhook | Artist email | 📋 Optional |
+
+### Convex Integration
+
+#### Sending Layer (`convex/emails.ts`)
+
+```typescript
+"use node";
+
+import { v } from "convex/values";
+import { Resend } from "resend";
+import { internalAction, internalMutation } from "./_generated/server";
+import { renderEmail, TemplateId } from "../emails/render";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = "BroLab Support <support@app.brolabentertainment.com>";
+
+/**
+ * Central email sending action
+ * All transactional emails go through this function
+ */
+export const send = internalAction({
+  args: {
+    templateId: v.string(),
+    to: v.string(),
+    props: v.any(),
+    idempotencyKey: v.string(), // e.g., "waitlist_confirmation:<waitlistId>"
+  },
+  handler: async (ctx, args) => {
+    // 1. Check idempotency
+    const alreadySent = await ctx.runQuery(internal.emails.checkSent, {
+      idempotencyKey: args.idempotencyKey,
+    });
+    if (alreadySent) {
+      console.log(`Email already sent: ${args.idempotencyKey}`);
+      return { success: true, skipped: true };
+    }
+
+    // 2. Render template
+    const { subject, html, text } = renderEmail(args.templateId as TemplateId, args.props);
+
+    // 3. Send via Resend
+    try {
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: args.to,
+        subject,
+        html,
+        text,
+      });
+
+      if (error) {
+        // Log failure
+        await ctx.runMutation(internal.emails.logSend, {
+          templateId: args.templateId,
+          recipient: args.to,
+          status: "failed",
+          error: error.message,
+          idempotencyKey: args.idempotencyKey,
+        });
+        return { success: false, error: error.message };
+      }
+
+      // Log success + mark as sent
+      await ctx.runMutation(internal.emails.logSend, {
+        templateId: args.templateId,
+        recipient: args.to,
+        status: "sent",
+        providerMessageId: data?.id,
+        idempotencyKey: args.idempotencyKey,
+      });
+
+      return { success: true, messageId: data?.id };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      await ctx.runMutation(internal.emails.logSend, {
+        templateId: args.templateId,
+        recipient: args.to,
+        status: "failed",
+        error: errorMessage,
+        idempotencyKey: args.idempotencyKey,
+      });
+      return { success: false, error: errorMessage };
+    }
+  },
+});
+```
+
+### Idempotency Strategy
+
+**Option A: Reuse `processedEvents` table**
+```typescript
+// Check: provider="email", eventId=idempotencyKey
+const existing = await ctx.db
+  .query("processedEvents")
+  .withIndex("by_event", (q) => q.eq("provider", "email").eq("eventId", idempotencyKey))
+  .unique();
+```
+
+**Option B: Dedicated `emailEvents` table** (recommended for better observability)
+```typescript
+// convex/schema.ts
+emailEvents: defineTable({
+  idempotencyKey: v.string(),  // "templateId:businessKey"
+  templateId: v.string(),
+  recipient: v.string(),
+  status: v.union(v.literal("sent"), v.literal("failed")),
+  providerMessageId: v.optional(v.string()),
+  error: v.optional(v.string()),
+  sentAt: v.number(),
+}).index("by_key", ["idempotencyKey"])
+```
+
+### Deliverability Checklist (Infrastructure)
+
+Before going to production, ensure:
+
+- [ ] Domain `app.brolabentertainment.com` verified on Resend dashboard
+- [ ] SPF record added to DNS: `v=spf1 include:_spf.resend.com ~all`
+- [ ] DKIM record added to DNS (provided by Resend)
+- [ ] DMARC record added: `v=DMARC1; p=none; rua=mailto:dmarc@brolabentertainment.com`
+- [ ] Test email delivery to Gmail, Outlook, Yahoo (check spam folder)
+- [ ] Verify "From" address displays correctly in email clients
+
+### Testing Strategy
+
+**Development:**
+- Use Resend test mode (emails not actually sent)
+- Use test email addresses: `test+<tag>@resend.dev`
+- Preview templates locally with React Email dev server
+
+**Staging:**
+- Send to real addresses (team members only)
+- Verify deliverability and rendering
+
+**Production:**
+- Monitor Resend dashboard for bounce/complaint rates
+- Set up alerts for high failure rates: "Fans pay you" not "Payments are received"
 
 #### Headline Style
 - **Length**: ≤10 words

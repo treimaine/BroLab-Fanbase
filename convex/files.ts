@@ -121,13 +121,44 @@ export const getPlayableUrl = query({
  * Used by artists to upload audio/video files.
  * 
  * Requirements: 16.4 - Use Convex File Storage upload flow with upload URLs
+ * Requirements: R-ART-SUB-5.5 - Video uploads require Premium
+ * Requirements: R-ART-SUB-7.3, R-ART-SUB-7.4 - File size limits by plan
+ * 
+ * Subscription-based validation:
+ * - Free plan: Audio only, max 50MB
+ * - Premium plan: Audio + Video, max 500MB
  */
 export const generateUploadUrl = mutation({
-  handler: async (ctx) => {
+  args: {
+    fileType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
+    fileSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     // Verify authentication
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
+    }
+    
+    // Import subscription helpers
+    const { canUploadVideo, getMaxFileSize } = await import("./subscriptions");
+    
+    // Check video upload permission (requires Premium)
+    if (args.fileType === "video") {
+      const canUpload = await canUploadVideo(ctx);
+      if (!canUpload) {
+        throw new Error("Video uploads require Premium. Upgrade to unlock.");
+      }
+    }
+    
+    // Check file size limit
+    if (args.fileSize !== undefined) {
+      const maxSize = await getMaxFileSize(ctx);
+      const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+      
+      if (args.fileSize > maxSize) {
+        throw new Error(`File size exceeds your plan limit (${maxSizeMB}MB). Upgrade to upload larger files.`);
+      }
     }
     
     return await ctx.storage.generateUploadUrl();
@@ -152,5 +183,45 @@ export const deleteFile = mutation({
     }
     
     await ctx.storage.delete(args.storageId);
+  },
+});
+
+/**
+ * Generate an upload URL for avatar/cover images.
+ * Used by artists to upload profile images directly.
+ * 
+ * Max file size: 5MB for images
+ */
+export const generateImageUploadUrl = mutation({
+  args: {
+    fileSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Verify authentication
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    
+    // Check file size limit (5MB for images)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (args.fileSize !== undefined && args.fileSize > maxSize) {
+      throw new Error("Image size exceeds limit (5MB max)");
+    }
+    
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Get a public URL for an image stored in Convex File Storage.
+ * Used for avatar and cover images.
+ */
+export const getImageUrl = query({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
   },
 });

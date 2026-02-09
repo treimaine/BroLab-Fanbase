@@ -365,7 +365,9 @@ function applyOptionalUpdates(
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
+    avatarStorageId?: string;
     coverUrl?: string;
+    coverStorageId?: string;
     socials?: Array<{ platform: string; url: string; active: boolean }>;
   }
 ): void {
@@ -378,8 +380,14 @@ function applyOptionalUpdates(
   if (args.avatarUrl !== undefined) {
     updates.avatarUrl = args.avatarUrl;
   }
+  if (args.avatarStorageId !== undefined) {
+    updates.avatarStorageId = args.avatarStorageId;
+  }
   if (args.coverUrl !== undefined) {
     updates.coverUrl = args.coverUrl;
+  }
+  if (args.coverStorageId !== undefined) {
+    updates.coverStorageId = args.coverStorageId;
   }
   if (args.socials !== undefined) {
     updates.socials = args.socials;
@@ -413,7 +421,9 @@ export const update = mutation({
     displayName: v.optional(v.string()),
     bio: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    avatarStorageId: v.optional(v.id("_storage")),
     coverUrl: v.optional(v.string()),
+    coverStorageId: v.optional(v.id("_storage")),
     socials: v.optional(
       v.array(
         v.object({

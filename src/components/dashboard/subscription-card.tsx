@@ -1,6 +1,6 @@
 /**
  * Subscription Card Component
- * Requirements: R-ART-SUB-4.1, R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.2
+ * Requirements: R-ART-SUB-4.1, R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.1, R-ART-SUB-6.2
  *
  * Displays current subscription plan with appropriate CTAs based on status.
  *
@@ -10,6 +10,10 @@
  * - Premium (Trialing): "Manage Subscription" → /api/billing/manage (with trial badge)
  * - Premium (Canceling): "Reactivate Premium" → /api/billing/manage
  * - Premium (Past Due): "Update Payment Method" → /api/billing/manage
+ *
+ * Analytics Events (R-ART-SUB-6):
+ * - upgrade_click: When user clicks upgrade button
+ * - manage_click: When user clicks manage subscription button
  */
 
 "use client";
@@ -18,14 +22,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { trackSubscriptionEvent } from "@/lib/analytics";
 import {
-    AlertTriangle,
-    Calendar,
-    CheckCircle2,
-    Crown,
-    Loader2,
-    Sparkles,
-    XCircle,
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  Crown,
+  Loader2,
+  Sparkles,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 
@@ -41,21 +46,6 @@ interface SubscriptionCardProps {
   currentPeriodEnd?: number;
   /** Loading state while fetching data */
   isLoading?: boolean;
-}
-
-/**
- * Track subscription-related events for analytics
- * Requirements: R-ART-SUB-6.2
- */
-function trackSubscriptionEvent(eventName: string, properties?: Record<string, unknown>) {
-  // Analytics tracking - can be integrated with analytics provider
-  // For now, log to console in development
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[Analytics] ${eventName}`, properties);
-  }
-
-  // Future: integrate with analytics provider (e.g., Segment, Mixpanel, PostHog)
-  // globalThis.analytics?.track(eventName, properties);
 }
 
 /**
@@ -179,21 +169,29 @@ export function SubscriptionCard({
 
   /**
    * Handle upgrade button click
-   * Requirements: R-ART-SUB-4.1 - Free plan upgrade CTA
+   * Requirements: R-ART-SUB-4.1 - Free plan upgrade CTA, R-ART-SUB-6.1 - Track upgrade_click
    */
   const handleUpgradeClick = useCallback(async () => {
-    // Track upgrade_click event (already tracked in SubscriptionBadge, but also here for card)
+    // Track upgrade_click event (R-ART-SUB-6.1)
     trackSubscriptionEvent("upgrade_click", {
-      timestamp: new Date().toISOString(),
-      currentPlan: plan,
+      plan,
       source: "subscription_card",
     });
 
     setIsRedirecting(true);
 
     try {
-      // Redirect to checkout API route
-      globalThis.location.href = "/api/billing/checkout";
+      // Get the Premium plan ID from environment variable
+      const premiumPlanId = process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID;
+      
+      // Redirect to checkout API route with plan ID
+      const checkoutUrl = new URL("/api/billing/checkout", globalThis.location.origin);
+      if (premiumPlanId) {
+        checkoutUrl.searchParams.set("plan", premiumPlanId);
+      }
+      checkoutUrl.searchParams.set("period", "month");
+      
+      globalThis.location.href = checkoutUrl.toString();
     } catch (error) {
       console.error("Failed to redirect to checkout:", error);
       setIsRedirecting(false);
@@ -202,14 +200,13 @@ export function SubscriptionCard({
 
   /**
    * Handle manage button click
-   * Requirements: R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.2
+   * Requirements: R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.2 - Track manage_click
    */
   const handleManageClick = useCallback(async () => {
     // Track manage_click event (R-ART-SUB-6.2)
     trackSubscriptionEvent("manage_click", {
-      timestamp: new Date().toISOString(),
-      currentPlan: plan,
-      currentStatus: status,
+      plan,
+      status,
       source: "subscription_card",
     });
 

@@ -15,6 +15,7 @@ import { LinkItem, type LinkItemData } from "@/components/dashboard/link-item";
 import { AddLinkDialog, type AddLinkData } from "@/components/forms/add-link-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardSkeleton, SuspenseWrapper } from "@/components/ui/skeleton";
+import { handleMutationError } from "@/lib/limit-toast";
 import { useMutation, useQuery } from "convex/react";
 import { Link2 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,8 +36,8 @@ export default function LinksPage() {
       });
       toast.success("Link added successfully");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to add link";
-      toast.error(message);
+      // Handle limit errors with upgrade toast (R-ART-SUB-5.6, R-ART-SUB-6.5)
+      handleMutationError(error, "Failed to add link", "links");
       throw error;
     }
   }
@@ -82,8 +83,7 @@ export default function LinksPage() {
               className="text-primary underline underline-offset-2 hover:text-primary/80"
             >
               Profile &amp; Bio → Social Links
-            </a>
-            .
+            </a>.
           </p>
         </div>
         <AddLinkDialog onAddLink={handleAddLink} />

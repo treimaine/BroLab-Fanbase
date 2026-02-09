@@ -9,10 +9,11 @@
  */
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Eye, EyeOff, Music, Video } from "lucide-react";
+import { Eye, EyeOff, Music, Pencil, Trash2, Video } from "lucide-react";
 import Image from "next/image";
 
 /**
@@ -37,6 +38,7 @@ export type ProductVisibility = "public" | "private";
 export interface ProductItemData {
   id: string;
   title: string;
+  description?: string;
   type: ProductType;
   priceUSD: number;
   coverImageUrl?: string;
@@ -46,6 +48,8 @@ export interface ProductItemData {
 interface ProductItemProps {
   readonly product: ProductItemData;
   readonly onToggleVisibility: (id: string, visibility: ProductVisibility) => void;
+  readonly onEdit?: (product: ProductItemData) => void;
+  readonly onDelete?: (id: string) => void;
   readonly disabled?: boolean;
 }
 
@@ -70,6 +74,8 @@ function formatPrice(priceUSD: number): string {
 export function ProductItem({
   product,
   onToggleVisibility,
+  onEdit,
+  onDelete,
   disabled = false,
 }: ProductItemProps) {
   const config = typeConfig[product.type];
@@ -165,6 +171,34 @@ export function ProductItem({
         aria-label={`Toggle ${product.title} visibility`}
         className="shrink-0"
       />
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-1 shrink-0">
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onEdit(product)}
+            disabled={disabled}
+            className="h-8 w-8"
+          >
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Edit {product.title}</span>
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(product.id)}
+            disabled={disabled}
+            className="h-8 w-8 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Delete {product.title}</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

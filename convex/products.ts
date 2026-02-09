@@ -210,6 +210,7 @@ export const create = mutation({
     type: v.union(v.literal("music"), v.literal("video")),
     priceUSD: v.number(),
     coverImageUrl: v.optional(v.string()),
+    coverImageStorageId: v.optional(v.id("_storage")),
     visibility: v.union(v.literal("public"), v.literal("private")),
     fileStorageId: v.optional(v.id("_storage")),
     contentType: v.optional(v.string()),
@@ -280,6 +281,7 @@ export const create = mutation({
       type: args.type,
       priceUSD: args.priceUSD,
       coverImageUrl: args.coverImageUrl,
+      coverImageStorageId: args.coverImageStorageId,
       visibility: args.visibility,
       fileStorageId: args.fileStorageId,
       contentType: args.contentType,
@@ -322,6 +324,7 @@ export const update = mutation({
     type: v.optional(v.union(v.literal("music"), v.literal("video"))),
     priceUSD: v.optional(v.number()),
     coverImageUrl: v.optional(v.string()),
+    coverImageStorageId: v.optional(v.id("_storage")),
     visibility: v.optional(v.union(v.literal("public"), v.literal("private"))),
     fileStorageId: v.optional(v.id("_storage")),
     contentType: v.optional(v.string()),
@@ -354,6 +357,9 @@ export const update = mutation({
     }
     if (args.coverImageUrl !== undefined) {
       updates.coverImageUrl = args.coverImageUrl;
+    }
+    if (args.coverImageStorageId !== undefined) {
+      updates.coverImageStorageId = args.coverImageStorageId;
     }
     if (args.visibility !== undefined) {
       updates.visibility = args.visibility;

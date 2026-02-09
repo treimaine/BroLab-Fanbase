@@ -759,7 +759,63 @@ THE System SHALL enforce these limits server-side in Convex mutations:
 
 **Enforcement Rules:**
 - **R-ART-SUB-7.1**: BEFORE creating product/event/link, query current count and check against limit
-- **R-ART-SUB-7.2**: IF limit exceeded, throw error with message: "You've reached the limit for [feature] on your current plan. Upgrade to create more."
+- **R-ART-SUB-7.2**: IF limit exceeded, throw error with message: "You've reached the limit for [feature]. Upgrade to Premium for unlimited access."
+
+---
+
+## Transactional Email System (Resend)
+
+### R-EMAIL-1: Provider & Sending Context
+THE System SHALL send transactional emails via Resend from Convex internal actions (Node runtime `"use node"`), NEVER from deterministic queries.
+
+### R-EMAIL-2: Async Dispatch
+Email sending SHALL be asynchronous via `ctx.scheduler.runAfter(0, ...)` to avoid blocking mutations. The mutation returns immediately; email is sent in background.
+
+### R-EMAIL-3: Reusable Templates
+Emails SHALL use reusable templates (layout + components) to avoid inline HTML that is hard to maintain. Recommended approach: React Email components compiled to HTML.
+
+### R-EMAIL-4: Template Registry
+Each transactional email SHALL be identified by a `templateId` (enum) and rendered via a single function `renderEmail(templateId, props)` that returns `{ subject, html, text? }`.
+
+**Template IDs (MVP):**
+- `waitlist_confirmation` — Sent after waitlist signup
+- `purchase_receipt` — Sent after successful purchase (future)
+- `artist_stripe_connected` — Sent when artist completes Stripe Connect (future)
+- `artist_stripe_pending` — Sent when artist has pending Stripe requirements (future)
+
+### R-EMAIL-5: From Address
+By default, emails SHALL be sent from: `BroLab Support <support@app.brolabentertainment.com>`.
+
+Secondary sender (optional, for future use): `BroLab <noreply@brolabentertainment.com>`.
+
+### R-EMAIL-6: Idempotency
+Email-triggering events SHALL be idempotent:
+- **R-EMAIL-6.1**: IF an email has already been sent for the same event/business key, it SHALL NOT be resent.
+- **R-EMAIL-6.2**: Idempotency MAY reuse the existing `processedEvents` table (provider="email", eventId=`<templateId>:<businessKey>`) OR use a dedicated `emailEvents` table.
+- **R-EMAIL-6.3**: Example business keys: `waitlist_confirmation:<waitlistId>`, `purchase_receipt:<orderId>`.
+
+### R-EMAIL-7: Observability
+Each email send attempt SHALL be logged with:
+- `templateId` — Which email template was used
+- `recipient` — Email address (can be hashed for privacy)
+- `timestamp` — When the send was attempted
+- `providerMessageId` — Resend message ID (if available)
+- `status` — `"sent"` | `"failed"`
+- `error` — Error message (if failed)
+
+Logs MAY be stored in Convex (table `emailLogs`) or external logging service.
+
+### R-EMAIL-8: Deliverability Prerequisites
+THE documentation SHALL require the following for production email deliverability:
+- **R-EMAIL-8.1**: Domain `app.brolabentertainment.com` verified on Resend
+- **R-EMAIL-8.2**: SPF record configured for the domain
+- **R-EMAIL-8.3**: DKIM record configured for the domain
+- **R-EMAIL-8.4**: DMARC policy configured (recommended: `p=none` initially, then `p=quarantine`)
+
+These are infrastructure tasks, not code tasks, but MUST be documented as prerequisites.
+
+### R-EMAIL-9: Scope (Transactional Only)
+THE email system covers ONLY transactional emails (triggered by user actions or system events). Marketing emails (newsletters, campaigns) are OUT OF SCOPE for this systemature] on your current plan. Upgrade to create more."
 - **R-ART-SUB-7.3**: BEFORE file upload, check: file type (video requires Premium) and file size (50MB Free, 500MB Premium)
 - **R-ART-SUB-7.4**: IF file validation fails, throw error with upgrade CTA
 

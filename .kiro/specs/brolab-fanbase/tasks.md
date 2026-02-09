@@ -1805,7 +1805,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.3 Data Layer (Convex Queries)
 
-- [ ] 8.3.1 Verify subscription queries exist
+- [x] 8.3.1 Verify subscription queries exist
   - File: `convex/subscriptions.ts`
   - Queries:
     - `getCurrentSubscription`: Returns plan, status, currentPeriodEnd, limits
@@ -1823,7 +1823,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.4 Downgrade Soft-Lock Implementation
 
-- [ ] 8.4.1 Update createProduct mutation
+- [x] 8.4.1 Update createProduct mutation
   - File: `convex/products.ts`
   - Before creating product:
     1. Query current products count
@@ -1832,19 +1832,19 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     4. If limit exceeded, throw error: "You've reached the limit for products on your current plan. Upgrade to create more."
   - _Requirements: R-ART-SUB-5.2, R-ART-SUB-7.1, R-ART-SUB-7.2_
 
-- [ ] 8.4.2 Update createEvent mutation
+- [x] 8.4.2 Update createEvent mutation
   - File: `convex/events.ts`
   - Same logic as createProduct
   - Error message: "You've reached the limit for events on your current plan. Upgrade to create more."
   - _Requirements: R-ART-SUB-5.3, R-ART-SUB-7.1, R-ART-SUB-7.2_
 
-- [ ] 8.4.3 Update createLink mutation
+- [x] 8.4.3 Update createLink mutation
   - File: `convex/links.ts`
   - Same logic as createProduct
   - Error message: "You've reached the limit for links on your current plan. Upgrade to create more."
   - _Requirements: R-ART-SUB-5.4, R-ART-SUB-7.1, R-ART-SUB-7.2_
 
-- [ ] 8.4.4 Update file upload validation
+- [x] 8.4.4 Update file upload validation
   - File: `convex/files.ts` (generateUploadUrl action)
   - Before generating upload URL:
     1. Check file type (video requires Premium)
@@ -1853,7 +1853,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     4. If file size exceeds limit, throw error: "File size exceeds your plan limit ([limit]MB). Upgrade to upload larger files."
   - _Requirements: R-ART-SUB-5.5, R-ART-SUB-7.3, R-ART-SUB-7.4_
 
-- [ ] 8.4.5 Add blocking UI feedback
+- [x] 8.4.5 Add blocking UI feedback
   - When mutation throws limit error, display toast with:
     - Error message from mutation
     - "Upgrade to Premium" button (inline in toast)
@@ -1870,7 +1870,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.5 Tracking Events (Analytics)
 
-- [ ] 8.5.1 Add tracking helper
+- [x] 8.5.1 Add tracking helper
   - File: `src/lib/analytics.ts`
   - Function: `trackSubscriptionEvent(eventName, metadata?)`
   - Events:
@@ -1882,7 +1882,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Metadata: `{ plan, status, limitType }` (if applicable)
   - _Requirements: R-ART-SUB-6.1, R-ART-SUB-6.2, R-ART-SUB-6.3, R-ART-SUB-6.4, R-ART-SUB-6.5, R-ART-SUB-6.6_
 
-- [ ] 8.5.2 Wire tracking events
+- [x] 8.5.2 Wire tracking events
   - SubscriptionCard: Track `upgrade_click` and `manage_click`
   - Billing page: Track `upgrade_success` on mount if `?success=true`
   - Mutation errors: Track `limit_hit` in catch blocks
@@ -1981,7 +1981,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.7 Documentation Updates
 
-- [ ] 8.7.1 Update README.md
+- [x] 8.7.1 Update README.md
   - Add section: "Artist Subscriptions (Clerk Billing)"
   - Document: Plans (Free/Premium), pricing ($19.99/month), limits
   - Document: Upgrade/manage flows, soft-lock policy
@@ -1992,7 +1992,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Document: How to set up Clerk Billing in Clerk Dashboard
   - _Requirements: Setup documentation_
 
-- [ ] 8.7.3 Curate knowledge in ByteRover
+- [x] 8.7.3 Curate knowledge in ByteRover
   - Run: `brv curate "Artist subscription implementation via Clerk Billing with soft-lock downgrade policy" --files src/app/api/billing/checkout/route.ts --files src/app/api/billing/manage/route.ts --files src/components/dashboard/subscription-card.tsx --files convex/subscriptions.ts`
   - _Requirements: ByteRover workflow_
 
@@ -2006,3 +2006,224 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - **Real flows only:** No mock/placeholder data, real Clerk Billing checkout/portal
 - **Tracking:** All subscription events tracked for analytics
 - **Testing:** Manual QA via Playwright MCP for all flows and states
+
+---
+
+## Phase 9 — Transactional Email System (Resend) — Templates & Infra Readiness
+
+**Context:**
+- Current state: Single email (waitlist confirmation) with inline HTML in `convex/emails.ts`
+- Problem: Inline HTML is hard to maintain, no reusable components, no idempotency
+- Goal: Refactor to reusable React Email templates + centralized sending layer
+
+**Business Rules:**
+- Transactional emails only (no marketing/newsletters)
+- Default sender: `BroLab Support <support@app.brolabentertainment.com>`
+- Async dispatch via `ctx.scheduler.runAfter(0, ...)` (never block mutations)
+- Idempotency required (no duplicate emails for same event)
+
+### 9.1 Template Refactor (React Email)
+
+- [x] 9.1.1 Install React Email dependencies
+    - Run: `npm install @react-email/components react-email`
+    - Verify installation in package.json
+    - _Requirements: R-EMAIL-3_
+
+- [x] 9.1.2 Create emails directory structure
+    - Create folder: `emails/`
+    - Create subfolders: `emails/components/`, `emails/templates/`
+    - Create file: `emails/render.ts` (template registry)
+    - _Requirements: R-EMAIL-3, R-EMAIL-4_
+
+- [x] 9.1.3 Create shared Layout component
+    - Create file: `emails/components/Layout.tsx`
+    - Implement: Dark background (#0a0a0a), card container (#141414), header with logo, footer with tagline + support contact
+    - Props: `children`, `previewText`
+    - Use `@react-email/components`: Html, Head, Body, Container, Section, Text, Preview
+    - _Requirements: R-EMAIL-3_
+
+- [x] 9.1.4 Create shared Button component
+    - Create file: `emails/components/Button.tsx`
+    - Implement: Lavender gradient CTA button (inline styles)
+    - Props: `href`, `children`
+    - Use `@react-email/components`: Link
+    - _Requirements: R-EMAIL-3_
+
+- [x] 9.1.5 Create shared Text component
+    - Create file: `emails/components/Text.tsx`
+    - Implement: Typography variants (heading, body, muted)
+    - Props: `variant`, `children`, `style`
+    - Use `@react-email/components`: Text
+    - _Requirements: R-EMAIL-3_
+
+- [x] 9.1.6 Create shared Footer component
+    - Create file: `emails/components/Footer.tsx`
+    - Implement: Tagline "Your career isn't an algorithm.", support contact, copyright
+    - Use `@react-email/components`: Section, Text
+    - _Requirements: R-EMAIL-3_
+
+- [x] 9.1.7 Create WaitlistConfirmation template
+    - Create file: `emails/templates/WaitlistConfirmation.tsx`
+    - Migrate content from current inline HTML in `convex/emails.ts`
+    - Use Layout, Button, Text, Footer components
+    - Props: `email` (recipient email for personalization if needed)
+    - Export as React component
+    - _Requirements: R-EMAIL-3_
+
+- [x] 9.1.8 Create template registry (renderEmail)
+    - Update file: `emails/render.ts`
+    - Define `TemplateId` type: `'waitlist_confirmation' | 'purchase_receipt' | ...`
+    - Implement `renderEmail(templateId, props)` function
+    - Return: `{ subject: string, html: string, text?: string }`
+    - Use `@react-email/render` to convert React to HTML
+    - Add plain text fallback for deliverability
+    - _Requirements: R-EMAIL-4_
+
+- [x] 9.1.9 Add plain text fallback for WaitlistConfirmation
+    - In `renderEmail`, add `text` field for waitlist_confirmation
+    - Content: Simple text version of the email (no HTML)
+    - Example: "Welcome to BroLab! You're on the waitlist. We'll notify you when your spot opens up."
+    - _Requirements: R-EMAIL-3_
+
+### 9.2 Sending Layer (Centralized)
+
+- [x] 9.2.1 Create centralized send action
+    - Update file: `convex/emails.ts`
+    - Create new internal action: `send`
+    - Args: `templateId`, `to`, `props`, `idempotencyKey`
+    - Flow:
+      1. Check idempotency (query processedEvents or emailEvents)
+      2. Call `renderEmail(templateId, props)` to get subject/html/text
+      3. Call Resend API with FROM = `BroLab Support <support@app.brolabentertainment.com>`
+      4. Log result (success/failure)
+      5. Mark event as processed
+    - _Requirements: R-EMAIL-1, R-EMAIL-2, R-EMAIL-5_
+
+- [x] 9.2.2 Update FROM address constant
+    - In `convex/emails.ts`, update `FROM_EMAIL` constant
+    - Old: `"BroLab <noreply@brolabentertainment.com>"`
+    - New: `"BroLab Support <support@app.brolabentertainment.com>"`
+    - _Requirements: R-EMAIL-5_
+
+- [x] 9.2.3 Add structured logging
+    - In `send` action, log each send attempt with:
+      - `templateId`
+      - `recipient` (email address)
+      - `timestamp` (Date.now())
+      - `status` ("sent" | "failed")
+      - `providerMessageId` (from Resend response, if available)
+      - `error` (error message, if failed)
+    - Use `console.log` with JSON structure for Convex dashboard visibility
+    - _Requirements: R-EMAIL-7_
+
+- [x] 9.2.4 Migrate sendWaitlistConfirmation to use centralized send
+    - Update `sendWaitlistConfirmation` action in `convex/emails.ts`
+    - Replace direct Resend call with:
+      ```typescript
+      await ctx.scheduler.runAfter(0, internal.emails.send, {
+        templateId: 'waitlist_confirmation',
+        to: args.email,
+        props: { email: args.email },
+        idempotencyKey: `waitlist_confirmation:${args.email}`,
+      });
+      ```
+    - Or refactor to call `send` directly if already in action context
+    - _Requirements: R-EMAIL-1, R-EMAIL-2_
+
+### 9.3 Idempotency
+
+- [x] 9.3.1 Choose idempotency strategy
+    - **Option A**: Reuse `processedEvents` table (provider="email", eventId=idempotencyKey)
+    - **Option B**: Create dedicated `emailEvents` table (recommended for better observability)
+    - Document decision in code comments
+    - _Requirements: R-EMAIL-6_
+
+- [x] 9.3.2 Implement idempotency check query
+    - If Option A: Create query `emails.checkSent` that queries `processedEvents` by provider="email" + eventId
+    - If Option B: Create table `emailEvents` in schema + query `emails.checkSent`
+    - Return: `boolean` (true if already sent)
+    - _Requirements: R-EMAIL-6_
+
+- [x] 9.3.3 Implement idempotency mark mutation
+    - If Option A: Reuse existing `processedEvents` insert logic
+    - If Option B: Create mutation `emails.markSent` that inserts into `emailEvents`
+    - Fields: `idempotencyKey`, `templateId`, `recipient`, `status`, `providerMessageId`, `error`, `sentAt`
+    - _Requirements: R-EMAIL-6_
+
+- [ ] 9.3.4 QA: Test idempotency
+    - Trigger waitlist submission twice with same email
+    - Verify only 1 email is sent (check Resend dashboard)
+    - Verify second call returns early with "already sent" log
+    - _Requirements: R-EMAIL-6_
+
+### 9.4 Deliverability Checklist (Docs Only)
+
+- [x] 9.4.1 Document domain verification requirement
+    - Add to `docs/EMAIL-DELIVERABILITY.md` (or similar):
+      - Domain `app.brolabentertainment.com` must be verified on Resend dashboard
+      - Link to Resend docs: https://resend.com/docs/dashboard/domains/introduction
+    - _Requirements: R-EMAIL-8_
+
+- [x] 9.4.2 Document DNS records requirement
+    - Add to `docs/EMAIL-DELIVERABILITY.md`:
+      - SPF record: `v=spf1 include:_spf.resend.com ~all`
+      - DKIM record: (provided by Resend after domain verification)
+      - DMARC record: `v=DMARC1; p=none; rua=mailto:dmarc@brolabentertainment.com`
+    - _Requirements: R-EMAIL-8_
+
+- [x] 9.4.3 Document test mode usage
+    - Add to `docs/EMAIL-DELIVERABILITY.md`:
+      - Resend test mode: emails not actually sent
+      - Test email addresses: `test+<tag>@resend.dev`
+      - How to verify delivery in Resend dashboard
+    - _Requirements: R-EMAIL-8_
+
+### 9.5 QA Checkpoint (Manual via Playwright MCP)
+
+- [ ] 9.5.1 Test waitlist email sends correctly
+    - Navigate to `/` (landing page)
+    - Enter test email in waitlist form
+    - Submit form
+    - Verify success toast appears
+    - Check Resend dashboard for sent email
+    - Verify email content matches new template (dark theme, lavender CTA)
+    - Verify FROM address is `BroLab Support <support@app.brolabentertainment.com>`
+    - _Requirements: R-EMAIL-1, R-EMAIL-3, R-EMAIL-5_
+
+- [ ] 9.5.2 Test email template rendering
+    - Check email in Resend dashboard or email client
+    - Verify: Header with logo, content card, CTA button, footer with tagline
+    - Verify: Responsive on mobile (check email client mobile preview)
+    - Verify: Links are correct (CTA points to app URL)
+    - _Requirements: R-EMAIL-3_
+
+- [ ] 9.5.3 Test idempotency
+    - Submit same email to waitlist twice
+    - Verify only 1 email appears in Resend dashboard
+    - Check Convex logs for "already sent" message on second attempt
+    - _Requirements: R-EMAIL-6_
+
+- [ ] 9.5.4 Test logging/observability
+    - Submit new email to waitlist
+    - Check Convex dashboard logs
+    - Verify log contains: templateId, recipient, timestamp, status, providerMessageId
+    - _Requirements: R-EMAIL-7_
+
+- [x] 9.5.5 Verify no inline HTML remains
+    - Open `convex/emails.ts`
+    - Verify no large HTML strings in the file
+    - Verify all email content comes from `emails/templates/` via `renderEmail()`
+    - _Requirements: R-EMAIL-3_
+
+- _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_type_
+
+---
+
+## Notes on Phase 9
+
+- **Transactional only:** No marketing emails in this phase
+- **React Email:** Recommended for maintainable templates with React components
+- **Idempotency:** Critical to prevent duplicate emails (use business key like `templateId:entityId`)
+- **Deliverability:** DNS records are infrastructure tasks, documented but not implemented in code
+- **Testing:** Use Resend test mode during development, verify in dashboard
+- **Future templates:** Purchase receipt, Stripe Connect status emails can be added following same pattern

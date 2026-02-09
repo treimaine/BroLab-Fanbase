@@ -235,9 +235,13 @@ export const create = mutation({
       .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
       .collect();
 
-    // Check subscription limits (R-CLERK-SUB-1.2)
+    // Check subscription limits (R-ART-SUB-5.4, R-ART-SUB-7.1, R-ART-SUB-7.2)
     const canCreate = await canCreateLink(ctx, existingLinks.length);
-    enforceLimit(canCreate, "custom links");
+    enforceLimit(
+      canCreate,
+      "links",
+      "You've reached the limit for links on your current plan. Upgrade to create more."
+    );
 
     const maxOrder = existingLinks.reduce(
       (max, link) => Math.max(max, link.order),

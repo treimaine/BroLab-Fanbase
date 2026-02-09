@@ -5,6 +5,7 @@
  */
 
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 
 /**
@@ -75,7 +76,12 @@ export const submit = mutation({
       email,
       createdAt: Date.now(),
     });
-    
+
+    // Send confirmation email via Resend
+    await ctx.scheduler.runAfter(0, internal.emails.sendWaitlistConfirmation, {
+      email,
+    });
+
     return {
       success: true,
       message: "Welcome to the waitlist! We'll be in touch soon.",

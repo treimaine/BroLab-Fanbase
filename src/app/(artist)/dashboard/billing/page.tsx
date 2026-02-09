@@ -5,27 +5,14 @@ import { UsageStatsCard } from "@/components/dashboard/usage-stats-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { SuspenseWrapper } from "@/components/ui/suspense-wrapper";
+import { trackSubscriptionEvent } from "@/lib/analytics";
+import { useSubscription } from "@clerk/nextjs/experimental";
 import { useQuery } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
 import { BillingContent } from "./components/billing-content";
-
-/**
- * Track billing-related events for analytics
- * Requirements: R-ART-SUB-6.3, R-ART-SUB-6.4
- */
-function trackBillingEvent(eventName: string, properties?: Record<string, unknown>) {
-  // Analytics tracking - can be integrated with analytics provider
-  // For now, log to console in development
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[Analytics] ${eventName}`, properties);
-  }
-  
-  // Future: integrate with analytics provider (e.g., Segment, Mixpanel, PostHog)
-  // globalThis.analytics?.track(eventName, properties);
-}
 
 /**
  * Return URL Handler Component
@@ -54,9 +41,8 @@ function ReturnUrlHandler() {
       });
       
       // Track upgrade_success event (R-ART-SUB-6.3)
-      trackBillingEvent("upgrade_success", {
+      trackSubscriptionEvent("upgrade_success", {
         source: "checkout_return",
-        timestamp: new Date().toISOString(),
       });
       
       // Clean up URL params without triggering navigation
@@ -73,9 +59,8 @@ function ReturnUrlHandler() {
       });
       
       // Track cancel_success event (R-ART-SUB-6.4)
-      trackBillingEvent("cancel_success", {
+      trackSubscriptionEvent("cancel_success", {
         source: "checkout_return",
-        timestamp: new Date().toISOString(),
       });
       
       // Clean up URL params without triggering navigation
@@ -93,27 +78,68 @@ function ReturnUrlHandler() {
  * Requirements: R-ART-SUB-4.1 through R-ART-SUB-4.6
  * 
  * Displays current subscription plan and usage stats.
- * Uses Convex queries for subscription and usage data.
+ * Uses Clerk's useSubscription() hook for real-time subscription data
+ * and Convex query for usage counts.
+ * 
+ * IMPORTANT: We use useSubscription() from Clerk instead of Convex query
+ * because Clerk Billing updates publicMetadata.subscription, but the JWT
+ * token used by Convex is not automatically refreshed. useSubscription()
+ * fetches directly from Clerk API for real-time data.
  */
 function SubscriptionSection() {
-  const subscription = useQuery(api.subscriptions.getCurrentSubscription);
+  // Use Clerk's useSubscription() for real-time subscription data
+  const { data: clerkSubscription, isLoading: isSubscriptionLoading } = useSubscription();
+  
+  // Use Convex for usage counts (this data is in our DB, not affected by JWT caching)
   const usage = useQuery(api.subscriptions.getCurrentUsage);
 
-  const isLoading = subscription === undefined || usage === undefined;
+  const isLoading = isSubscriptionLoading || usage === undefined;
 
-  // Determine subscription plan and status
-  const plan = subscription?.plan ?? "free";
-  const status = subscription?.status ?? "none";
-  const currentPeriodEnd = subscription?.currentPeriodEnd;
+  // Determine subscription plan and status from Clerk data
+  // clerkSubscription is null if no subscription exists
+  // status can be: "active", "past_due", "canceled", etc.
+  const subscriptionStatus = clerkSubscription?.status;
+  
+  // Check if subscription is canceled (has canceledAt date in the active subscription item)
+  const activeSubscriptionItem = clerkSubscription?.subscriptionItems?.find(
+    (item) => item.status === "active"
+  );
+  const isCanceled = activeSubscriptionItem?.canceledAt != null;
+  
+  const hasActiveSubscription = subscriptionStatus === "active";
+  const plan = hasActiveSubscription ? "premium" : "free";
+  
+  // Map Clerk status to our status type
+  // If subscription is active but has been canceled (canceledAt is set), show "canceled" status
+  // This allows the UI to display "Canceling" badge and appropriate messaging
+  let status: "active" | "canceled" | "past_due" | "trialing" | "none";
+  if (!subscriptionStatus) {
+    status = "none";
+  } else if (subscriptionStatus === "active" && isCanceled) {
+    status = "canceled"; // Show as canceling even though technically still active
+  } else {
+    status = subscriptionStatus;
+  }
+  
+  // Get period end from Clerk subscription's next payment date
+  const currentPeriodEnd = clerkSubscription?.nextPayment?.date 
+    ? new Date(clerkSubscription.nextPayment.date).getTime() 
+    : undefined;
 
-  // Get limits from subscription data
-  // Type assertion needed because Convex returns "unlimited" as string
-  const limits = subscription?.limits ?? {
-    maxProducts: 5 as number | "unlimited",
-    maxEvents: 5 as number | "unlimited",
-    maxLinks: 5 as number | "unlimited",
-    canUploadVideo: false,
-  };
+  // Determine limits based on plan
+  const limits = hasActiveSubscription
+    ? {
+        maxProducts: "unlimited" as const,
+        maxEvents: "unlimited" as const,
+        maxLinks: "unlimited" as const,
+        canUploadVideo: true,
+      }
+    : {
+        maxProducts: 5,
+        maxEvents: 5,
+        maxLinks: 5,
+        canUploadVideo: false,
+      };
 
   // Get current usage counts
   const productsCount = usage?.productsCount ?? 0;
@@ -131,15 +157,15 @@ function SubscriptionSection() {
       <UsageStatsCard
         products={{
           current: productsCount,
-          limit: limits.maxProducts as number | "unlimited",
+          limit: limits.maxProducts,
         }}
         events={{
           current: eventsCount,
-          limit: limits.maxEvents as number | "unlimited",
+          limit: limits.maxEvents,
         }}
         links={{
           current: linksCount,
-          limit: limits.maxLinks as number | "unlimited",
+          limit: limits.maxLinks,
         }}
         canUploadVideo={limits.canUploadVideo}
         isLoading={isLoading}

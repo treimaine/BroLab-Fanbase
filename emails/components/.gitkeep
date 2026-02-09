@@ -1,0 +1,9 @@
+# Email Components
+
+This directory contains reusable React Email components used across email templates.
+
+Examples:
+- Header.tsx
+- Footer.tsx
+- Button.tsx
+- Layout.tsx
