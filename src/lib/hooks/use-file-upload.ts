@@ -111,12 +111,12 @@ function handleUploadError(err: unknown, showToasts: boolean): string {
 }
 
 /**
- * Map FileType to Convex format
+ * Map FileType to Convex format (for generateUploadUrl)
+ * Note: "image" type uses generateImageUploadUrl instead
  */
-function mapFileTypeToConvex(type: FileType): "audio" | "video" | "image" {
+function mapFileTypeToConvex(type: FileType): "audio" | "video" {
   if (type === "music") return "audio";
-  if (type === "video") return "video";
-  return "image";
+  return "video";
 }
 
 // ============================================================================

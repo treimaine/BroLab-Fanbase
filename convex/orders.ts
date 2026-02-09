@@ -105,7 +105,7 @@ export const getMyPurchases = query({
     const orderItemsResults = await Promise.all(orderItemsPromises);
 
     // Create order → items mapping
-    const orderItemsMap = new Map();
+    const orderItemsMap = new Map<string, typeof orderItemsResults[0]>();
     orders.forEach((order, index) => {
       orderItemsMap.set(order._id, orderItemsResults[index]);
     });
@@ -172,7 +172,7 @@ export const getMyPurchases = query({
             },
           };
         })
-        .filter((item) => item !== null);
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
       return {
         order,
