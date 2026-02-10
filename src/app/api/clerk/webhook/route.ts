@@ -50,12 +50,13 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
   
   console.log(`📥 Processing user event for ${id}`);
   console.log(`   Role: ${public_metadata?.role || 'none'}`);
-  console.log(`   Email addresses:`, email_addresses);
+  console.log(`   Email addresses count: ${email_addresses?.length || 0}`);
   
   const role = public_metadata?.role as "artist" | "fan" | undefined;
 
+  // Skip if no role assigned yet (user hasn't completed onboarding)
   if (!role) {
-    console.log(`⏭️ Skipping sync for user ${id} - no role assigned yet`);
+    console.log(`⏭️ Skipping sync for user ${id} - no role assigned yet (will sync after onboarding)`);
     return new Response("OK - No role assigned", { status: 200 });
   }
 
@@ -73,10 +74,10 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
     }
   }
   
+  // If no email in webhook, skip for now (will sync when email is added)
   if (!primaryEmail) {
-    console.error(`❌ No email found for user ${id}`);
-    console.error(`   Email addresses data:`, JSON.stringify(email_addresses));
-    return new Response("Error: No email found", { status: 400 });
+    console.log(`⏭️ Skipping sync for user ${id} - no email address yet (will sync when email is added)`);
+    return new Response("OK - No email yet", { status: 200 });
   }
 
   console.log(`   Using email: ${primaryEmail}`);
