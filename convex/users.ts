@@ -82,7 +82,25 @@ export const upsertFromClerk = mutation({
  * @param clerkUserId - Clerk's unique user identifier
  * @returns User document or null if not found
  */
-export const getByClerkId = internalQuery({
+export const getByClerkId = query({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .unique();
+
+    return user;
+  },
+});
+
+/**
+ * Internal query: Get user by Clerk user ID
+ * Used by internal actions only
+ */
+export const getByClerkIdInternal = internalQuery({
   args: {
     clerkUserId: v.string(),
   },
@@ -175,8 +193,8 @@ export const createStripeCustomer = action({
     email: v.string(),
   },
   handler: async (ctx, args): Promise<{ stripeCustomerId: string }> => {
-    // Get user from Convex
-    const user = await ctx.runQuery(internal.users.getByClerkId, {
+    // Get user from Convex using internal query
+    const user = await ctx.runQuery(internal.users.getByClerkIdInternal, {
       clerkUserId: args.clerkUserId,
     });
 
