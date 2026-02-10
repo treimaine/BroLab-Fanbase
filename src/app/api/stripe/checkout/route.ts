@@ -22,8 +22,15 @@ import { fetchQuery } from "convex/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Lazy initialization of Stripe (avoid build-time errors)
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2025-12-15.clover" as any,
+  });
+}
 
 /**
  * POST /api/stripe/checkout
@@ -130,6 +137,7 @@ export async function POST(req: NextRequest) {
     // 6. Create Stripe Checkout session
     // Requirements: R-CHECKOUT-CONNECT-1, R-CHECKOUT-CONNECT-2
     // Route payment to artist's Stripe Connect account with no platform commission
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -170,6 +178,7 @@ export async function POST(req: NextRequest) {
     console.error("Stripe checkout error:", error);
 
     // Handle Stripe-specific errors
+    const Stripe = (await import("stripe")).default;
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
         { error: error.message },

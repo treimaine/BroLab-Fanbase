@@ -23,6 +23,9 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+// Mark route as dynamic (uses auth/headers)
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/billing/checkout
  *
