@@ -30,7 +30,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        elements: {
+          formFieldInput: "dark:text-white dark:placeholder:text-gray-400",
+        },
+      }}
+    >
       <html lang="en" suppressHydrationWarning>
         <body className={`${inter.variable} ${playfair.variable} font-sans`}>
           <PHProvider>
