@@ -1,7 +1,7 @@
 import { api } from "@/../convex/_generated/api";
 import { Id } from "@/../convex/_generated/dataModel";
 import { WebhookEvent } from "@clerk/nextjs/server";
-import { fetchMutation } from "convex/nextjs";
+import { fetchAction, fetchMutation } from "convex/nextjs";
 import { headers } from "next/headers";
 // @ts-ignore - svix types issue
 import { Webhook } from "svix";
@@ -46,12 +46,20 @@ async function verifyWebhook(req: Request): Promise<WebhookEvent | Response> {
  */
 async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
   const data = evt.data as any;
-  const { id, first_name, last_name, username, image_url, public_metadata } = data;
+  const { id, first_name, last_name, username, image_url, email_addresses, public_metadata } = data;
   const role = public_metadata?.role as "artist" | "fan" | undefined;
 
   if (!role) {
     console.log(`⏭️ Skipping sync for user ${id} - no role assigned yet`);
     return new Response("OK - No role assigned", { status: 200 });
+  }
+
+  // Extract primary email
+  const primaryEmail = email_addresses?.find((e: any) => e.id === data.primary_email_address_id)?.email_address;
+  
+  if (!primaryEmail) {
+    console.error(`❌ No primary email found for user ${id}`);
+    return new Response("Error: No primary email", { status: 400 });
   }
 
   try {
@@ -61,9 +69,22 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
       displayName: `${first_name || ""} ${last_name || ""}`.trim() || username || id,
       usernameSlug: username || id,
       avatarUrl: image_url,
+      email: primaryEmail,
     });
 
     console.log(`✅ User ${id} synced to Convex via webhook`);
+
+    // Create Stripe customer for new users
+    try {
+      await fetchAction(api.users.createStripeCustomer, {
+        clerkUserId: id,
+        email: primaryEmail,
+      });
+      console.log(`✅ Stripe customer created for user ${id}`);
+    } catch (stripeError) {
+      console.error(`⚠️ Failed to create Stripe customer for user ${id}:`, stripeError);
+      // Don't fail the webhook - user sync succeeded
+    }
 
     if (role === "artist") {
       await createArtistProfile(userId, id);

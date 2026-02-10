@@ -8,7 +8,9 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import Stripe from "stripe";
+import { internal } from "./_generated/api";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 
 /**
  * Upsert user from Clerk data
@@ -23,6 +25,7 @@ import { mutation, query } from "./_generated/server";
  * @param displayName - User's display name
  * @param usernameSlug - URL-friendly username slug
  * @param avatarUrl - Optional avatar image URL
+ * @param email - User email (for Stripe customer creation)
  * @returns The user's Convex document ID
  */
 export const upsertFromClerk = mutation({
@@ -32,6 +35,7 @@ export const upsertFromClerk = mutation({
     displayName: v.string(),
     usernameSlug: v.string(),
     avatarUrl: v.optional(v.string()),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { clerkUserId, role, displayName, usernameSlug, avatarUrl } = args;
@@ -69,16 +73,16 @@ export const upsertFromClerk = mutation({
 });
 
 /**
- * Get user by Clerk user ID
+ * Get user by Clerk user ID (internal query)
  * Requirements: 15.2 - Retrieve Convex user record by Clerk ID
  * 
- * Used to fetch the Convex user record associated with a Clerk user.
+ * Used internally by actions to fetch the Convex user record associated with a Clerk user.
  * Returns null if no user found.
  * 
  * @param clerkUserId - Clerk's unique user identifier
  * @returns User document or null if not found
  */
-export const getByClerkId = query({
+export const getByClerkId = internalQuery({
   args: {
     clerkUserId: v.string(),
   },
@@ -135,6 +139,95 @@ export const getByUsername = query({
       .unique();
 
     return user;
+  },
+});
+
+/**
+ * Get Stripe client instance
+ * Lazy initialization to avoid errors during Convex deployment analysis
+ */
+function getStripeClient(): Stripe {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error(
+      "Stripe is not configured. Please set STRIPE_SECRET_KEY in your Convex environment variables."
+    );
+  }
+  
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2025-12-15.clover",
+  });
+}
+
+/**
+ * Create Stripe customer for user (called from webhook)
+ * Requirements: R-FAN-PM-1.2, R-FAN-PM-1.3 - Stripe customer binding
+ * 
+ * This action creates a Stripe customer when a new user is created via Clerk webhook.
+ * It's idempotent - if the user already has a stripeCustomerId, it returns early.
+ * 
+ * @param clerkUserId - Clerk user ID
+ * @param email - User email
+ * @returns Object with stripeCustomerId
+ */
+export const createStripeCustomer = action({
+  args: {
+    clerkUserId: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ stripeCustomerId: string }> => {
+    // Get user from Convex
+    const user = await ctx.runQuery(internal.users.getByClerkId, {
+      clerkUserId: args.clerkUserId,
+    });
+
+    if (!user) {
+      throw new Error(`User not found for Clerk ID: ${args.clerkUserId}`);
+    }
+
+    // If user already has a Stripe customer ID, return it (idempotent)
+    if (user.stripeCustomerId) {
+      console.log(`User ${args.clerkUserId} already has Stripe customer: ${user.stripeCustomerId}`);
+      return { stripeCustomerId: user.stripeCustomerId };
+    }
+
+    // Create Stripe customer with email and metadata
+    console.log(`Creating Stripe customer for user ${args.clerkUserId} with email ${args.email}`);
+    const stripe = getStripeClient();
+    const customer = await stripe.customers.create({
+      email: args.email,
+      metadata: {
+        convexUserId: user._id,
+        clerkUserId: args.clerkUserId,
+      },
+    });
+
+    console.log(`Stripe customer created: ${customer.id}`);
+
+    // Store stripeCustomerId in Convex
+    await ctx.runMutation(internal.users.updateStripeCustomerId, {
+      userId: user._id,
+      stripeCustomerId: customer.id,
+    });
+
+    console.log(`Stripe customer ID saved to Convex for user ${args.clerkUserId}`);
+
+    return { stripeCustomerId: customer.id };
+  },
+});
+
+/**
+ * Internal mutation: Update user's Stripe customer ID
+ * Requirements: R-FAN-PM-1.2 - Store stripeCustomerId in Convex
+ */
+export const updateStripeCustomerId = internalMutation({
+  args: {
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      stripeCustomerId: args.stripeCustomerId,
+    });
   },
 });
 
