@@ -18,6 +18,7 @@ import { DashboardSkeleton, SuspenseWrapper } from "@/components/ui/skeleton";
 import { handleMutationError } from "@/lib/limit-toast";
 import { useMutation, useQuery } from "convex/react";
 import { Link2 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 export default function LinksPage() {
@@ -78,12 +79,12 @@ export default function LinksPage() {
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Custom Links</h1>
           <p className="mt-1 text-muted-foreground">
             Add links for merch, booking, press kit, newsletter, etc. For social media, use{" "}
-            <a
+            <Link
               href="/dashboard/profile"
               className="text-primary underline underline-offset-2 hover:text-primary/80"
             >
               Profile &amp; Bio → Social Links
-            </a>.
+            </Link>.
           </p>
         </div>
         <AddLinkDialog onAddLink={handleAddLink} />

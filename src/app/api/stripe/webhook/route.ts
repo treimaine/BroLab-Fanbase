@@ -40,7 +40,8 @@ async function verifyWebhookSignature(
   req: NextRequest
 ): Promise<{ event: Stripe.Event; body: string } | NextResponse> {
   const body = await req.text();
-  const signature = headers().get("stripe-signature");
+  const headersList = await headers();
+  const signature = headersList.get("stripe-signature");
 
   if (!signature) {
     console.error("Missing stripe-signature header");

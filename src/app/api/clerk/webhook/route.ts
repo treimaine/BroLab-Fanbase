@@ -10,7 +10,7 @@ import { Webhook } from "svix";
  * Verify webhook signature using Svix headers
  */
 async function verifyWebhook(req: Request): Promise<WebhookEvent | Response> {
-  const headerPayload = headers();
+  const headerPayload = await headers();
   const svixId = headerPayload.get("svix-id");
   const svixTimestamp = headerPayload.get("svix-timestamp");
   const svixSignature = headerPayload.get("svix-signature");

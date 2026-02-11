@@ -15,12 +15,13 @@ import { HubHeader } from "@/components/hub";
 import { HubSkeleton, SuspenseWrapper } from "@/components/ui/skeleton";
 import { useQuery } from "convex/react";
 import { Music } from "lucide-react";
+import { use } from "react";
 import { HubContent } from "./components/hub-content";
 
 interface PublicHubPageProps {
-  readonly params: {
+  readonly params: Promise<{
     readonly artistSlug: string;
-  };
+  }>;
 }
 
 /**
@@ -44,7 +45,8 @@ function NotFoundState() {
 /**
  * Public Hub Page Component
  */
-export default function PublicHubPage({ params }: PublicHubPageProps) {
+export default function PublicHubPage(props: PublicHubPageProps) {
+  const params = use(props.params);
   const { artistSlug } = params;
   const artist = useQuery(api.artists.getBySlug, { slug: artistSlug });
 
@@ -77,7 +79,7 @@ export default function PublicHubPage({ params }: PublicHubPageProps) {
             <div className="h-10 w-64 mx-auto mb-6 animate-pulse bg-primary/10 rounded-lg" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={`skeleton-${i}`} className="aspect-square animate-pulse bg-primary/10 rounded-2xl" />
+                <div key={`skeleton-card-${i}`} className="aspect-square animate-pulse bg-primary/10 rounded-2xl" />
               ))}
             </div>
           </div>
