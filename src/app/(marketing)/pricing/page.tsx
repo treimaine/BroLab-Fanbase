@@ -180,7 +180,7 @@ export default function PricingPage() {
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold">Unlimited links</span>
-                    <p className="text-sm text-muted-foreground">Full Linktree-style flexibility</p>
+                    <p className="text-sm text-muted-foreground">Merch, tickets, booking links</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">

@@ -12,7 +12,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ## Tasks
 
-- [ ] 1. Phase 0 — Bootstrap Projet (Next.js + Tailwind + shadcn)
+- [x] 1. Phase 0 — Bootstrap Projet (Next.js + Tailwind + shadcn)
     - [x] 1.1 Créer le projet Next.js 14.x avec npm
     - Commande: `npx create-next-app@14 . --typescript --eslint --tailwind --app --src-dir --import-alias "@/*"`
     - Options: TypeScript, ESLint, Tailwind, App Router, src/ directory
@@ -66,7 +66,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Persister la préférence
     - _Requirements: 13.2, 13.3_
 
-- [ ] 3. Phase 2 — Navigation App-Like (mobile + desktop)
+- [x] 3. Phase 2 — Navigation App-Like (mobile + desktop)
     - [x] 3.1 Créer le composant Sidebar (desktop)
     - NavLinks basés sur role (fan/artist)
     - User section (avatar + role) + Sign out button
@@ -132,7 +132,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Hover overlay triggers loadAndPlay(track)
     - _Requirements: 19.1, 19.3_
 
-- [ ] 4. Phase 2B — Identity & Auth Foundation (Clerk)
+- [x] 4. Phase 2B — Identity & Auth Foundation (Clerk)
     - [x] 4.1 Installer Clerk Next.js
     - `npm install @clerk/nextjs`
     - Configurer env variables: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY
@@ -170,11 +170,11 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - src/lib/utils.ts: slugify() function
     - _Requirements: 15.7, 9.1_
 
-    - [ ]* 4.7 Write property test for reserved slug rejection
+    - [x]* 4.7 Write property test for reserved slug rejection
     - **Property 9: Reserved Slug Rejection**
     - **Validates: Requirements 15.7**
 
-- [ ] 5. Phase 3A — Landing Page
+- [x] 5. Phase 3A — Landing Page
     - [x] 5.1 Créer le layout marketing
     - Navbar minimal: brand + "Sign In" + "Join Beta" button
     - _Requirements: 1.6_
@@ -202,7 +202,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Intégrer HeroSection + FeatureGrid + Footer
     - _Requirements: 1.1-1.7_
 
-- [ ] 6. Phase 3B — Convex Setup + Data Wiring Minimal
+- [x] 6. Phase 3B — Convex Setup + Data Wiring Minimal
     - [x] 6.1 Installer Convex
     - `npm install convex`
     - `npx convex dev` pour initialiser
@@ -240,7 +240,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_type_
     - Ask user if questions arise
 
-- [ ] 8. Phase 3C — Public Artist Hub
+- [x] 8. Phase 3C — Public Artist Hub
     - [x] 8.1 Créer les fonctions artists (Convex)
     - convex/artists.ts: getBySlug, create, update
     - Validation slug unique + reserved slugs
@@ -362,7 +362,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Note: Profile/Links/Events/Products/Billing pages return 404 (Phase 3E-3I not implemented yet)
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot_
 
-- [ ] 10. Phase 3E — Artist Profile Page
+- [x] 10. Phase 3E — Artist Profile Page
     - [x] 10.1 Créer le composant ProfileForm
     - Image URL input + Display Name + Unique Slug + Bio
     - Prefix "fan.brolab/" avant le slug
@@ -388,7 +388,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Test toast notifications
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type_
 
-- [ ] 11. Phase 3F — Artist Links Page
+- [x] 11. Phase 3F — Artist Links Page
     - [x] 11.1 Créer le composant LinkItem
     - Title, URL preview, type badge, active toggle
     - _Requirements: 6.5_
@@ -415,7 +415,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Verify CRUD operations work
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type_
 
-- [ ] 12. Phase 3G — Artist Events Page
+- [x] 12. Phase 3G — Artist Events Page
     - [x] 12.1 Créer le composant EventStatsRow
     - Total Tickets Sold, Gross Revenue, Upcoming Shows
     - _Requirements: 7.1_
@@ -446,7 +446,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Verify CRUD operations work
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type_
 
-- [ ] 13. Phase 3H — Artist Products Page (Upload Flow)
+- [x] 13. Phase 3H — Artist Products Page (Upload Flow)
     - [x] 13.1 Créer les fonctions files (Convex)
     - convex/files.ts: generateUploadUrl action
     - _Requirements: 16.4, 16.5_
@@ -495,7 +495,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Test visibility toggle
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click/type/file_upload_
 
-- [ ] 14. Phase 3I — Artist Billing (Stripe Connect + Automatic Payouts)
+- [x] 14. Phase 3I — Artist Billing (Stripe Connect + Automatic Payouts)
   
   **Business Context:**
     - Fans pay artists directly (no platform commission)
@@ -503,7 +503,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Payouts are automatic (Stripe managed schedule)
     - NO manual "Withdraw Funds" button
 
-    - [ ] 14.1 Schema & Data Model Updates
+    - [x] 14.1 Schema & Data Model Updates
     - [x] 14.1.1 Update Convex schema (convex/schema.ts)
       - Add fields to `artists` table:
         - `stripeConnectAccountId: v.optional(v.string())`
@@ -524,7 +524,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - Indexes: by_artist, by_stripe_payout
       - _Requirements: R-ART-BAL-3_
 
-    - [ ] 14.2 Stripe Connect Onboarding (Convex Actions)
+    - [x] 14.2 Stripe Connect Onboarding (Convex Actions)
     - [x] 14.2.1 Create convex/stripeConnect.ts
       - Action `createAccount`: Create Stripe Connect Express account
       - Action `createAccountLink`: Generate onboarding/refresh URL
@@ -538,7 +538,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - `upsertPayoutHistory`: Update payout history from payout.* webhooks (optional Palier B)
       - _Requirements: R-ART-CONNECT-3_
 
-    - [ ] 14.3 Webhooks Extension (Stripe Connect Events)
+    - [x] 14.3 Webhooks Extension (Stripe Connect Events)
     - [x] 14.3.1 Extend src/app/api/stripe/webhook/route.ts
       - Handle `account.updated` event:
         - Extract connectStatus, chargesEnabled, payoutsEnabled, requirementsDue
@@ -556,7 +556,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - Call `stripeConnect.upsertPayoutHistory` internal mutation
       - _Requirements: R-ART-BAL-3_
 
-    - [ ] 14.4 Checkout Flow Update (Route to Artist)
+    - [x] 14.4 Checkout Flow Update (Route to Artist)
     - [x] 14.4.1 Update src/app/api/stripe/checkout/route.ts
       - Query artist's `stripeConnectAccountId` and `connectStatus`
       - Validate artist is connected (connectStatus === "connected")
@@ -571,7 +571,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - Download entitlements granted
       - _Requirements: R-CHECKOUT-CONNECT-3_
 
-    - [ ] 14.5 Artist Billing Queries (Deterministic Read Model)
+    - [x] 14.5 Artist Billing Queries (Deterministic Read Model)
     - [x] 14.5.1 Create convex/artistBilling.ts
       - Query `getSummary`: Return connectStatus, balances, last payout, requirements
       - Query `getTransactions`: Return real sales from orders/orderItems/products
@@ -580,7 +580,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
         - Map order statuses to UI-friendly labels
       - _Requirements: R-ART-BAL-1, R-ART-TXN-1, R-ART-TXN-2, R-ART-TXN-3_
 
-    - [ ] 14.6 UI Components Update (Remove Placeholders)
+    - [x] 14.6 UI Components Update (Remove Placeholders)
     - [x] 14.6.1 Update BalanceCard component
       - Accept real props: availableBalance, pendingBalance, lastPayout
       - Remove hardcoded placeholder data
@@ -604,7 +604,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - Display real transaction data: product title, amount, date, status
       - _Requirements: R-ART-TXN-1, R-ART-TXN-4, R-PROD-0.1_
 
-    - [ ] 14.7 Page Assembly (src/app/(artist)/dashboard/billing/page.tsx)
+    - [x] 14.7 Page Assembly (src/app/(artist)/dashboard/billing/page.tsx)
     - [x] 14.7.1 Wire up Convex queries
       - Use `useQuery(api.artistBilling.getSummary)`
       - Use `useQuery(api.artistBilling.getTransactions)`
@@ -622,7 +622,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - Update page title to "Earnings & Payouts"
       - _Requirements: R-ART-PAYOUT-2, R-ART-PAYOUT-3_
 
-    - [ ] 14.8 Connect Onboarding Flow (UI)
+    - [x] 14.8 Connect Onboarding Flow (UI)
     - [x] 14.8.1 Create "Connect Stripe" button handler
       - Call `stripeConnect.createAccount` action
       - Call `stripeConnect.createAccountLink` action
@@ -640,7 +640,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
       - Open Express dashboard in new tab
       - _Requirements: R-ART-PAYOUT-3_
 
-- [ ] 14.9 Checkpoint Phase 3I — Vérifier Artist Billing (Stripe Connect) (manuel via Playwright MCP)
+- [x] 14.9 Checkpoint Phase 3I — Vérifier Artist Billing (Stripe Connect) (manuel via Playwright MCP)
     - [x] 14.9.1 Test not_connected state
     - Navigate to `/dashboard/billing` as artist without Stripe Connect
     - Take snapshot and verify "Connect Stripe" CTA is visible
@@ -656,13 +656,13 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take snapshot of connected state
     - _Requirements: R-ART-CONNECT-1, R-ART-CONNECT-3_
 
-    - [ ] 14.9.3 Test pending state (if requirements due)
+    - [x] 14.9.3 Test pending state (if requirements due)
     - If Stripe account has pending requirements, verify requirements list displays
     - Verify "Continue Setup" CTA is visible and clickable
     - Click CTA and verify redirect to Stripe onboarding
     - _Requirements: R-ART-CONNECT-4_
 
-    - [ ] 14.9.4 Test connected state
+    - [x] 14.9.4 Test connected state
     - Navigate to `/dashboard/billing` as connected artist
     - Take snapshot and verify BalanceCard shows real data (or transaction totals if Palier A)
     - Verify PayoutMethodCard shows "Connected" status with green indicator
@@ -671,7 +671,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Verify NO "Withdraw Funds" button exists anywhere on page
     - _Requirements: R-ART-BAL-1, R-ART-TXN-1, R-ART-PAYOUT-3, R-PROD-0.1_
 
-    - [ ] 14.9.5 Test fan checkout → artist routing
+    - [x] 14.9.5 Test fan checkout → artist routing
     - Sign in as fan account
     - Navigate to connected artist's public hub (e.g., `/djnova`)
     - Click "Buy Now" on a product
@@ -682,7 +682,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Verify transaction appears in TransactionsList with correct product title, amount, date
     - _Requirements: R-CHECKOUT-CONNECT-1, R-CHECKOUT-CONNECT-3, R-ART-TXN-2_
 
-    - [ ] 14.9.6 Test error handling
+    - [x] 14.9.6 Test error handling
     - Sign in as fan account
     - Navigate to non-connected artist's public hub
     - Click "Buy Now" on a product
@@ -702,7 +702,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_type + mcp_playwright_browser_file_upload_
     - Ask user if questions arise
 
-- [ ] 16. Phase 3J — Fan Dashboard
+- [x] 16. Phase 3J — Fan Dashboard
     - [x] 16.1 Créer le layout fan avec AppShell
     - src/app/(fan)/layout.tsx
     - AppShell avec role="fan"
@@ -714,7 +714,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Redirect vers /me/[username] basé sur Clerk user (pas mock!)
     - _Requirements: 9.1_
 
-    - [ ]* 16.3 Write property test for /me redirect
+    - [x]* 16.3 Write property test for /me redirect
     - **Property 10: Fan Dashboard URL Contains Username**
     - **Validates: Requirements 9.1**
 
@@ -743,11 +743,11 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Connecté à Convex (followed artists feed)
     - _Requirements: 9.1-9.6_
 
-    - [ ] 16.9 Refactoring & Real Stats (Fan Feed, Links, Dashboard)
+    - [x] 16.9 Refactoring & Real Stats (Fan Feed, Links, Dashboard)
 
     **Context:** Audit validé - 3 chantiers prioritaires pour production readiness
 
-    - [ ] 16.9.1 Fan Feed — Refactor useMemo Antipattern (PRIORITÉ HAUTE)
+    - [x] 16.9.1 Fan Feed — Refactor useMemo Antipattern (PRIORITÉ HAUTE)
       
       - [x] 16.9.1.1 Lire convex/feed.ts et confirmer comportement page-only
         - Vérifier que `getForCurrentUser` retourne uniquement la page courante (limit items)
@@ -794,7 +794,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
         - ✅ End of feed → "You've reached the end" message, button caché
         - _Requirements: R-FAN-FEED-1..5_
 
-    - [ ] 16.9.2 Artist Links — Nettoyer Types Sociaux (PRIORITÉ MOYENNE)
+    - [x] 16.9.2 Artist Links — Nettoyer Types Sociaux (PRIORITÉ MOYENNE)
       
       - [x] 16.9.2.1 Mettre à jour LINK_TYPES dans src/components/dashboard/link-item.tsx
         - Retirer les types sociaux: `instagram`, `youtube`, `spotify`, `apple-music`
@@ -817,7 +817,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
         - Helper text: "Add links for merch, booking, press kit, newsletter, etc. For social media, use Profile & Bio → Social Links."
         - _Requirements: R-ART-LINKS-1_
 
-      - [ ] 16.9.2.4 QA Checklist (manuel via Playwright MCP)
+      - [x] 16.9.2.4 QA Checklist (manuel via Playwright MCP)
         - ✅ Dropdown "Type" ne contient QUE des types business (pas Instagram/YouTube/etc.)
         - ✅ Ajouter lien avec type "Merch" + URL valide → succès
         - ✅ Essayer d'ajouter URL instagram.com → erreur "Manage social links in Profile & Bio"
@@ -825,13 +825,13 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
         - ✅ Types sociaux absents du dropdown (vérifier visuellement)
         - _Requirements: R-ART-LINKS-1..4_
 
-      - [ ] 16.9.2.5 (Optionnel) Migration des records existants
+      - [x] 16.9.2.5 (Optionnel) Migration des records existants
         - Si des links existants ont type social (instagram/youtube/etc.), les convertir en type `other`
         - Ou afficher un warning dans l'UI pour que l'artiste les migre manuellement
         - Script Convex ou mutation one-time
         - _Requirements: Data integrity_
 
-    - [ ] 16.9.3 Dashboard Overview — Connecter Stats Réelles (PRIORITÉ MOYENNE)
+    - [x] 16.9.3 Dashboard Overview — Connecter Stats Réelles (PRIORITÉ MOYENNE)
       
       - [x] 16.9.3.1 Créer query convex/follows.ts: countByArtist
         - Args: `{ artistId: v.id("artists") }`
@@ -915,7 +915,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
         - Utiliser pour formater revenue
         - _Requirements: R-ART-DASH-STAT-3_
 
-      - [ ] 16.9.3.7 QA Checklist (manuel via Playwright MCP)
+      - [x] 16.9.3.7 QA Checklist (manuel via Playwright MCP)
         - ✅ Créer 5 follows pour l'artiste → stat "Followers" affiche "5"
         - ✅ Créer 2 events futurs → stat "Upcoming Events" affiche "2"
         - ✅ Créer 1 order paid ($50) → stat "Revenue" affiche "$50.00" (ou balance si billing implémenté)
@@ -924,7 +924,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
         - ✅ Format currency correct ($ avec 2 décimales)
         - _Requirements: R-ART-DASH-STAT-1..4_
 
-    - [ ] 16.10 Checkpoint Refactoring — Vérifier Feed/Links/Stats (manuel via Playwright MCP)
+    - [x] 16.10 Checkpoint Refactoring — Vérifier Feed/Links/Stats (manuel via Playwright MCP)
     - Verify Fan Feed pagination works without glitches
     - Verify Links dropdown only shows business types
     - Verify Dashboard stats show real data
@@ -932,7 +932,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
     - Ask user if questions arise
 
-- [ ] 17. Phase 3K — Fan Purchases Page
+- [x] 17. Phase 3K — Fan Purchases Page
     - [x] 17.1 Créer le composant PurchaseItem
     - Image, type badge, title, artist, date, price
     - Download button (si downloadable)
@@ -951,7 +951,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Verify status badges display correctly
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
 
-- [ ] 18. Phase 3L — Fan Billing Page
+- [x] 18. Phase 3L — Fan Billing Page
     - [x] 18.1 Créer le composant PaymentMethodsTab
     - Saved cards list + "Add Payment Method" button
     - _Requirements: 11.2, 11.3_
@@ -981,7 +981,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click_
     - Ask user if questions arise
 
-- [ ] 20. Phase 4 — Stripe Integration (Checkout + Webhooks)
+- [x] 20. Phase 4 — Stripe Integration (Checkout + Webhooks)
     - [x] 20.1 Installer Stripe
     - `npm install stripe @stripe/stripe-js`
     - Configurer env variables (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET)
@@ -1007,11 +1007,11 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Return 200 on success, 400 on error
     - _Requirements: 18.2, 18.5_
 
-    - [ ]* 20.5 Write property test for webhook idempotency
+    - [x]* 20.5 Write property test for webhook idempotency
     - **Property 16: Webhook Idempotency**
     - **Validates: Requirements 18.5**
 
-- [ ] 21. Phase 5 — Downloads (Ownership-gated)
+- [x] 21. Phase 5 — Downloads (Ownership-gated)
     - [x] 21.1 Créer les fonctions download (Convex)
     - convex/downloads.ts: getDownloadUrl action
     - Verify ownership: fan authenticated + orderItem exists + order status paid
@@ -1026,7 +1026,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Show error toast on failure
     - _Requirements: 17.2_
 
-    - [ ]* 21.3 Write property test for download ownership verification
+    - [x]* 21.3 Write property test for download ownership verification
     - **Property 14: Download Ownership Verification**
     - **Validates: Requirements 17.3, 17.4, 17.5**
 
@@ -1039,7 +1039,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_network_requests_
     - Ask user if questions arise
 
-- [ ] 23. Phase 6 — Qualité / Fidélité Design
+- [x] 23. Phase 6 — Qualité / Fidélité Design
     - [x] 23.1 Audit UI Landing page
     - Vérifier fidélité avec screenshots SuperDesign
     - Ajuster spacing, radius, colors si nécessaire
@@ -1062,7 +1062,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Vérifier bottom nav mobile, sidebar desktop
     - _Requirements: 12.1-12.5_
 
-- [ ] 24. Final Checkpoint — Projet complet (manuel via Playwright MCP)
+- [x] 24. Final Checkpoint — Projet complet (manuel via Playwright MCP)
     - Ensure all tests pass
     - Verify all pages render correctly
     - Test full user flows (sign-up → dashboard → purchase → download)
@@ -1234,7 +1234,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - [x] 9.4.3 QA: upgrade/downgrade flows
 
 ### 9.5 QA Checkpoint — "Prod ready" (manuel via Playwright MCP)
-- [ ] 9.5.1 Verify no mock payment data anywhere user-facing
+- [x] 9.5.1 Verify no mock payment data anywhere user-facing
 - Navigate to `/me/[username]/billing` as fan
 - Take snapshot and verify no hardcoded mock payment methods
 - Verify payment methods list is either empty (with "Add payment method" CTA) or shows real Stripe data
@@ -1243,7 +1243,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - Verify transactions list is either empty (with "No sales yet" message) or shows real order data
 - _Requirements: R-PROD-0.1_
 
-- [ ] 9.5.2 Test add card flow (Elements) + card appears (webhook sync)
+- [x] 9.5.2 Test add card flow (Elements) + card appears (webhook sync)
 - Navigate to `/me/[username]/billing` as fan
 - Click "Add payment method" button
 - Verify Stripe Elements dialog opens with PaymentElement
@@ -1255,7 +1255,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - Take snapshot of payment methods list
 - _Requirements: R-FAN-PM-2.2, R-FAN-PM-4.1_
 
-- [ ] 9.5.3 Test remove/set default actions
+- [x] 9.5.3 Test remove/set default actions
 - In payment methods list, click "Set as default" on a non-default card
 - Verify loading state appears on button
 - Wait 2 seconds for webhook to process
@@ -1268,7 +1268,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - Take snapshot of updated list
 - _Requirements: R-FAN-PM-5.1, R-FAN-PM-6.1_
 
-- [ ] 9.5.4 Verify fan feed is real and paginated
+- [x] 9.5.4 Verify fan feed is real and paginated
 - Navigate to `/me/[username]` as fan (feed page)
 - Verify feed shows posts from followed artists (not mock data)
 - Scroll to bottom of feed
@@ -1278,7 +1278,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - Take snapshot of feed with loaded posts
 - _Requirements: R-FAN-FEED-1, R-FAN-FEED-2_
 
-- [ ] 9.5.5 Test Stripe one-time purchase unlocks downloads
+- [x] 9.5.5 Test Stripe one-time purchase unlocks downloads
 - Sign in as fan account
 - Navigate to artist's public hub (e.g., `/djnova`)
 - Click "Buy Now" on a product
@@ -1291,7 +1291,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 - Take snapshot of purchases page with download button
 - _Requirements: R-CHECKOUT-1, R-DOWNLOAD-1_
 
-- [ ] 9.5.6 Verify Clerk artist subscription gates features server-side
+- [x] 9.5.6 Verify Clerk artist subscription gates features server-side
 - Sign in as artist with free plan
 - Navigate to `/dashboard/products`
 - Attempt to create 4th product (if free plan limit is 3)
@@ -1306,7 +1306,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ---
 
-- [ ] 25. Phase 7 — Landing/Home UI/UX Improvement (Conversion-First)
+- [x] 25. Phase 7 — Landing/Home UI/UX Improvement (Conversion-First)
 
 **Context:** Transition to conversion-focused landing page with artist-first messaging.
 
@@ -1333,7 +1333,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Create new: ProofBar, HowItWorks, UseCases, FAQ
     - _Requirements: R-MKT-LAND-4_
 
-    - [ ] 25.2 Hero Rewrite (English, Artist-First)
+    - [x] 25.2 Hero Rewrite (English, Artist-First)
     - [x] 25.2.1 Update Hero copy (English)
     - Headline: "Fans pay you directly."
     - Subheadline: "Sell music, merch, and tickets with Stripe Connect payouts. We earn from your subscription—not your sales."
@@ -1363,7 +1363,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Respect `prefers-reduced-motion`
     - _Requirements: R-MKT-LAND-6_
 
-    - [ ] 25.3 Add New Sections
+    - [x] 25.3 Add New Sections
     - [x] 25.3.1 Create ProofBar component (3 trust indicators)
     - Create `src/components/marketing/proof-bar.tsx`
     - 3 columns (desktop), stacked (mobile)
@@ -1419,7 +1419,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Only one open at a time (optional)
     - _Requirements: R-MKT-LAND-4, R-MKT-LAND-8, R-MKT-LAND-9_
 
-    - [ ] 25.4 Performance & Polish
+    - [x] 25.4 Performance & Polish
     - [x] 25.4.1 Optimize images with next/image
     - Audit all images in landing page
     - Replace `<img>` with `<Image>` from `next/image`
@@ -1451,7 +1451,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - If over target, use dynamic imports for heavy components
     - _Requirements: R-MKT-LAND-6_
 
-    - [ ] 25.5 Analytics & Tracking (PostHog)
+    - [x] 25.5 Analytics & Tracking (PostHog)
     - [x] 25.5.1 Install PostHog package
     - Run: `npm install posthog-js`
     - Verify installation in package.json
@@ -1552,8 +1552,8 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Test: Load page, verify event in PostHog dashboard
     - _Requirements: R-MKT-LAND-7_
 
-    - [ ] 25.6 QA Checkpoint (Manual via Playwright MCP)
-    - [ ] 25.6.1 Mobile-first verification
+    - [x] 25.6 QA Checkpoint (Manual via Playwright MCP)
+    - [x] 25.6.1 Mobile-first verification
     - Open browser and resize to mobile viewport (375px width)
     - Navigate to `/` (landing page)
     - Take snapshot and verify hero headline is visible without scrolling
@@ -1564,7 +1564,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take snapshot of sign-up page
     - _Requirements: R-MKT-LAND-3_
 
-    - [ ] 25.6.2 CTA routing verification (SignedOut state)
+    - [x] 25.6.2 CTA routing verification (SignedOut state)
     - Ensure signed out (clear cookies or use incognito)
     - Navigate to `/`
     - Click "Start free as an Artist" button
@@ -1576,7 +1576,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take snapshot of explore page
     - _Requirements: R-MKT-LAND-2_
 
-    - [ ] 25.6.3 CTA routing verification (SignedIn Artist state)
+    - [x] 25.6.3 CTA routing verification (SignedIn Artist state)
     - Sign in as artist account
     - Navigate to `/`
     - Verify primary CTA text changes to "Go to Dashboard" or similar
@@ -1585,7 +1585,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take snapshot of dashboard
     - _Requirements: R-MKT-LAND-2_
 
-    - [ ] 25.6.4 CTA routing verification (SignedIn Fan state)
+    - [x] 25.6.4 CTA routing verification (SignedIn Fan state)
     - Sign in as fan account
     - Navigate to `/`
     - Verify primary CTA text changes to "Go to Feed" or similar
@@ -1594,7 +1594,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take snapshot of feed page
     - _Requirements: R-MKT-LAND-2_
 
-    - [ ] 25.6.5 Performance check (Lighthouse)
+    - [x] 25.6.5 Performance check (Lighthouse)
     - Open Chrome DevTools
     - Navigate to Lighthouse tab
     - Select "Mobile" device and "Navigation" mode
@@ -1607,7 +1607,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - If scores below target, identify issues in report and document for fixes
     - _Requirements: R-MKT-LAND-6_
 
-    - [ ] 25.6.6 Copy clarity check (5-second test)
+    - [x] 25.6.6 Copy clarity check (5-second test)
     - Recruit 3-5 people (team members, friends, or use usertesting.com)
     - Show landing page for exactly 5 seconds
     - Hide page and ask: "What does this product do?"
@@ -1617,7 +1617,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Repeat test after revisions
     - _Requirements: R-MKT-LAND-1_
 
-    - [ ] 25.6.7 Accessibility verification (Keyboard navigation)
+    - [x] 25.6.7 Accessibility verification (Keyboard navigation)
     - Navigate to `/` (landing page)
     - Press Tab key repeatedly
     - Verify focus moves through all interactive elements in logical order:
@@ -1632,7 +1632,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take screenshot showing focus indicator
     - _Requirements: R-MKT-LAND-10_
 
-    - [ ] 25.6.8 Accessibility verification (Color contrast)
+    - [x] 25.6.8 Accessibility verification (Color contrast)
     - Open Chrome DevTools
     - Navigate to Elements tab
     - Select headline text
@@ -1643,7 +1643,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Document any failing elements
     - _Requirements: R-MKT-LAND-10_
 
-    - [ ] 25.6.9 Accessibility verification (Screen reader)
+    - [x] 25.6.9 Accessibility verification (Screen reader)
     - Mac: Enable VoiceOver (Cmd+F5)
     - Windows: Open NVDA (free screen reader)
     - Navigate to `/` (landing page)
@@ -1655,7 +1655,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Document any issues
     - _Requirements: R-MKT-LAND-10_
 
-    - [ ] 25.6.10 Analytics verification (PostHog events)
+    - [x] 25.6.10 Analytics verification (PostHog events)
     - Open PostHog dashboard (https://app.posthog.com)
     - Navigate to Events tab
     - Clear recent events (or note timestamp)
@@ -1669,7 +1669,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Take screenshot of PostHog events list
     - _Requirements: R-MKT-LAND-7_
 
-    - [ ] 25.6.11 No misleading content check
+    - [x] 25.6.11 No misleading content check
     - Navigate to `/` (landing page)
     - Read all copy carefully
     - Verify no fake user counts (e.g., "10,000+ artists" if not true)
@@ -1679,17 +1679,17 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Document any misleading content found
     - _Requirements: R-MKT-LAND-5_
 
-- [ ] _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_take_screenshot + mcp_playwright_browser_console_messages_
+- [x] _Note: Vérification manuelle via mcp_playwright_browser_navigate + mcp_playwright_browser_snapshot + mcp_playwright_browser_click + mcp_playwright_browser_take_screenshot + mcp_playwright_browser_console_messages_
 
-    - [ ] 25.7 Success Metrics Setup (Post-Launch)
-    - [ ] 25.7.1 Define baseline metrics (pre-launch)
+    - [x] 25.7 Success Metrics Setup (Post-Launch)
+    - [x] 25.7.1 Define baseline metrics (pre-launch)
     - Current artist sign-up conversion rate (if available)
     - Current bounce rate
     - Current time on page
     - Document in analytics dashboard
     - _Requirements: R-MKT-LAND-11_
 
-    - [ ] 25.7.2 Set up conversion funnel tracking
+    - [x] 25.7.2 Set up conversion funnel tracking
     - Funnel steps:
     1. Landing page view
     2. CTA click
@@ -1699,7 +1699,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Track drop-off at each step
     - _Requirements: R-MKT-LAND-11_
 
-    - [ ] 25.7.3 Schedule 30-day review
+    - [x] 25.7.3 Schedule 30-day review
     - Set calendar reminder for 30 days post-launch
     - Review metrics:
     - Artist sign-up conversion rate (target: ≥3%)
@@ -1813,7 +1813,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - If missing, implement according to existing patterns
   - _Requirements: R-ART-SUB-3.4_
 
-- [ ] 8.3.2 Test subscription queries
+- [x] 8.3.2 Test subscription queries
   - Test with Free plan user
   - Test with Premium plan user
   - Test with canceled Premium user (before currentPeriodEnd)
@@ -1861,7 +1861,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Track `limit_hit` event with metadata: `{ limitType: 'products' | 'events' | 'links' | 'video' | 'fileSize' }`
   - _Requirements: R-ART-SUB-5.6, R-ART-SUB-6.5_
 
-- [ ] 8.4.6 Verify existing items remain editable
+- [x] 8.4.6 Verify existing items remain editable
   - Test: Downgrade Premium artist with 10 products to Free
   - Verify: All 10 products remain visible in dashboard
   - Verify: Can edit existing products (title, description, price)
@@ -1890,7 +1890,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 8.6 QA Checklist (Manual Testing)
 
-- [ ] 8.6.1 Test Free → Upgrade → Premium flow
+- [x] 8.6.1 Test Free → Upgrade → Premium flow
   - Sign in as Free artist
   - Navigate to `/dashboard/billing`
   - Verify "Upgrade to Premium" button visible
@@ -1904,7 +1904,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify "Manage Subscription" button visible
   - _Requirements: R-ART-SUB-1_
 
-- [ ] 8.6.2 Test Premium → Manage → Cancel flow
+- [x] 8.6.2 Test Premium → Manage → Cancel flow
   - Sign in as Premium artist
   - Navigate to `/dashboard/billing`
   - Verify "Manage Subscription" button visible
@@ -1918,7 +1918,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify "Reactivate Premium" button visible
   - _Requirements: R-ART-SUB-2_
 
-- [ ] 8.6.3 Test over-quota blocking (Free plan)
+- [x] 8.6.3 Test over-quota blocking (Free plan)
   - Sign in as Free artist with 5 products
   - Navigate to `/dashboard/products`
   - Click "Add Product"
@@ -1929,7 +1929,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify redirect to Clerk Billing checkout
   - _Requirements: R-ART-SUB-5.2, R-ART-SUB-5.6_
 
-- [ ] 8.6.4 Test video upload blocking (Free plan)
+- [x] 8.6.4 Test video upload blocking (Free plan)
   - Sign in as Free artist
   - Navigate to `/dashboard/products`
   - Click "Add Product"
@@ -1939,7 +1939,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify "Upgrade to Premium" button in toast
   - _Requirements: R-ART-SUB-5.5, R-ART-SUB-7.3_
 
-- [ ] 8.6.5 Test downgrade soft-lock
+- [x] 8.6.5 Test downgrade soft-lock
   - Sign in as Premium artist with 10 products
   - Cancel subscription via Clerk Billing portal
   - Wait for currentPeriodEnd to pass (or manually update Clerk metadata for testing)
@@ -1951,7 +1951,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify error toast: "You've reached the limit for products on your current plan. Upgrade to create more."
   - _Requirements: R-ART-SUB-5.1, R-ART-SUB-5.2, R-ART-SUB-5.7_
 
-- [ ] 8.6.6 Test all subscription states
+- [x] 8.6.6 Test all subscription states
   - Free (Active): Badge "Free", Upgrade CTA visible
   - Premium (Active): Badge "Premium", Manage CTA visible, next billing date shown
   - Premium (Trialing): Badge "Premium (Trial)", trial end date shown
@@ -1959,7 +1959,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Premium (Past Due): Badge "Payment Failed", Update Payment CTA visible
   - _Requirements: R-ART-SUB-4_
 
-- [ ] 8.6.7 Verify no mock data visible
+- [x] 8.6.7 Verify no mock data visible
   - Navigate to `/dashboard/billing`
   - Verify subscription section shows real plan from Clerk metadata
   - Verify usage stats show real counts from Convex
@@ -1967,7 +1967,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Verify no placeholder text like "Your plan: —"
   - _Requirements: R-PROD-0.1, R-PROD-0.2_
 
-- [ ] 8.6.8 Test tracking events
+- [x] 8.6.8 Test tracking events
   - Open browser DevTools → Network tab
   - Click "Upgrade to Premium"
   - Verify `upgrade_click` event sent (check network requests or analytics dashboard)
@@ -1987,7 +1987,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
   - Document: Upgrade/manage flows, soft-lock policy
   - _Requirements: Documentation_
 
-- [ ] 8.7.2 Update .env.example
+- [x] 8.7.2 Update .env.example
   - Add Clerk Billing environment variables (if any)
   - Document: How to set up Clerk Billing in Clerk Dashboard
   - _Requirements: Setup documentation_
@@ -2150,7 +2150,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Fields: `idempotencyKey`, `templateId`, `recipient`, `status`, `providerMessageId`, `error`, `sentAt`
     - _Requirements: R-EMAIL-6_
 
-- [ ] 9.3.4 QA: Test idempotency
+- [x] 9.3.4 QA: Test idempotency
     - Trigger waitlist submission twice with same email
     - Verify only 1 email is sent (check Resend dashboard)
     - Verify second call returns early with "already sent" log
@@ -2180,7 +2180,7 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
 
 ### 9.5 QA Checkpoint (Manual via Playwright MCP)
 
-- [ ] 9.5.1 Test waitlist email sends correctly
+- [x] 9.5.1 Test waitlist email sends correctly
     - Navigate to `/` (landing page)
     - Enter test email in waitlist form
     - Submit form
@@ -2190,20 +2190,20 @@ Ce plan d'implémentation suit les phases définies dans les contraintes projet.
     - Verify FROM address is `BroLab Support <support@app.brolabentertainment.com>`
     - _Requirements: R-EMAIL-1, R-EMAIL-3, R-EMAIL-5_
 
-- [ ] 9.5.2 Test email template rendering
+- [x] 9.5.2 Test email template rendering
     - Check email in Resend dashboard or email client
     - Verify: Header with logo, content card, CTA button, footer with tagline
     - Verify: Responsive on mobile (check email client mobile preview)
     - Verify: Links are correct (CTA points to app URL)
     - _Requirements: R-EMAIL-3_
 
-- [ ] 9.5.3 Test idempotency
+- [x] 9.5.3 Test idempotency
     - Submit same email to waitlist twice
     - Verify only 1 email appears in Resend dashboard
     - Check Convex logs for "already sent" message on second attempt
     - _Requirements: R-EMAIL-6_
 
-- [ ] 9.5.4 Test logging/observability
+- [x] 9.5.4 Test logging/observability
     - Submit new email to waitlist
     - Check Convex dashboard logs
     - Verify log contains: templateId, recipient, timestamp, status, providerMessageId

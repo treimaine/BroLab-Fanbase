@@ -3,11 +3,11 @@
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -152,6 +152,7 @@ export function HeroSection() {
                     <FormItem className="flex-1">
                       <FormControl>
                         <Input
+                          id="hero-email-input"
                           placeholder="your@email.com"
                           className="h-14 rounded-2xl border-border bg-card/50 px-6 text-lg text-foreground placeholder:text-muted-foreground/50 backdrop-blur-xl focus:border-primary/50 focus:ring-0 focus:ring-offset-0"
                           disabled={isSubmitting}
@@ -172,14 +173,14 @@ export function HeroSection() {
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
-                      Secure Early Access
+                      Join as an Artist (Beta)
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </>
                   )}
                 </Button>
               </form>
             </Form>
-            <p className="text-sm text-muted-foreground">Join 2,500+ artists taking back control.</p>
+            <p className="text-sm text-muted-foreground">Join 50+ artists taking back control.</p>
           </motion.div>
         </div>
 

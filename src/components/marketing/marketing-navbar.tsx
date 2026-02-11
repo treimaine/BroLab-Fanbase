@@ -4,11 +4,9 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 
 export function MarketingNavbar() {
-  const router = useRouter();
 
   return (
     <header className="fixed top-0 z-[100] w-full border-b border-border bg-background/60 backdrop-blur-xl transition-colors duration-300">
@@ -32,19 +30,23 @@ export function MarketingNavbar() {
                 size="sm" 
                 className="text-muted-foreground hover:bg-accent/10 hover:text-foreground min-h-[44px] px-4"
               >
-                Login
+                Sign in
               </Button>
             </Link>
             <Button 
               size="sm" 
               className="group relative overflow-hidden rounded-full bg-primary px-6 font-bold text-primary-foreground transition-all hover:bg-primary/90 min-h-[44px]"
               onClick={() => {
-                posthog.capture('start_as_artist_click', { location: 'navbar' });
-                router.push('/sign-up');
+                posthog.capture('beta_invite_click', { location: 'navbar' });
+                const emailInput = document.getElementById('hero-email-input');
+                if (emailInput) {
+                  emailInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  setTimeout(() => emailInput.focus(), 500);
+                }
               }}
             >
-              <span className="relative z-10 hidden sm:inline">Get Started</span>
-              <span className="relative z-10 sm:hidden">Join</span>
+              <span className="relative z-10 hidden sm:inline">Get Beta Invite</span>
+              <span className="relative z-10 sm:hidden">Beta</span>
             </Button>
           </SignedOut>
 

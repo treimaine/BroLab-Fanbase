@@ -30,15 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      appearance={{
-        elements: {
-          formFieldInput: "dark:text-white dark:placeholder:text-gray-400",
-        },
-      }}
-    >
-      <html lang="en" suppressHydrationWarning>
-        <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+        <ClerkProvider
+          appearance={{
+            elements: {
+              formFieldInput: "dark:text-white dark:placeholder:text-gray-400",
+            },
+          }}
+        >
           <PHProvider>
             <ConvexClientProvider>
               <ThemeProvider>
@@ -51,8 +51,8 @@ export default function RootLayout({
               </ThemeProvider>
             </ConvexClientProvider>
           </PHProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

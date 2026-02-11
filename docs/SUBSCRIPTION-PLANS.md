@@ -47,7 +47,7 @@ Subscription management is handled by **Clerk Billing** (source of truth), with 
 ### Features
 - **Unlimited products** - No limit on digital products
 - **Unlimited events** - Create as many events as needed
-- **Unlimited custom links** - Full Linktree-style flexibility
+- **Unlimited custom links** - Business links
 - **Video uploads enabled** - Upload music videos, behind-the-scenes, etc.
 - **500MB max file size** - High-quality video support
 - **Priority support** - Faster response times
