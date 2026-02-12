@@ -99,7 +99,12 @@ export function Faq() {
           whileInView={mounted ? "visible" : undefined}
           viewport={mounted ? { once: true, margin: "-100px" } : undefined}
         >
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion 
+            type="single" 
+            collapsible 
+            className="w-full"
+            suppressHydrationWarning
+          >
             {faqs.map((faq) => (
               <AccordionItem key={faq.id} value={faq.id}>
                 <AccordionTrigger className="text-left text-lg font-medium">

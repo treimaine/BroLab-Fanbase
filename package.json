@@ -6,7 +6,11 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "security:audit": "npm audit --omit=dev",
+    "security:check": "npm outdated && npm audit",
+    "security:fix": "npm audit fix",
+    "preinstall": "npm audit --omit=dev || true"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",

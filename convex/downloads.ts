@@ -38,6 +38,14 @@ export const getDownloadUrl = action({
     // 1. Verify authentication
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
+      // LOG: Tentative d'accès non authentifiée
+      await ctx.runMutation(internal.downloads_helpers.logSecurityEvent, {
+        clerkUserId: undefined,
+        action: "download_attempt",
+        resourceType: "product",
+        resourceId: args.productId,
+        reason: "not_authenticated",
+      });
       throw new Error("Not authenticated");
     }
 
@@ -47,20 +55,57 @@ export const getDownloadUrl = action({
     });
 
     if (!user) {
+      // LOG: User not found in database
+      await ctx.runMutation(internal.downloads_helpers.logSecurityEvent, {
+        clerkUserId: identity.subject,
+        action: "download_attempt",
+        resourceType: "product",
+        resourceId: args.productId,
+        reason: "user_not_found",
+      });
       throw new Error("User not found");
     }
 
-    // 3. Verify ownership
+    // 3. Check rate limit (max 10 downloads/minute per user)
+    const rateLimit = await ctx.runQuery(internal.downloads_helpers.checkDownloadRateLimit, {
+      fanUserId: user._id,
+    });
+
+    if (rateLimit.isExceeded) {
+      // LOG: Rate limit exceeded
+      await ctx.runMutation(internal.downloads_helpers.logSecurityEvent, {
+        userId: user._id,
+        clerkUserId: identity.subject,
+        action: "download_attempt",
+        resourceType: "product",
+        resourceId: args.productId,
+        reason: "rate_limit_exceeded",
+      });
+      throw new Error(
+        `Rate limit exceeded. You can download up to ${rateLimit.limit} files per minute. Please try again in a moment.`
+      );
+    }
+
+    // 4. Verify ownership
     const ownership = await ctx.runQuery(internal.downloads_helpers.checkOwnership, {
       fanUserId: user._id,
       productId: args.productId,
     });
 
     if (!ownership.isValid) {
+      // LOG: Unauthorized access attempt (no ownership)
+      await ctx.runMutation(internal.downloads_helpers.logSecurityEvent, {
+        userId: user._id,
+        clerkUserId: identity.subject,
+        action: "download_attempt",
+        resourceType: "product",
+        resourceId: args.productId,
+        reason: "not_authorized",
+      });
       throw new Error("Access denied: You do not own this product");
     }
 
-    // 4. Get product to retrieve fileStorageId
+    // 5. Get product to retrieve fileStorageId
     const product: {
       _id: string;
       title: string;
@@ -74,7 +119,7 @@ export const getDownloadUrl = action({
       throw new Error("Product file not found");
     }
 
-    // 5. Generate file URL from fileStorageId
+    // 6. Generate file URL from fileStorageId
     const fileUrl: string | null = await ctx.runQuery(internal.downloads_helpers.getStorageUrl, {
       storageId: product.fileStorageId,
     });
@@ -83,7 +128,7 @@ export const getDownloadUrl = action({
       throw new Error("Failed to generate download URL");
     }
 
-    // 6. Log download (optional)
+    // 7. Log successful download
     if (ownership.orderId) {
       await ctx.runMutation(internal.downloads_helpers.logDownloadAttempt, {
         fanUserId: user._id,
@@ -99,3 +144,4 @@ export const getDownloadUrl = action({
     };
   },
 });
+

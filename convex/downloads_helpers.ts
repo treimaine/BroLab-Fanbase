@@ -99,3 +99,60 @@ export const logDownloadAttempt = internalMutation({
     });
   },
 });
+
+/**
+ * Helper mutation: Log security event
+ * Requirements: A01 - Log unauthorized access attempts
+ */
+export const logSecurityEvent = internalMutation({
+  args: {
+    userId: v.optional(v.id("users")),
+    clerkUserId: v.optional(v.string()),
+    action: v.string(),
+    resourceType: v.string(),
+    resourceId: v.string(),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("securityLogs", {
+      userId: args.userId,
+      clerkUserId: args.clerkUserId,
+      action: args.action,
+      resourceType: args.resourceType,
+      resourceId: args.resourceId,
+      reason: args.reason,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Helper query: Check rate limit for downloads
+ * Requirements: A01 - Rate limiting for download attempts
+ * Limit: 10 downloads per minute per user
+ */
+export const checkDownloadRateLimit = internalQuery({
+  args: {
+    fanUserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const oneMinuteAgo = Date.now() - 60000;
+
+    const recentDownloads = await ctx.db
+      .query("downloads")
+      .withIndex("by_fan", (q) => q.eq("fanUserId", args.fanUserId))
+      .filter((q) => q.gt(q.field("timestamp"), oneMinuteAgo))
+      .collect();
+
+    const limit = 10;
+    const isExceeded = recentDownloads.length >= limit;
+
+    return {
+      isExceeded,
+      count: recentDownloads.length,
+      limit,
+      resetAt: Date.now() + 60000,
+    };
+  },
+});
+

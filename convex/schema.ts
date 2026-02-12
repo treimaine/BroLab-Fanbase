@@ -255,3 +255,21 @@ export default defineSchema({
     .index("by_artist", ["artistId"])
     .index("by_stripe_payout", ["stripePayoutId"]),
 });
+
+// Security logs for unauthorized access attempts
+// Requirements: A01 - Broken Access Control mitigation
+securityLogs: defineTable({
+  userId: v.optional(v.id("users")),
+  clerkUserId: v.optional(v.string()),
+  action: v.string(), // "download_attempt", "unauthorized_access", etc.
+  resourceType: v.string(), // "product", "order", etc.
+  resourceId: v.string(),
+  reason: v.string(), // "not_authenticated", "not_authorized", "rate_limit_exceeded"
+  ipAddress: v.optional(v.string()),
+  userAgent: v.optional(v.string()),
+  timestamp: v.number(),
+})
+  .index("by_userId", ["userId"])
+  .index("by_timestamp", ["timestamp"])
+  .index("by_action", ["action"]),
+
