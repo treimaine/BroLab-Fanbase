@@ -14,17 +14,18 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { isReservedSlug } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { slugSchema } from "@/lib/validations";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -37,17 +38,7 @@ const profileFormSchema = z.object({
     .string()
     .min(2, "Display name must be at least 2 characters")
     .max(50, "Display name must be less than 50 characters"),
-  artistSlug: z
-    .string()
-    .min(3, "Slug must be at least 3 characters")
-    .max(30, "Slug must be less than 30 characters")
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Use only lowercase letters, numbers, and hyphens (no consecutive hyphens)"
-    )
-    .refine((val) => !isReservedSlug(val), {
-      message: "This slug is reserved and cannot be used",
-    }),
+  artistSlug: slugSchema,
   bio: z
     .string()
     .max(500, "Bio must be less than 500 characters")

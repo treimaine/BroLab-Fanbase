@@ -135,6 +135,14 @@ export const getDownloadUrl = action({
         productId: args.productId,
         orderId: ownership.orderId,
       });
+
+      // Log successful download as security event (low severity)
+      await ctx.runMutation(internal.security.logFileDownload, {
+        userId: user._id,
+        clerkUserId: identity.subject,
+        productId: args.productId,
+        orderId: ownership.orderId,
+      });
     }
 
     return {

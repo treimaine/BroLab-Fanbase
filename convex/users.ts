@@ -47,6 +47,10 @@ export const upsertFromClerk = mutation({
       .unique();
 
     if (existingUser) {
+      // Check if role is changing
+      const roleChanged = existingUser.role !== role;
+      const oldRole = existingUser.role;
+
       // Update existing user
       await ctx.db.patch(existingUser._id, {
         role,
@@ -54,6 +58,17 @@ export const upsertFromClerk = mutation({
         usernameSlug,
         avatarUrl,
       });
+
+      // Log role change if it occurred
+      if (roleChanged) {
+        await ctx.runMutation(internal.security.logRoleChange, {
+          userId: existingUser._id,
+          clerkUserId,
+          oldRole,
+          newRole: role,
+          changedBy: "system", // Could be enhanced to track who made the change
+        });
+      }
 
       return existingUser._id;
     }

@@ -103,6 +103,9 @@ export const logDownloadAttempt = internalMutation({
 /**
  * Helper mutation: Log security event
  * Requirements: A01 - Log unauthorized access attempts
+ * 
+ * Wrapper around centralized security logging with automatic severity classification.
+ * Maps download-related events to appropriate severity levels.
  */
 export const logSecurityEvent = internalMutation({
   args: {
@@ -114,6 +117,9 @@ export const logSecurityEvent = internalMutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    const timestamp = Date.now();
+
+    // Insert security log directly
     await ctx.db.insert("securityLogs", {
       userId: args.userId,
       clerkUserId: args.clerkUserId,
@@ -121,7 +127,32 @@ export const logSecurityEvent = internalMutation({
       resourceType: args.resourceType,
       resourceId: args.resourceId,
       reason: args.reason,
-      timestamp: Date.now(),
+      timestamp,
+    });
+
+    // Determine severity based on reason for console logging
+    let severity: "low" | "medium" | "high" | "critical";
+    
+    if (args.reason === "not_authenticated") {
+      severity = "medium";
+    } else if (args.reason === "not_authorized") {
+      severity = "high";
+    } else if (args.reason === "rate_limit_exceeded") {
+      severity = "high";
+    } else if (args.reason === "user_not_found") {
+      severity = "critical";
+    } else {
+      severity = "medium";
+    }
+
+    // Log to console
+    console.log(`[SECURITY ${severity.toUpperCase()}] ${args.action}`, {
+      userId: args.userId,
+      clerkUserId: args.clerkUserId,
+      resourceType: args.resourceType,
+      resourceId: args.resourceId,
+      reason: args.reason,
+      timestamp: new Date(timestamp).toISOString(),
     });
   },
 });

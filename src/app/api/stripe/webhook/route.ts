@@ -15,6 +15,9 @@
  */
 
 import { api } from "@/../convex/_generated/api";
+import { withRateLimit } from "@/lib/api-rate-limit";
+import { RATE_LIMITS } from "@/lib/rate-limiter";
+import { GENERIC_ERROR_MESSAGES, logSecurityEvent } from "@/lib/security-logger";
 import { fetchAction } from "convex/nextjs";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -56,13 +59,20 @@ async function verifyWebhookSignature(
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     return { event, body };
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
-    return NextResponse.json(
-      { 
-        error: `Webhook signature verification failed: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }` 
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_webhook_verification_failed",
+      error: err,
+      timestamp: Date.now(),
+      metadata: {
+        hasSignature: !!signature,
+        bodyLength: body.length,
       },
+    });
+
+    // Return generic error to client
+    return NextResponse.json(
+      { error: GENERIC_ERROR_MESSAGES.WEBHOOK_VERIFICATION_FAILED },
       { status: 400 }
     );
   }
@@ -102,13 +112,20 @@ async function handleCheckoutCompleted(event: Stripe.Event): Promise<NextRespons
       message: result.message,
     });
   } catch (convexError) {
-    console.error("Convex action failed:", convexError);
-    return NextResponse.json(
-      { 
-        error: `Failed to process webhook: ${
-          convexError instanceof Error ? convexError.message : "Unknown error"
-        }` 
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_checkout_processing_failed",
+      error: convexError,
+      timestamp: Date.now(),
+      metadata: {
+        eventId: event.id,
+        sessionId: session.id,
       },
+    });
+
+    // Return generic error to client
+    return NextResponse.json(
+      { error: GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
     );
   }
@@ -132,13 +149,20 @@ async function handlePaymentMethodEvent(event: Stripe.Event): Promise<NextRespon
       message: result.message,
     });
   } catch (convexError) {
-    console.error("Payment method webhook failed:", convexError);
-    return NextResponse.json(
-      { 
-        error: `Failed to process payment method webhook: ${
-          convexError instanceof Error ? convexError.message : "Unknown error"
-        }` 
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_payment_method_processing_failed",
+      error: convexError,
+      timestamp: Date.now(),
+      metadata: {
+        eventId: event.id,
+        eventType: event.type,
       },
+    });
+
+    // Return generic error to client
+    return NextResponse.json(
+      { error: GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
     );
   }
@@ -180,13 +204,20 @@ async function handleConnectAccountUpdated(event: Stripe.Event): Promise<NextRes
       message: result.message,
     });
   } catch (convexError) {
-    console.error("Connect account webhook failed:", convexError);
-    return NextResponse.json(
-      { 
-        error: `Failed to process Connect account webhook: ${
-          convexError instanceof Error ? convexError.message : "Unknown error"
-        }` 
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_connect_account_processing_failed",
+      error: convexError,
+      timestamp: Date.now(),
+      metadata: {
+        eventId: event.id,
+        accountId: account.id,
       },
+    });
+
+    // Return generic error to client
+    return NextResponse.json(
+      { error: GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
     );
   }
@@ -243,13 +274,20 @@ async function handleBalanceAvailable(event: Stripe.Event): Promise<NextResponse
       message: result.message,
     });
   } catch (convexError) {
-    console.error("Balance webhook failed:", convexError);
-    return NextResponse.json(
-      { 
-        error: `Failed to process balance webhook: ${
-          convexError instanceof Error ? convexError.message : "Unknown error"
-        }` 
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_balance_processing_failed",
+      error: convexError,
+      timestamp: Date.now(),
+      metadata: {
+        eventId: event.id,
+        accountId: stripeConnectAccountId,
       },
+    });
+
+    // Return generic error to client
+    return NextResponse.json(
+      { error: GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
     );
   }
@@ -286,13 +324,21 @@ async function handlePayoutEvent(event: Stripe.Event): Promise<NextResponse> {
       message: result.message,
     });
   } catch (convexError) {
-    console.error("Payout webhook failed:", convexError);
-    return NextResponse.json(
-      { 
-        error: `Failed to process payout webhook: ${
-          convexError instanceof Error ? convexError.message : "Unknown error"
-        }` 
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_payout_processing_failed",
+      error: convexError,
+      timestamp: Date.now(),
+      metadata: {
+        eventId: event.id,
+        eventType: event.type,
+        payoutId: payout.id,
       },
+    });
+
+    // Return generic error to client
+    return NextResponse.json(
+      { error: GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
     );
   }
@@ -315,9 +361,12 @@ async function handlePayoutEvent(event: Stripe.Event): Promise<NextResponse> {
  * - account.updated: Update Connect account status
  * - balance.available: Sync balance snapshots (Palier B)
  * - payout.*: Track payout history (Palier B)
+ *
+ * Security: Rate limited to 100 requests per minute per IP
  */
 export async function POST(req: NextRequest) {
-  try {
+  return withRateLimit(req, RATE_LIMITS.WEBHOOK, async () => {
+    try {
     // 1. Verify webhook signature
     const verificationResult = await verifyWebhookSignature(req);
     
@@ -358,10 +407,18 @@ export async function POST(req: NextRequest) {
         });
     }
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "stripe_webhook_handler_error",
+      error,
+      timestamp: Date.now(),
+    });
+
+    // Return generic error to client
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: GENERIC_ERROR_MESSAGES.INTERNAL_SERVER_ERROR },
       { status: 500 }
     );
   }
+  });
 }

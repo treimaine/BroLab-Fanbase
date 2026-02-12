@@ -36,8 +36,20 @@ async function verifyWebhook(req: Request): Promise<WebhookEvent | Response> {
       "svix-signature": svixSignature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error("❌ Error verifying webhook:", err);
-    return new Response("Error: Verification failed", { status: 400 });
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "clerk_webhook_verification_failed",
+      error: err,
+      timestamp: Date.now(),
+      metadata: {
+        hasSvixId: !!svixId,
+        hasSvixTimestamp: !!svixTimestamp,
+        hasSvixSignature: !!svixSignature,
+      },
+    });
+
+    // Return generic error to client
+    return new Response(GENERIC_ERROR_MESSAGES.WEBHOOK_VERIFICATION_FAILED, { status: 400 });
   }
 }
 
@@ -112,9 +124,20 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
 
     return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error("❌ Failed to sync user to Convex:", error);
-    console.error("   Error details:", error instanceof Error ? error.message : String(error));
-    return new Response(`Error: Sync failed - ${error instanceof Error ? error.message : String(error)}`, { status: 500 });
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "clerk_user_sync_failed",
+      error,
+      timestamp: Date.now(),
+      metadata: {
+        clerkUserId: id,
+        role,
+        hasEmail: !!primaryEmail,
+      },
+    });
+
+    // Return generic error to client
+    return new Response(GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED, { status: 500 });
   }
 }
 
@@ -147,8 +170,18 @@ async function handleUserDeletion(evt: WebhookEvent): Promise<Response> {
     console.log(`✅ User ${id} and all associated data deleted from Convex`);
     return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error("❌ Failed to delete user from Convex:", error);
-    return new Response("Error: Deletion failed", { status: 500 });
+    // Log detailed error server-side
+    await logSecurityEvent({
+      type: "clerk_user_deletion_failed",
+      error,
+      timestamp: Date.now(),
+      metadata: {
+        clerkUserId: id,
+      },
+    });
+
+    // Return generic error to client
+    return new Response(GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED, { status: 500 });
   }
 }
 

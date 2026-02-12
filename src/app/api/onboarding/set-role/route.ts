@@ -1,10 +1,13 @@
 import { api } from "@/../convex/_generated/api";
+import { withRateLimit } from "@/lib/api-rate-limit";
+import { RATE_LIMITS } from "@/lib/rate-limiter";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { fetchMutation } from "convex/nextjs";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  try {
+export async function POST(req: NextRequest) {
+  return withRateLimit(req, RATE_LIMITS.ONBOARDING, async () => {
+    try {
     const { userId } = await auth();
 
     if (!userId) {
@@ -54,4 +57,5 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+  });
 }

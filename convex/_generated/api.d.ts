@@ -22,6 +22,7 @@ import type * as links from "../links.js";
 import type * as orders from "../orders.js";
 import type * as paymentMethods from "../paymentMethods.js";
 import type * as products from "../products.js";
+import type * as security from "../security.js";
 import type * as seed from "../seed.js";
 import type * as stripe from "../stripe.js";
 import type * as stripeConnect from "../stripeConnect.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   orders: typeof orders;
   paymentMethods: typeof paymentMethods;
   products: typeof products;
+  security: typeof security;
   seed: typeof seed;
   stripe: typeof stripe;
   stripeConnect: typeof stripeConnect;

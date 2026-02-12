@@ -1,6 +1,26 @@
 /**
- * File upload validation utilities
+ * Validation utilities for forms and file uploads
  */
+
+import { z } from "zod";
+import { isReservedSlug } from "./constants";
+
+/**
+ * Slug validation schema (client-side)
+ * Validates artist slugs and username slugs
+ * Requirements: R-SEC-1 (A01: Broken Access Control)
+ */
+export const slugSchema = z
+  .string()
+  .min(3, "Slug must be at least 3 characters")
+  .max(30, "Slug must be less than 30 characters")
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Use only lowercase letters, numbers, and hyphens (no consecutive hyphens)"
+  )
+  .refine((val) => !isReservedSlug(val), {
+    message: "This slug is reserved and cannot be used",
+  });
 
 // Allowed file types for upload
 export const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/wav"] as const;

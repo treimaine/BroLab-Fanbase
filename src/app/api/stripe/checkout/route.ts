@@ -46,9 +46,12 @@ function getStripe() {
  * Metadata included in session:
  * - fanUserId: Convex user ID of the purchaser
  * - productId: Convex product ID being purchased
+ *
+ * Security: Rate limited to 10 requests per 10 seconds per IP
  */
 export async function POST(req: NextRequest) {
-  try {
+  return withRateLimit(req, RATE_LIMITS.CHECKOUT, async () => {
+    try {
     // 1. Verify authentication
     const { userId: clerkUserId } = await auth();
 
@@ -192,4 +195,5 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+  });
 }
