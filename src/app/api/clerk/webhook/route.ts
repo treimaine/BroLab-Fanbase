@@ -1,5 +1,6 @@
 import { api } from "@/../convex/_generated/api";
 import { Id } from "@/../convex/_generated/dataModel";
+import { GENERIC_ERROR_MESSAGES, logSecurityEvent } from "@/lib/security-logger";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { fetchAction, fetchMutation } from "convex/nextjs";
 import { headers } from "next/headers";
