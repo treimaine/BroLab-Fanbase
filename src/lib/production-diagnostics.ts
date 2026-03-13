@@ -15,13 +15,12 @@ export function diagnoseProductionIssues(): ProductionIssue[] {
   const issues: ProductionIssue[] = [];
 
   // Check environment variables
-  if (typeof window === 'undefined') {
+  if (globalThis.window === undefined) {
     // Server-side checks
     
     // Check Clerk configuration
     const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
     const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-    const clerkJwtIssuer = process.env.CLERK_JWT_ISSUER_DOMAIN;
     
     if (!clerkPublishableKey || clerkPublishableKey.includes('placeholder')) {
       issues.push({

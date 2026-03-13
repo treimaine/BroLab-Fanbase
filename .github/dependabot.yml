@@ -1,41 +1,51 @@
+# Dependabot Configuration
+# Prevents problematic automatic updates that cause deployment failures
+
 version: 2
 updates:
-  # Enable version updates for npm
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly" # Reduce frequency to avoid conflicts
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 10
-    # Group minor and patch updates
+    # Group related updates together
     groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-    # Security updates
-    allow:
-      - dependency-type: "all"
-    # Ignore major version updates for critical packages
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      next-ecosystem:
+        patterns:
+          - "next*"
+          - "eslint-config-next"
+      clerk-ecosystem:
+        patterns:
+          - "@clerk/*"
+      stripe-ecosystem:
+        patterns:
+          - "stripe*"
+          - "@stripe/*"
+      radix-ecosystem:
+        patterns:
+          - "@radix-ui/*"
+    # Ignore problematic packages that cause conflicts
     ignore:
-      - dependency-name: "next"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
-        update-types: ["version-update:semver-major"]
-    # Labels for PRs
-    labels:
-      - "dependencies"
-      - "security"
-    # Commit message prefix
+      # ESLint v9 has breaking changes - stay on v8
+      - dependency-name: "eslint"
+        versions: [">=9.0.0"]
+      # Tailwind v4 is still beta - stay on v3
+      - dependency-name: "tailwindcss" 
+        versions: [">=4.0.0"]
+      # PostCSS v9 has compatibility issues
+      - dependency-name: "postcss"
+        versions: [">=9.0.0"]
+    # Auto-merge minor and patch updates for stable packages
+    open-pull-requests-limit: 5
+    reviewers:
+      - "treimaine"
+    assignees:
+      - "treimaine"
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "deps"
       include: "scope"
