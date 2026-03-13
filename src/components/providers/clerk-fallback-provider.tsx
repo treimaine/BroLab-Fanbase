@@ -1,15 +1,15 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 
 interface ClerkFallbackProviderProps {
-  children: ReactNode;
-  publishableKey?: string;
-  appearance?: any;
-  afterSignOutUrl?: string;
-  signInFallbackRedirectUrl?: string;
-  signUpFallbackRedirectUrl?: string;
+  readonly children: ReactNode;
+  readonly publishableKey?: string;
+  readonly appearance?: any;
+  readonly afterSignOutUrl?: string;
+  readonly signInFallbackRedirectUrl?: string;
+  readonly signUpFallbackRedirectUrl?: string;
 }
 
 export function ClerkFallbackProvider({
@@ -24,27 +24,35 @@ export function ClerkFallbackProvider({
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  useEffect(() => {
-    // Listen for Clerk loading errors
-    const handleClerkError = (event: ErrorEvent) => {
-      if (event.message?.includes('Clerk') || event.message?.includes('clerk')) {
-        console.error('Clerk loading error:', event.message);
-        setClerkError(event.message);
-        
-        // Auto-retry up to maxRetries times
-        if (retryCount < maxRetries) {
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-            setClerkError(null);
-            window.location.reload();
-          }, 2000 + (retryCount * 1000)); // Exponential backoff
-        }
-      }
-    };
+  const handleRetry = useCallback(() => {
+    setRetryCount(prev => prev + 1);
+    setClerkError(null);
+    globalThis.location.reload();
+  }, []);
 
-    window.addEventListener('error', handleClerkError);
-    return () => window.removeEventListener('error', handleClerkError);
-  }, [retryCount]);
+  const scheduleRetry = useCallback(() => {
+    if (retryCount < maxRetries) {
+      const delay = 2000 + (retryCount * 1000); // Exponential backoff
+      setTimeout(handleRetry, delay);
+    }
+  }, [retryCount, maxRetries, handleRetry]);
+
+  const handleClerkError = useCallback((event: ErrorEvent) => {
+    const isClerkError = event.message?.includes('Clerk') || event.message?.includes('clerk');
+    if (isClerkError) {
+      setClerkError(event.message);
+      scheduleRetry();
+    }
+  }, [scheduleRetry]);
+
+  useEffect(() => {
+    globalThis.addEventListener('error', handleClerkError);
+    return () => globalThis.removeEventListener('error', handleClerkError);
+  }, [handleClerkError]);
+
+  const handleManualRetry = useCallback(() => {
+    globalThis.location.reload();
+  }, []);
 
   // Show error state if Clerk fails to load after retries
   if (clerkError && retryCount >= maxRetries) {
@@ -53,11 +61,11 @@ export function ClerkFallbackProvider({
         <div className="text-center p-8 max-w-md">
           <h1 className="text-2xl font-bold mb-4">Authentication Service Unavailable</h1>
           <p className="text-muted-foreground mb-6">
-            We're having trouble connecting to our authentication service. 
+            We&apos;re having trouble connecting to our authentication service. 
             Please check your internet connection and try again.
           </p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={handleManualRetry}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
             Retry

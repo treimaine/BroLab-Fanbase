@@ -51,9 +51,16 @@ export function UserSyncProvider({ children }: Readonly<{ children: React.ReactN
         hasSynced.current = true;
         
       } catch (error) {
-        
-        // Don't block the app if sync fails
+        // Log error for debugging but don't block the app
         // User can still use the app, sync will retry on next load
+        if (process.env.NODE_ENV === 'development') {
+          // Only log in development to avoid production console pollution
+          // eslint-disable-next-line no-console
+          console.warn('User sync failed:', error);
+        }
+        
+        // Reset sync flag to allow retry on next component mount
+        hasSynced.current = false;
       }
     };
 
