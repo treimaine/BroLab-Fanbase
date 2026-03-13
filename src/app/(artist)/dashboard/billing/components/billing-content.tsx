@@ -193,7 +193,7 @@ export function BillingContent() {
       setIsConnecting(true);
 
       const { stripeConnectAccountId } = await createAccount({});
-      console.log("Stripe Connect account created:", stripeConnectAccountId);
+      
 
       const returnUrl = `${globalThis.location.origin}/dashboard/billing`;
       const refreshUrl = `${globalThis.location.origin}/dashboard/billing`;
@@ -201,7 +201,7 @@ export function BillingContent() {
       const { url } = await createAccountLink({ returnUrl, refreshUrl });
       globalThis.location.href = url;
     } catch (error) {
-      console.error("Error connecting Stripe:", error);
+      
       toast.error(
         error instanceof Error
           ? error.message
@@ -221,7 +221,7 @@ export function BillingContent() {
       const { url } = await createAccountLink({ returnUrl, refreshUrl });
       globalThis.location.href = url;
     } catch (error) {
-      console.error("Error refreshing Stripe link:", error);
+      
       toast.error(
         error instanceof Error
           ? error.message
@@ -238,7 +238,7 @@ export function BillingContent() {
       const { url } = await createLoginLink({});
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      console.error("Error creating login link:", error);
+      
       toast.error(
         error instanceof Error
           ? error.message

@@ -87,7 +87,7 @@ export async function GET(req: Request) {
     // 5. Redirect to checkout page
     return NextResponse.redirect(checkoutUrl.toString());
   } catch (error) {
-    console.error("Billing checkout error:", error);
+    
 
     // Handle specific Clerk errors
     if (error instanceof Error && error.message.includes("not found")) {

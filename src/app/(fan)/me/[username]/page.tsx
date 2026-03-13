@@ -38,7 +38,7 @@ function EmptyFeedState() {
       try {
         await toggleFollow({ artistId: artistId as any });
       } catch (error) {
-        console.error("Failed to follow artist:", error);
+        
       }
     },
     [toggleFollow]

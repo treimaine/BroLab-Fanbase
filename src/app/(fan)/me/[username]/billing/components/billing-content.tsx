@@ -57,7 +57,7 @@ export function BillingContent() {
       setSetupClientSecret(result.clientSecret);
       setIsAddDialogOpen(true);
     } catch (error) {
-      console.error("Create setup intent error:", error);
+      
       toast.error("Failed to initialize payment method setup. Please try again.");
     }
   }, [createSetupIntent]);
@@ -70,7 +70,7 @@ export function BillingContent() {
       
       toast.success("Default payment method updated");
     } catch (error) {
-      console.error("Set default payment method error:", error);
+      
       toast.error("Failed to set default payment method. Please try again.");
     } finally {
       setBusyId(null);
@@ -85,7 +85,7 @@ export function BillingContent() {
       
       toast.success("Payment method removed successfully");
     } catch (error) {
-      console.error("Remove payment method error:", error);
+      
       toast.error("Failed to remove payment method. Please try again.");
     } finally {
       setBusyId(null);

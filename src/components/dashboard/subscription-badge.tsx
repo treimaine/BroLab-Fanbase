@@ -31,23 +31,25 @@ export function SubscriptionBadge() {
   const handleUpgradeClick = useCallback(async () => {
     // Track upgrade_click event (R-ART-SUB-6.1)
     // Using console for now - can be replaced with analytics provider
-    console.log("[Analytics] upgrade_click", {
-      timestamp: new Date().toISOString(),
-      currentPlan: subscription?.plan || "free",
-      source: "subscription_badge",
-    });
+    // console.log('upgrade_click', {
+    //   timestamp: new Date().toISOString(),
+    //   currentPlan: subscription?.plan || "free",
+    //   source: "subscription_badge",
+    // });
 
     // Set loading state
     setIsUpgrading(true);
 
     try {
       // Redirect to checkout API route
-      window.location.href = "/api/billing/checkout";
+      globalThis.location.href = "/api/billing/checkout";
     } catch (error) {
+      // Log error and reset loading state
+      // eslint-disable-next-line no-console
       console.error("Failed to redirect to checkout:", error);
       setIsUpgrading(false);
     }
-  }, [subscription?.plan]);
+  }, []);
 
   if (!subscription) {
     return null;

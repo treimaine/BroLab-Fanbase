@@ -50,7 +50,7 @@ export function FeedSidebar() {
       try {
         await toggleFollow({ artistId: artistId as any });
       } catch (error) {
-        console.error("Failed to follow artist:", error);
+        
       }
     },
     [toggleFollow]
@@ -67,7 +67,7 @@ export function FeedSidebar() {
       });
       return url;
     } catch (error) {
-      console.error("Error fetching playable URL:", error);
+      
       return null;
     }
   }, []);

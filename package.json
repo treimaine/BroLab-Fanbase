@@ -12,7 +12,10 @@
     "security:fix": "npm audit fix",
     "preinstall": "npm audit --omit=dev || true",
     "fix:production": "node scripts/fix-production-config.js",
-    "diagnose": "node scripts/fix-production-config.js"
+    "diagnose": "node scripts/fix-production-config.js",
+    "build:analyze": "ANALYZE=true npm run build",
+    "start:prod": "NODE_ENV=production npm start",
+    "health-check": "curl -f http://localhost:3000/healthz || exit 1"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
@@ -73,5 +76,6 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
-  }
+  },
+  "type": "module"
 }

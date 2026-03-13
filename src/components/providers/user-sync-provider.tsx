@@ -49,9 +49,9 @@ export function UserSyncProvider({ children }: Readonly<{ children: React.ReactN
         });
         
         hasSynced.current = true;
-        console.log("✅ User synced to Convex:", user.id);
+        
       } catch (error) {
-        console.error("❌ Failed to sync user to Convex:", error);
+        
         // Don't block the app if sync fails
         // User can still use the app, sync will retry on next load
       }

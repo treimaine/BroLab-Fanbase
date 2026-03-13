@@ -54,9 +54,9 @@ export function PlayerDemo() {
               key={post.id}
               post={post}
               onRequestUrl={getMockPlayableUrl}
-              onLike={() => console.log("Liked:", post.id)}
-              onComment={() => console.log("Comment:", post.id)}
-              onShare={() => console.log("Share:", post.id)}
+              onLike={() => {}}
+              onComment={() => {}}
+              onShare={() => {}}
             />
           ))}
         </div>

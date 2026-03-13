@@ -42,7 +42,7 @@ export function trackSubscriptionEvent(
 
   // Log to console in development
   if (process.env.NODE_ENV === "development") {
-    console.log(`[Analytics] ${eventName}`, eventData);
+    
   }
 
   // Future: integrate with analytics provider (e.g., PostHog, Segment, Mixpanel)

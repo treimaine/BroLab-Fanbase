@@ -129,13 +129,13 @@ function mapFileTypeToConvex(type: FileType): "audio" | "video" {
  * @example
  * ```tsx
  * const { uploadFile, isUploading, progress, error } = useFileUpload({
- *   onProgress: (p) => console.log(`Upload: ${p}%`),
+ *   onProgress: (p) => ,
  * });
  *
  * const handleUpload = async (file: File) => {
  *   const result = await uploadFile(file, "music");
  *   if (result) {
- *     console.log("Uploaded:", result.storageId);
+ *     
  *   }
  * };
  * ```

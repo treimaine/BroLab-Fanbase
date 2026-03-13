@@ -61,7 +61,7 @@ export default function OnboardingPage() {
         router.push(`/me/${user.username || user.id}`);
       }
     } catch (error) {
-      console.error("Error setting role:", error);
+      
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);

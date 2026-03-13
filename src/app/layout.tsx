@@ -14,6 +14,11 @@ if (process.env.NODE_ENV === 'development') {
   import("@/lib/production-diagnostics");
 }
 
+// Dynamic import for ClerkDebug in development only
+const ClerkDebug = process.env.NODE_ENV === 'development' 
+  ? require("@/components/debug/clerk-debug").ClerkDebug 
+  : () => null;
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -38,11 +43,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} font-sans`}>
         <ClerkProvider
+          publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
           appearance={{
             elements: {
               formFieldInput: "dark:text-white dark:placeholder:text-gray-400",
             },
           }}
+          afterSignOutUrl="/"
+          signInFallbackRedirectUrl="/onboarding"
+          signUpFallbackRedirectUrl="/onboarding"
+          telemetry={process.env.NODE_ENV === 'development' ? false : undefined}
         >
           <PHProvider>
             <ConvexClientProvider>
@@ -53,6 +63,7 @@ export default function RootLayout({
                   </GlobalPlayerProvider>
                 </UserSyncProvider>
                 <Toaster />
+                <ClerkDebug />
               </ThemeProvider>
             </ConvexClientProvider>
           </PHProvider>

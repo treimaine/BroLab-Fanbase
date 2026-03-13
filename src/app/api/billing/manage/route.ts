@@ -73,7 +73,7 @@ export async function GET(req: Request) {
     // 4. Redirect to manage page
     return NextResponse.redirect(manageUrl.toString());
   } catch (error) {
-    console.error("Billing manage error:", error);
+    
 
     // Handle specific Clerk errors
     if (error instanceof Error && error.message.includes("not found")) {

@@ -100,29 +100,13 @@ export function logProductionIssues() {
   const issues = diagnoseProductionIssues();
   
   if (issues.length === 0) {
-    console.log('✅ No production issues detected');
     return;
   }
   
-  console.group('🚨 Production Issues Detected');
-  
   issues.forEach((issue, index) => {
-    const emoji = {
-      critical: '🔴',
-      high: '🟠',
-      medium: '🟡',
-      low: '🟢'
-    }[issue.severity];
-    
-    console.group(`${emoji} Issue ${index + 1}: ${issue.message}`);
-    console.log('Type:', issue.type);
-    console.log('Severity:', issue.severity);
-    console.log('Solution:', issue.solution);
-    console.log('Affected features:', issue.affectedFeatures.join(', '));
-    console.groupEnd();
+    // Process issues silently in production
+    // Could be sent to monitoring service like Sentry, DataDog, etc.
   });
-  
-  console.groupEnd();
 }
 
 // Auto-run diagnostics in development

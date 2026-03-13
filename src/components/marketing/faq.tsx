@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion";
 import { motion, type Variants } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -42,10 +42,10 @@ const faqs = [
 ];
 
 export function Faq() {
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setIsClient(true);
   }, []);
 
   // Header animation - fade in + slide up
@@ -80,10 +80,10 @@ export function Faq() {
       <div className="max-w-3xl mx-auto">
         <motion.div
           className="text-center mb-12"
-          variants={mounted ? headerVariants : undefined}
-          initial={mounted ? "hidden" : false}
-          whileInView={mounted ? "visible" : undefined}
-          viewport={mounted ? { once: true, margin: "-100px" } : undefined}
+          variants={headerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
         >
           <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">
             Frequently Asked Questions
@@ -93,30 +93,46 @@ export function Faq() {
           </p>
         </motion.div>
 
-        <motion.div
-          variants={mounted ? accordionVariants : undefined}
-          initial={mounted ? "hidden" : false}
-          whileInView={mounted ? "visible" : undefined}
-          viewport={mounted ? { once: true, margin: "-100px" } : undefined}
-        >
-          <Accordion 
-            type="single" 
-            collapsible 
-            className="w-full"
-            suppressHydrationWarning
+        {/* Only render Accordion on client to avoid hydration mismatch */}
+        {isClient ? (
+          <motion.div
+            variants={accordionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
           >
+            <Accordion 
+              type="single" 
+              collapsible 
+              className="w-full"
+            >
+              {faqs.map((faq) => (
+                <AccordionItem key={faq.id} value={faq.id}>
+                  <AccordionTrigger className="text-left text-lg font-medium">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground text-base">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </motion.div>
+        ) : (
+          // Fallback content for SSR - same structure but no interactive elements
+          <div className="w-full space-y-4">
             {faqs.map((faq) => (
-              <AccordionItem key={faq.id} value={faq.id}>
-                <AccordionTrigger className="text-left text-lg font-medium">
+              <div key={faq.id} className="border-b pb-4">
+                <h3 className="text-left text-lg font-medium mb-2">
                   {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-base">
+                </h3>
+                <div className="text-muted-foreground text-base">
                   {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
+                </div>
+              </div>
             ))}
-          </Accordion>
-        </motion.div>
+          </div>
+        )}
       </div>
     </section>
   );

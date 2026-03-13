@@ -47,7 +47,7 @@ async function verifyWebhookSignature(
   const signature = headersList.get("stripe-signature");
 
   if (!signature) {
-    console.error("Missing stripe-signature header");
+    
     return NextResponse.json(
       { error: "Missing stripe-signature header" },
       { status: 400 }
@@ -86,7 +86,7 @@ async function handleCheckoutCompleted(event: Stripe.Event): Promise<NextRespons
   const metadata = session.metadata;
 
   if (!metadata?.fanUserId || !metadata?.productId) {
-    console.error("Missing required metadata in checkout session");
+    
     return NextResponse.json(
       { error: "Missing required metadata: fanUserId and productId" },
       { status: 400 }
@@ -106,7 +106,7 @@ async function handleCheckoutCompleted(event: Stripe.Event): Promise<NextRespons
       currency: session.currency || "usd",
     });
 
-    console.log("Webhook processed successfully:", result);
+    
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -143,7 +143,7 @@ async function handlePaymentMethodEvent(event: Stripe.Event): Promise<NextRespon
       eventData: event.data.object,
     });
 
-    console.log("Payment method webhook processed successfully:", result);
+    
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -178,16 +178,7 @@ async function handleConnectAccountUpdated(event: Stripe.Event): Promise<NextRes
   const payoutsEnabled = account.payouts_enabled || false;
   const requirementsDue = account.requirements?.currently_due || [];
 
-  console.log(
-    "Processing account.updated event:",
-    account.id,
-    "Charges:",
-    chargesEnabled,
-    "Payouts:",
-    payoutsEnabled,
-    "Requirements:",
-    requirementsDue
-  );
+  
 
   try {
     const result = await fetchAction(api.stripe.handleConnectAccountUpdated, {
@@ -198,7 +189,7 @@ async function handleConnectAccountUpdated(event: Stripe.Event): Promise<NextRes
       requirementsDue,
     });
 
-    console.log("Connect account status updated successfully:", result);
+    
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -233,7 +224,7 @@ async function handleBalanceAvailable(event: Stripe.Event): Promise<NextResponse
   const usdPending = balance.pending.find((b) => b.currency === "usd");
 
   if (!usdAvailable) {
-    console.log("No USD balance found in balance.available event, skipping");
+    
     return NextResponse.json({
       success: true,
       message: "No USD balance to sync",
@@ -243,21 +234,14 @@ async function handleBalanceAvailable(event: Stripe.Event): Promise<NextResponse
   const stripeConnectAccountId = event.account;
 
   if (!stripeConnectAccountId) {
-    console.error("Missing account ID in balance.available event");
+    
     return NextResponse.json(
       { error: "Missing account ID in balance.available event" },
       { status: 400 }
     );
   }
 
-  console.log(
-    "Processing balance.available event:",
-    stripeConnectAccountId,
-    "Available:",
-    usdAvailable.amount,
-    "Pending:",
-    usdPending?.amount || 0
-  );
+  
 
   try {
     const result = await fetchAction(api.stripe.handleBalanceAvailable, {
@@ -268,7 +252,7 @@ async function handleBalanceAvailable(event: Stripe.Event): Promise<NextResponse
       currency: "usd",
     });
 
-    console.log("Balance snapshot created successfully:", result);
+    
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -300,16 +284,7 @@ async function handleBalanceAvailable(event: Stripe.Event): Promise<NextResponse
 async function handlePayoutEvent(event: Stripe.Event): Promise<NextResponse> {
   const payout = event.data.object as Stripe.Payout;
 
-  console.log(
-    "Processing payout event:",
-    event.type,
-    "Payout ID:",
-    payout.id,
-    "Amount:",
-    payout.amount,
-    "Status:",
-    payout.status
-  );
+  
 
   try {
     const result = await fetchAction(api.stripe.handlePayoutWebhook, {
@@ -318,7 +293,7 @@ async function handlePayoutEvent(event: Stripe.Event): Promise<NextResponse> {
       payout: payout,
     });
 
-    console.log("Payout webhook processed successfully:", result);
+    
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -375,7 +350,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { event } = verificationResult;
-    console.log(`Received Stripe event: ${event.type} (${event.id})`);
 
     // 2. Route to appropriate handler based on event type
     switch (event.type) {
@@ -400,7 +374,6 @@ export async function POST(req: NextRequest) {
         return handlePayoutEvent(event);
 
       default:
-        console.log(`Event type ${event.type} not handled, acknowledging`);
         return NextResponse.json({
           success: true,
           message: `Event type ${event.type} acknowledged but not handled`,

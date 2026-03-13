@@ -193,7 +193,7 @@ export function SubscriptionCard({
       
       globalThis.location.href = checkoutUrl.toString();
     } catch (error) {
-      console.error("Failed to redirect to checkout:", error);
+      
       setIsRedirecting(false);
     }
   }, [plan]);
@@ -216,7 +216,7 @@ export function SubscriptionCard({
       // Redirect to manage API route
       globalThis.location.href = "/api/billing/manage";
     } catch (error) {
-      console.error("Failed to redirect to manage:", error);
+      
       setIsRedirecting(false);
     }
   }, [plan, status]);

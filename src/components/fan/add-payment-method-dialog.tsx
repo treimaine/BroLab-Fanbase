@@ -28,7 +28,7 @@ function getStripePromise() {
   if (!stripePromise) {
     const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
     if (!publishableKey) {
-      console.error("Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY");
+      
       return null;
     }
     stripePromise = loadStripe(publishableKey);

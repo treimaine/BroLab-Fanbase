@@ -40,7 +40,7 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
   };
 
   // Log to console (in production, send to monitoring service like Sentry, DataDog, etc.)
-  console.error("[SECURITY EVENT]", JSON.stringify(logEntry, null, 2));
+  // console.log('Security Event:', logEntry);
 
   // Determine if this is a critical event that should be logged to Convex
   const criticalEventTypes = [
@@ -63,7 +63,7 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
       });
     } catch (convexError) {
       // Don't fail the original operation if Convex logging fails
-      console.error("[SECURITY EVENT] Failed to log to Convex:", convexError);
+      
     }
   }
 

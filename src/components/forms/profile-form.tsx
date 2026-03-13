@@ -206,7 +206,7 @@ export function ProfileForm({
       
       toast.success("Image uploaded successfully");
     } catch (error) {
-      console.error("Avatar upload error:", error);
+      
       toast.error("Failed to upload image. Please try again.");
       setAvatarError(true);
     } finally {

@@ -49,3 +49,7 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    # Prevent automatic deployment by requiring manual review
+    labels:
+      - "dependencies"
+      - "no-deploy"

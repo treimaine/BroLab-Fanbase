@@ -45,7 +45,7 @@ async function getUserRole(userId: string): Promise<string | undefined> {
     const user = await client.users.getUser(userId);
     return user.publicMetadata?.role as string | undefined;
   } catch (error) {
-    console.error("Error fetching user role:", error);
+    
     return undefined;
   }
 }

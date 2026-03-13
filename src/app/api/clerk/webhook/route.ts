@@ -17,12 +17,12 @@ async function verifyWebhook(req: Request): Promise<WebhookEvent | Response> {
   const svixSignature = headerPayload.get("svix-signature");
 
   if (!svixId || !svixTimestamp || !svixSignature) {
-    console.error("❌ Missing svix headers");
+    
     return new Response("Error: Missing svix headers", { status: 400 });
   }
 
   if (!process.env.CLERK_WEBHOOK_SECRET) {
-    console.error("❌ CLERK_WEBHOOK_SECRET not configured");
+    
     return new Response("Error: Webhook secret not configured", { status: 500 });
   }
 
@@ -61,15 +61,14 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
   const data = evt.data as any;
   const { id, first_name, last_name, username, image_url, email_addresses, public_metadata } = data;
   
-  console.log(`📥 Processing user event for ${id}`);
-  console.log(`   Role: ${public_metadata?.role || 'none'}`);
-  console.log(`   Email addresses count: ${email_addresses?.length || 0}`);
+  
+  
+  
   
   const role = public_metadata?.role as "artist" | "fan" | undefined;
 
   // Skip if no role assigned yet (user hasn't completed onboarding)
   if (!role) {
-    console.log(`⏭️ Skipping sync for user ${id} - no role assigned yet (will sync after onboarding)`);
     return new Response("OK - No role assigned", { status: 200 });
   }
 
@@ -89,11 +88,10 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
   
   // If no email in webhook, skip for now (will sync when email is added)
   if (!primaryEmail) {
-    console.log(`⏭️ Skipping sync for user ${id} - no email address yet (will sync when email is added)`);
     return new Response("OK - No email yet", { status: 200 });
   }
 
-  console.log(`   Using email: ${primaryEmail}`);
+  
 
   try {
     const userId = await fetchMutation(api.users.upsertFromClerk, {
@@ -105,7 +103,7 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
       email: primaryEmail,
     });
 
-    console.log(`✅ User ${id} synced to Convex via webhook`);
+    
 
     // Create Stripe customer for new users (non-blocking)
     try {
@@ -113,9 +111,18 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
         clerkUserId: id,
         email: primaryEmail,
       });
-      console.log(`✅ Stripe customer created for user ${id}`);
+      
     } catch (stripeError) {
-      console.error(`⚠️ Failed to create Stripe customer for user ${id}:`, stripeError);
+      // Log Stripe customer creation failure but don't fail the webhook
+      await logSecurityEvent({
+        type: "stripe_customer_creation_failed",
+        error: stripeError,
+        timestamp: Date.now(),
+        metadata: {
+          clerkUserId: id,
+          email: primaryEmail,
+        },
+      });
       // Don't fail the webhook - user sync succeeded
     }
 
@@ -148,9 +155,18 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
 async function createArtistProfile(userId: Id<"users">, clerkUserId: string): Promise<void> {
   try {
     await fetchMutation(api.artists.createFromWebhook, { userId });
-    console.log(`✅ Artist profile created for user ${clerkUserId}`);
+    
   } catch (artistError) {
-    console.log(`ℹ️ Artist profile creation skipped for user ${clerkUserId}:`, artistError);
+    // Log artist profile creation failure but don't fail the webhook
+    await logSecurityEvent({
+      type: "artist_profile_creation_failed",
+      error: artistError,
+      timestamp: Date.now(),
+      metadata: {
+        userId,
+        clerkUserId,
+      },
+    });
   }
 }
 
@@ -162,13 +178,13 @@ async function handleUserDeletion(evt: WebhookEvent): Promise<Response> {
   const id = data.id;
 
   if (!id) {
-    console.error("❌ Missing user ID in deletion event");
+    
     return new Response("Error: Missing user ID", { status: 400 });
   }
 
   try {
     await fetchMutation(api.users.deleteByClerkId, { clerkUserId: id });
-    console.log(`✅ User ${id} and all associated data deleted from Convex`);
+    
     return new Response("OK", { status: 200 });
   } catch (error) {
     // Log detailed error server-side
@@ -194,7 +210,7 @@ export async function POST(req: Request) {
   }
 
   const eventType = evt.type;
-  console.log(`📥 Received Clerk webhook: ${eventType}`);
+  
 
   if (eventType === "user.created" || eventType === "user.updated") {
     return handleUserUpsert(evt);
@@ -204,6 +220,6 @@ export async function POST(req: Request) {
     return handleUserDeletion(evt);
   }
 
-  console.log(`✅ Webhook ${eventType} processed successfully`);
+  
   return new Response("OK", { status: 200 });
 }

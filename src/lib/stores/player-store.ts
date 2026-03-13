@@ -73,7 +73,7 @@ export const usePlayerStore = create<PlayerStore>()(
           audio.load();
           
           audio.play().catch((err) => {
-            console.error("Playback failed:", err);
+            
             set({ 
               status: "error", 
               error: err.message || "Failed to play audio" 

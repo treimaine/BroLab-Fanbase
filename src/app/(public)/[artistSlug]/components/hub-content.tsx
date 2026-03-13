@@ -43,7 +43,7 @@ export function HubContent({ artistId, artistName, artistSlug }: Readonly<HubCon
       });
       return url;
     } catch (error) {
-      console.error("Error fetching playable URL:", error);
+      
       return null;
     }
   }, []);

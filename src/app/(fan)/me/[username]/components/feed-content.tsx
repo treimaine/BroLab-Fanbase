@@ -101,7 +101,7 @@ export function FeedContent() {
       });
       return url;
     } catch (error) {
-      console.error("Error fetching playable URL:", error);
+      
       return null;
     }
   }, []);

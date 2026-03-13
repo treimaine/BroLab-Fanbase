@@ -70,7 +70,7 @@ export function PurchasesContent() {
         throw new Error("No download URL received");
       }
     } catch (error) {
-      console.error("Download error:", error);
+      
       
       const errorMessage = error instanceof Error ? error.message : "Failed to download";
       toast.error(errorMessage);

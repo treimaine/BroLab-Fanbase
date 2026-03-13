@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
     // 7. Return checkout URL
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error("Stripe checkout error:", error);
+    
 
     // Handle Stripe-specific errors
     const Stripe = (await import("stripe")).default;

@@ -148,7 +148,7 @@ export function HubHeader({
       );
     } catch (error) {
       toast.error("Failed to update follow status");
-      console.error("Follow toggle error:", error);
+      
     } finally {
       setIsToggling(false);
     }

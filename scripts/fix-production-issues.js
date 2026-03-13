@@ -8,11 +8,17 @@
 const fs = require('node:fs');
 const { execSync } = require('node:child_process');
 
-console.log('🔧 BroLab Fanbase - Production Issues Diagnostic\n');
+// Logging utility for script output
+function log(message) {
+  // eslint-disable-next-line no-console
+  console.log(message);
+}
+
+log('🔧 BroLab Fanbase - Production Issues Diagnostic\n');
 
 // 1. Check for Dependabot conflicts
 function checkDependabotConflicts() {
-  console.log('📦 Checking for Dependabot conflicts...');
+  log('📦 Checking for Dependabot conflicts...');
   
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   const issues = [];
@@ -43,21 +49,21 @@ function checkDependabotConflicts() {
   });
   
   if (issues.length > 0) {
-    console.log('❌ Dependabot conflicts found:');
+    log('❌ Dependabot conflicts found:');
     issues.forEach(issue => {
-      console.log(`   - ${issue.issue}`);
-      console.log(`     Fix: ${issue.fix}`);
+      log(`   - ${issue.issue}`);
+      log(`     Fix: ${issue.fix}`);
     });
     return false;
   }
   
-  console.log('✅ No Dependabot conflicts detected');
+  log('✅ No Dependabot conflicts detected');
   return true;
 }
 
 // 2. Check environment variables
 function checkEnvironmentVariables() {
-  console.log('\n🔑 Checking environment variables...');
+  log('\n🔑 Checking environment variables...');
   
   const requiredVars = [
     'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
@@ -82,23 +88,23 @@ function checkEnvironmentVariables() {
   });
   
   if (missing.length > 0) {
-    console.log('❌ Missing environment variables:');
-    missing.forEach(varName => console.log(`   - ${varName}`));
+    log('❌ Missing environment variables:');
+    missing.forEach(varName => log(`   - ${varName}`));
     return false;
   }
   
   if (testValues.length > 0) {
-    console.log('⚠️  Test values in production:');
-    testValues.forEach(varName => console.log(`   - ${varName}`));
+    log('⚠️  Test values in production:');
+    testValues.forEach(varName => log(`   - ${varName}`));
   }
   
-  console.log('✅ Environment variables configured');
+  log('✅ Environment variables configured');
   return true;
 }
 
 // 3. Check build configuration
 function checkBuildConfig() {
-  console.log('\n⚙️  Checking build configuration...');
+  log('\n⚙️  Checking build configuration...');
   
   const issues = [];
   
@@ -126,34 +132,34 @@ function checkBuildConfig() {
   }
   
   if (issues.length > 0) {
-    console.log('❌ Build configuration issues:');
-    issues.forEach(issue => console.log(`   - ${issue}`));
+    log('❌ Build configuration issues:');
+    issues.forEach(issue => log(`   - ${issue}`));
     return false;
   }
   
-  console.log('✅ Build configuration looks good');
+  log('✅ Build configuration looks good');
   return true;
 }
 
 // 4. Test build locally
 function testBuild() {
-  console.log('\n🏗️  Testing local build...');
+  log('\n🏗️  Testing local build...');
   
   try {
-    console.log('Running npm run build...');
+    log('Running npm run build...');
     execSync('npm run build', { stdio: 'pipe' });
-    console.log('✅ Local build successful');
+    log('✅ Local build successful');
     return true;
   } catch (error) {
-    console.log('❌ Local build failed:');
-    console.log(error.stdout?.toString() || error.message);
+    log('❌ Local build failed:');
+    log(error.stdout?.toString() || error.message);
     return false;
   }
 }
 
 // 5. Generate fixes
 function generateFixes() {
-  console.log('\n🔧 Generating fixes...');
+  log('\n🔧 Generating fixes...');
   
   // Fix package.json for compatibility
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -173,7 +179,7 @@ function generateFixes() {
   };
   
   fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
-  console.log('✅ Updated package.json with overrides');
+  log('✅ Updated package.json with overrides');
   
   // Create Vercel configuration
   const vercelConfig = {
@@ -190,7 +196,7 @@ function generateFixes() {
   };
   
   fs.writeFileSync('vercel.json', JSON.stringify(vercelConfig, null, 2) + '\n');
-  console.log('✅ Created vercel.json configuration');
+  log('✅ Created vercel.json configuration');
 }
 
 // Main execution
@@ -205,22 +211,22 @@ async function main() {
   const allPassed = checks.every(Boolean);
   
   if (allPassed) {
-    console.log('\n✅ All checks passed - deployment should work');
+    log('\n✅ All checks passed - deployment should work');
   } else {
-    console.log('\n🚨 Issues detected - generating fixes...');
+    log('\n🚨 Issues detected - generating fixes...');
     generateFixes();
     
-    console.log('\n📋 Next steps to fix deployment:');
-    console.log('1. Close problematic Dependabot PRs');
-    console.log('2. Run: npm install');
-    console.log('3. Run: npm run build (test locally)');
-    console.log('4. Set production environment variables in Vercel');
-    console.log('5. Redeploy from main branch');
+    log('\n📋 Next steps to fix deployment:');
+    log('1. Close problematic Dependabot PRs');
+    log('2. Run: npm install');
+    log('3. Run: npm run build (test locally)');
+    log('4. Set production environment variables in Vercel');
+    log('5. Redeploy from main branch');
     
-    console.log('\n🔗 Helpful links:');
-    console.log('- Vercel Environment Variables: https://vercel.com/docs/projects/environment-variables');
-    console.log('- Clerk Production Setup: https://clerk.com/docs/deployments/overview');
-    console.log('- Next.js 15 Migration: https://nextjs.org/docs/app/building-your-application/upgrading/version-15');
+    log('\n🔗 Helpful links:');
+    log('- Vercel Environment Variables: https://vercel.com/docs/projects/environment-variables');
+    log('- Clerk Production Setup: https://clerk.com/docs/deployments/overview');
+    log('- Next.js 15 Migration: https://nextjs.org/docs/app/building-your-application/upgrading/version-15');
   }
 }
 

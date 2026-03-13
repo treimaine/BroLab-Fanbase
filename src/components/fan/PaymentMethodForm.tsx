@@ -43,12 +43,12 @@ export function PaymentMethodForm({
     e.preventDefault();
 
     if (!stripe || !elements) {
-      console.log("Stripe or Elements not ready");
+      
       return;
     }
 
     setIsSubmitting(true);
-    console.log("Starting confirmSetup...");
+    
 
     try {
       // Confirm setup with Stripe (R-FAN-PM-2.3)
@@ -60,11 +60,11 @@ export function PaymentMethodForm({
         },
       });
 
-      console.log("confirmSetup result:", result);
+      
 
       if (result.error) {
         // Handle error: show destructive toast with error message (R-FAN-PM-7.1)
-        console.error("confirmSetup error:", result.error);
+        
         toast.error(result.error.message || "Failed to add payment method");
         setIsSubmitting(false);
       } else {
@@ -75,7 +75,7 @@ export function PaymentMethodForm({
         onSuccess?.();
       }
     } catch (error) {
-      console.error("Error confirming setup:", error);
+      
       toast.error("An unexpected error occurred. Please try again.");
       setIsSubmitting(false);
     }
