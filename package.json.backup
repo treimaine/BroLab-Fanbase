@@ -10,9 +10,7 @@
     "security:audit": "npm audit --omit=dev",
     "security:check": "npm outdated && npm audit",
     "security:fix": "npm audit fix",
-    "preinstall": "npm audit --omit=dev || true",
-    "fix:production": "node scripts/fix-production-config.js",
-    "diagnose": "node scripts/fix-production-config.js"
+    "preinstall": "npm audit --omit=dev || true"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",

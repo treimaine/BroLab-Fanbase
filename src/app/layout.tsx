@@ -9,6 +9,11 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
+// Import diagnostics in development only
+if (process.env.NODE_ENV === 'development') {
+  import("@/lib/production-diagnostics");
+}
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
