@@ -9,6 +9,8 @@ interface Feature {
   title: string;
   description: string;
   gradient: string;
+  stat: string;
+  statLabel: string;
 }
 
 const features: Feature[] = [
@@ -18,6 +20,8 @@ const features: Feature[] = [
     description:
       "Connect with your fans without the interference of algorithms. Your content, their feed, zero friction.",
     gradient: "from-amber-400 to-orange-500",
+    stat: "0%",
+    statLabel: "Platform interference",
   },
   {
     icon: Rocket,
@@ -25,6 +29,8 @@ const features: Feature[] = [
     description:
       "Sell music, merch, and tickets worldwide. Get paid directly to your bank account via Stripe Connect.",
     gradient: "from-primary to-blue-500",
+    stat: "~2s",
+    statLabel: "Average payout speed",
   },
   {
     icon: Eye,
@@ -32,6 +38,8 @@ const features: Feature[] = [
     description:
       "You own your data, your audience, and your revenue. No platform lock-in, ever. Build your empire.",
     gradient: "from-purple-500 to-pink-500",
+    stat: "100%",
+    statLabel: "Your data, your revenue",
   },
 ];
 
@@ -96,13 +104,18 @@ export function FeatureGrid() {
                 </p>
               </div>
 
-              <div className="mt-12 flex h-1 w-full overflow-hidden rounded-full bg-muted">
-                <motion.div 
-                  initial={{ x: "-100%" }}
-                  whileInView={{ x: "0%" }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  className={cn("h-full w-full bg-gradient-to-r", feature.gradient)} 
-                />
+              <div className="mt-10 border-t border-border/50 pt-6 flex items-end justify-between">
+                <div>
+                  <p className={cn("font-serif text-4xl font-black bg-gradient-to-r bg-clip-text text-transparent", feature.gradient)}>
+                    {feature.stat}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                    {feature.statLabel}
+                  </p>
+                </div>
+                <div className={cn("h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br opacity-20 group-hover:opacity-60 transition-opacity", feature.gradient)}>
+                  <feature.icon className="h-5 w-5 text-white" />
+                </div>
               </div>
             </motion.div>
           ))}

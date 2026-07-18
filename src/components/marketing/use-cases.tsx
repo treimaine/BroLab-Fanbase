@@ -86,49 +86,74 @@ export function UseCases() {
             </div>
           </motion.div>
 
-          {/* Right: Abstract Editorial Layout */}
+          {/* Right: Dashboard Mockup */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.21, 0.47, 0.32, 0.98] }}
             className="relative"
           >
-            <div className="relative aspect-square sm:aspect-[4/3] lg:aspect-square">
-              {/* Main Card */}
-              <div className="absolute left-1/2 top-1/2 h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-[3rem] border border-border bg-card/50 p-8 backdrop-blur-2xl shadow-xl shadow-primary/5">
-                <div className="h-full w-full rounded-[2rem] bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
+            <div className="relative rounded-[2rem] border border-border bg-card/60 p-6 backdrop-blur-2xl shadow-2xl shadow-primary/10">
+              {/* Dashboard Header */}
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Your Hub</p>
+                  <p className="mt-1 text-xl font-bold text-foreground">@elara.vance</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <span className="text-lg">🎵</span>
+                </div>
               </div>
-              
-              {/* Floating Element 1 */}
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-                className="absolute right-[5%] top-[10%] aspect-video w-[60%] rounded-2xl border border-border bg-card/80 p-4 backdrop-blur-md shadow-lg"
-              >
-                <div className="flex h-full items-center gap-4">
-                  <div className="h-12 w-12 rounded-lg bg-primary/20" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-3/4 rounded bg-muted-foreground/20" />
-                    <div className="h-3 w-1/2 rounded bg-muted-foreground/10" />
-                  </div>
-                </div>
-              </motion.div>
 
-              {/* Floating Element 2 */}
-              <motion.div 
-                animate={{ y: [0, 15, 0] }}
-                transition={{ duration: 4, repeat: Infinity }}
-                className="absolute bottom-[15%] left-[5%] w-[50%] rounded-[2rem] border border-border bg-card/80 p-6 backdrop-blur-xl shadow-lg"
+              {/* Stat Row */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {[
+                  { label: "Fans", value: "2,841", trend: "+12%" },
+                  { label: "Earned", value: "$4,320", trend: "+$640" },
+                  { label: "Links", value: "1 link", trend: "All-in-one" },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-2xl border border-border/60 bg-muted/30 p-3 text-center">
+                    <p className="text-lg font-black text-foreground">{stat.value}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">{stat.label}</p>
+                    <p className="mt-1 text-[10px] font-bold text-primary">{stat.trend}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent Sales Feed */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/50 mb-4">Recent Activity</p>
+                {[
+                  { name: "Marcus T.", action: "Bought", item: "Silent Echo – Album", amount: "$12.00", time: "2m ago" },
+                  { name: "Lena K.", action: "Joined", item: "Fan Community", amount: "Free", time: "5m ago" },
+                  { name: "Diego R.", action: "Bought", item: "London Tour Ticket", amount: "$45.00", time: "11m ago" },
+                ].map((sale) => (
+                  <div key={sale.name} className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {sale.name[0]}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{sale.name}</p>
+                        <p className="text-xs text-muted-foreground">{sale.action}: {sale.item}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-primary">{sale.amount}</p>
+                      <p className="text-[10px] text-muted-foreground/50">{sale.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Revenue Pill */}
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -right-4 -top-4 rounded-full border border-border/60 bg-card px-4 py-2 shadow-lg backdrop-blur-md"
               >
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-sm font-bold text-muted-foreground">Revenue</span>
-                  <span className="text-sm font-bold text-primary">+$2,450</span>
-                </div>
-                <div className="flex h-2 w-full gap-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full w-[40%] bg-primary" />
-                  <div className="h-full w-[20%] bg-muted-foreground/20" />
-                  <div className="h-full w-[10%] bg-muted-foreground/10" />
-                </div>
+                <p className="text-sm font-black text-primary">+$57 <span className="text-xs font-semibold text-muted-foreground">today</span></p>
               </motion.div>
             </div>
           </motion.div>

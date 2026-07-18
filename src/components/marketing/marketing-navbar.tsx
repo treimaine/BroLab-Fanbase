@@ -45,8 +45,8 @@ export function MarketingNavbar() {
                 }
               }}
             >
-              <span className="relative z-10 hidden sm:inline">Get Beta Invite</span>
-              <span className="relative z-10 sm:hidden">Beta</span>
+              <span className="relative z-10 hidden sm:inline">Claim Your Link</span>
+              <span className="relative z-10 sm:hidden">Start</span>
             </Button>
           </SignedOut>
 

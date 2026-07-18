@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 
 interface Step {
   number: string;
   title: string;
   description: string;
+  timeLabel: string;
 }
 
 const steps: Step[] = [
@@ -14,16 +15,19 @@ const steps: Step[] = [
     number: "01",
     title: "Create your hub",
     description: "Claim your unique link and customize your profile in seconds.",
+    timeLabel: "Setup in under 5 min",
   },
   {
     number: "02",
     title: "Connect Stripe",
     description: "Link your bank for automatic, direct payouts from every sale.",
+    timeLabel: "Verified in 2 min",
   },
   {
     number: "03",
     title: "Go live",
     description: "Share your link everywhere and watch your community grow.",
+    timeLabel: "Instant — no approval needed",
   },
 ];
 
@@ -37,11 +41,19 @@ export function HowItWorks() {
     },
   };
 
+  const scrollToHero = () => {
+    const emailInput = document.getElementById("hero-email-input");
+    if (emailInput) {
+      emailInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => emailInput.focus(), 500);
+    }
+  };
+
   return (
     <section className="relative overflow-hidden bg-background px-4 py-32 md:px-6 transition-colors duration-300">
       <div className="mx-auto max-w-7xl">
         <div className="mb-20 text-center">
-          <motion.h2 
+          <motion.h2
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
@@ -50,6 +62,16 @@ export function HowItWorks() {
           >
             Simple by <span className="italic text-primary">design.</span>
           </motion.h2>
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+            transition={{ delay: 0.1 }}
+            className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto"
+          >
+            From zero to live in under 10 minutes. No technical skills needed.
+          </motion.p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-3">
@@ -66,24 +88,24 @@ export function HowItWorks() {
               <div className="mb-8 font-serif text-5xl font-bold text-primary/40 transition-colors group-hover:text-primary">
                 {step.number}
               </div>
-              
+
               <h3 className="mb-4 text-2xl font-bold text-foreground">
                 {step.title}
               </h3>
-              
+
               <p className="text-lg leading-relaxed text-muted-foreground">
                 {step.description}
               </p>
 
-              <div className="mt-8 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
-                <CheckCircle2 className="h-4 w-4" />
-                Completed in 1 min
+              <div className="mt-8 flex items-center gap-2 text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                <Clock className="h-4 w-4 flex-shrink-0" />
+                {step.timeLabel}
               </div>
             </motion.div>
           ))}
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -92,7 +114,10 @@ export function HowItWorks() {
         >
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-6 py-3 text-muted-foreground">
             <span>Ready to take control?</span>
-            <button className="flex items-center gap-1 font-bold text-foreground hover:text-primary transition-colors">
+            <button
+              onClick={scrollToHero}
+              className="flex items-center gap-1 font-bold text-foreground hover:text-primary transition-colors"
+            >
               Claim your link <ArrowRight className="h-4 w-4" />
             </button>
           </div>

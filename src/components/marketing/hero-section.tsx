@@ -173,14 +173,23 @@ export function HeroSection() {
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
-                      Join as an Artist (Beta)
+                      Claim Your Link
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </>
                   )}
                 </Button>
               </form>
             </Form>
-            <p className="text-sm text-muted-foreground">Join 50+ artists taking back control.</p>
+            <div className="flex flex-col items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 text-yellow-500">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <svg key={i} className="h-4 w-4 fill-current drop-shadow-sm" viewBox="0 0 24 24">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-sm font-medium text-muted-foreground/80 tracking-wide">Loved by 50+ early access artists.</p>
+            </div>
           </motion.div>
         </div>
 
@@ -210,36 +219,52 @@ export function HeroSection() {
             </div>
           </div>
           
-          {/* Floating Accents */}
+          {/* Floating Accents Optimized */}
           <motion.div 
-            animate={{ y: [0, -20, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -left-12 top-1/4 h-32 w-32 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur-2xl lg:block hidden shadow-lg"
+            animate={{ y: [0, -15, 0], rotate: [0, 2, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -left-12 top-1/4 h-32 w-32 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-3xl lg:block hidden shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)] dark:border-white/5 dark:bg-black/20"
           >
-            <div className="h-full w-full rounded-2xl bg-primary/20" />
+            <div className="h-full w-full rounded-2xl bg-gradient-to-br from-primary/30 to-purple-500/10 blur-xl" />
           </motion.div>
           <motion.div 
-            animate={{ y: [0, 20, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -right-8 bottom-1/4 h-40 w-40 rounded-[2.5rem] border border-border bg-card/50 p-4 backdrop-blur-2xl lg:block hidden shadow-lg"
+            animate={{ y: [0, 15, 0], rotate: [0, -2, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute -right-8 bottom-1/4 h-40 w-40 rounded-[2.5rem] border border-white/10 bg-white/5 p-4 backdrop-blur-3xl lg:block hidden shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)] dark:border-white/5 dark:bg-black/20"
           >
-            <div className="h-full w-full rounded-3xl bg-purple-500/10" />
+            <div className="h-full w-full rounded-3xl bg-gradient-to-tr from-purple-500/30 to-primary/10 blur-xl" />
           </motion.div>
         </motion.div>
       </div>
 
       {/* Trust Badges */}
-      <div className="mt-20 border-t border-border pb-20 pt-12">
-        <div className="mx-auto max-w-7xl px-4">
-          <p className="text-center text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground/60">
-            Powered by industry standards
+      <div className="mt-32 w-full overflow-hidden border-y border-border/50 bg-muted/20 pb-16 pt-16 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-4 relative">
+          <p className="mb-12 text-center text-xs font-bold uppercase tracking-[0.25em] text-muted-foreground/60">
+            Integrates seamlessly with your world
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-x-12 gap-y-8 opacity-40 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-            <span className="text-xl font-bold text-foreground">Stripe</span>
-            <span className="text-xl font-bold text-foreground">Clerk</span>
-            <span className="text-xl font-bold text-foreground">Convex</span>
-            <span className="text-xl font-bold text-foreground">Next.js</span>
-            <span className="text-xl font-bold text-foreground">PostHog</span>
+          
+          <div className="relative flex w-full overflow-hidden">
+            {/* Gradient masks for smooth fade edges */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-32 bg-gradient-to-r from-background to-transparent" />
+            
+            <motion.div 
+               animate={{ x: ["0%", "-50%"] }}
+               transition={{ ease: "linear", duration: 30, repeat: Infinity }}
+               className="flex w-max items-center whitespace-nowrap opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500"
+            >
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="flex shrink-0 items-center justify-around gap-20 px-10">
+                    <span className="text-2xl font-bold tracking-tight text-foreground">Spotify</span>
+                    <span className="text-2xl font-bold tracking-tighter text-foreground">Shopify</span>
+                    <span className="text-2xl font-bold italic tracking-tight text-foreground">Instagram</span>
+                    <span className="text-2xl font-black tracking-tighter text-foreground">YouTube</span>
+                    <span className="text-2xl font-medium tracking-tight text-foreground">Apple <span className="font-light">Music</span></span>
+                  </div>
+                ))}
+            </motion.div>
+            
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-32 bg-gradient-to-l from-background to-transparent" />
           </div>
         </div>
       </div>
