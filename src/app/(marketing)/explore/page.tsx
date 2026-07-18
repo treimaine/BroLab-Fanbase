@@ -77,7 +77,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-primary/5 to-background py-16 transition-colors duration-300 md:py-24">
+      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-primary/5 to-background pb-16 pt-10 transition-colors duration-300 md:pb-24 md:pt-16">
         <div className="mx-auto max-w-7xl px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

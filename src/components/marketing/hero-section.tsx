@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/../convex/_generated/api";
+import { Eyebrow } from "@/components/ds";
 import { Button } from "@/components/ui/button";
 import {
     Form,
@@ -10,9 +11,10 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { EASE_SIGNATURE, fadeInUp } from "@/lib/motion";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
-import { motion, useScroll, useTransform, type Variants } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Loader2, Play } from "lucide-react";
 import Image from "next/image";
 import { usePostHog } from "posthog-js/react";
@@ -74,15 +76,6 @@ export function HeroSection() {
     }
   };
 
-  const fadeInUp: Variants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] },
-    },
-  };
-
   return (
     <section 
       ref={containerRef}
@@ -96,23 +89,17 @@ export function HeroSection() {
         />
         <motion.div 
           style={{ y: y2 }}
-          className="absolute -right-[10%] bottom-[10%] h-[50%] w-[50%] rounded-full bg-purple-500/5 blur-[100px]" 
+          className="absolute -right-[10%] bottom-[10%] h-[50%] w-[50%] rounded-full bg-primary/5 blur-[100px]" 
         />
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pt-32 lg:pt-48">
         <div className="flex flex-col items-center text-center">
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            animate="visible"
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 backdrop-blur-md"
-          >
-            <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          <motion.div variants={fadeInUp} initial="hidden" animate="visible">
+            <Eyebrow dot className="mb-6">
               Beta Access Now Open
-            </span>
+            </Eyebrow>
           </motion.div>
 
           <motion.h1
@@ -197,7 +184,7 @@ export function HeroSection() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 40 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 1, ease: [0.21, 0.47, 0.32, 0.98] }}
+          transition={{ delay: 0.6, duration: 1, ease: EASE_SIGNATURE }}
           className="relative mt-20 perspective-1000"
         >
           <div className="group relative mx-auto w-full max-w-5xl overflow-hidden rounded-[2.5rem] border border-border bg-card/50 p-4 backdrop-blur-3xl lg:p-6 shadow-2xl shadow-primary/10">
@@ -223,14 +210,14 @@ export function HeroSection() {
           <motion.div 
             animate={{ y: [0, -15, 0], rotate: [0, 2, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -left-12 top-1/4 h-32 w-32 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-3xl lg:block hidden shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)] dark:border-white/5 dark:bg-black/20"
+            className="absolute -left-12 top-1/4 hidden h-32 w-32 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-glow backdrop-blur-3xl lg:block dark:border-white/5 dark:bg-black/20"
           >
             <div className="h-full w-full rounded-2xl bg-gradient-to-br from-primary/30 to-purple-500/10 blur-xl" />
           </motion.div>
           <motion.div 
             animate={{ y: [0, 15, 0], rotate: [0, -2, 0] }}
             transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="absolute -right-8 bottom-1/4 h-40 w-40 rounded-[2.5rem] border border-white/10 bg-white/5 p-4 backdrop-blur-3xl lg:block hidden shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)] dark:border-white/5 dark:bg-black/20"
+            className="absolute -right-8 bottom-1/4 hidden h-40 w-40 rounded-hub border border-white/10 bg-white/5 p-4 shadow-glow backdrop-blur-3xl lg:block dark:border-white/5 dark:bg-black/20"
           >
             <div className="h-full w-full rounded-3xl bg-gradient-to-tr from-purple-500/30 to-primary/10 blur-xl" />
           </motion.div>

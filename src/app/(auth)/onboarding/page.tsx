@@ -29,7 +29,8 @@ export default function OnboardingPage() {
     if (role === "artist") {
       router.replace("/dashboard");
     } else {
-      router.replace(`/me/${user.username || user.id}`);
+      // /me resolves the fan's Convex usernameSlug and redirects
+      router.replace("/me");
     }
     return null;
   }
@@ -58,7 +59,8 @@ export default function OnboardingPage() {
       if (selectedRole === "artist") {
         router.push("/dashboard");
       } else {
-        router.push(`/me/${user.username || user.id}`);
+        // /me resolves the fan's Convex usernameSlug and redirects
+        router.push("/me");
       }
     } catch (error) {
       

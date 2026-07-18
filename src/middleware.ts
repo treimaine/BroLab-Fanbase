@@ -50,19 +50,6 @@ async function getUserRole(userId: string): Promise<string | undefined> {
   }
 }
 
-/**
- * Get user's username for redirect
- */
-async function getUsername(userId: string): Promise<string> {
-  try {
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    return user.username || user.id;
-  } catch {
-    return userId;
-  }
-}
-
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
 
@@ -94,17 +81,22 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }
 
-  // Handle /me redirect to /me/[username]
+  // Handle /me: let the page resolve the user's Convex usernameSlug
+  // (the slug lives in Convex — derived from display name — not in Clerk)
   if (isMeRootRoute(req) && url.pathname === "/me") {
-    const username = await getUsername(userId);
-    return NextResponse.redirect(new URL(`/me/${username}`, req.url));
+    if (role !== "fan") {
+      return NextResponse.redirect(
+        new URL(role === "artist" ? "/dashboard" : "/", req.url)
+      );
+    }
+    return NextResponse.next();
   }
 
   // Protect artist routes - require artist role
   if (isArtistRoute(req) && role !== "artist") {
     if (role === "fan") {
-      const username = await getUsername(userId);
-      return NextResponse.redirect(new URL(`/me/${username}`, req.url));
+      // /me resolves the fan's Convex slug and redirects
+      return NextResponse.redirect(new URL("/me", req.url));
     }
     return NextResponse.redirect(new URL("/", req.url));
   }

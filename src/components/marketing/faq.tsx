@@ -6,9 +6,8 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { motion, type Variants } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { CtaPill, Highlight, Reveal, Section, SectionHeading } from "@/components/ds";
+import { fadeIn } from "@/lib/motion";
 import { useEffect, useState } from "react";
 
 const faqs = [
@@ -57,40 +56,16 @@ export function Faq() {
     setIsClient(true);
   }, []);
 
-  const fadeInUp: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] },
-    },
-  };
-
   return (
-    <section className="py-32 px-4 md:px-6 bg-background transition-colors duration-300">
-      <div className="max-w-3xl mx-auto">
-        <motion.div
-          className="text-center mb-16"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-        >
-          <h2 className="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Got <span className="italic text-primary">questions?</span>
-          </h2>
-          <p className="mt-6 text-lg text-muted-foreground">
-            Everything you need to know before claiming your link.
-          </p>
-        </motion.div>
+    <Section size="narrow">
+      <SectionHeading
+        title={<>Got <Highlight>questions?</Highlight></>}
+        subtitle="Everything you need to know before claiming your link."
+      />
 
+      <div>
         {isClient ? (
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-          >
+          <Reveal>
             <Accordion
               type="single"
               collapsible
@@ -107,7 +82,7 @@ export function Faq() {
                 </AccordionItem>
               ))}
             </Accordion>
-          </motion.div>
+          </Reveal>
         ) : (
           <div className="w-full space-y-4">
             {faqs.map((faq) => (
@@ -124,24 +99,10 @@ export function Faq() {
         )}
 
         {/* CTA after FAQ */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
-          className="mt-16 flex justify-center"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-6 py-3 text-muted-foreground">
-            <span>Still have questions?</span>
-            <Link
-              href="/contact"
-              className="flex items-center gap-1 font-bold text-foreground hover:text-primary transition-colors"
-            >
-              Get in touch <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </motion.div>
+        <Reveal variants={fadeIn} className="mt-16 flex justify-center">
+          <CtaPill label="Still have questions?" action="Get in touch" href="/contact" />
+        </Reveal>
       </div>
-    </section>
+    </Section>
   );
 }

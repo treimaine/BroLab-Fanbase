@@ -3,7 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { motion, type Variants } from "framer-motion";
+import { fadeInUp, staggerContainer } from "@/lib/motion";
+import { motion } from "framer-motion";
 import {
     ArrowRight,
     Calendar,
@@ -18,25 +19,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] },
-  },
-};
-
-const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
@@ -45,11 +27,11 @@ export default function PricingPage() {
         {/* Background Effects */}
         <div className="pointer-events-none absolute inset-0 z-0">
           <div className="absolute -left-[10%] top-[10%] h-[40%] w-[40%] rounded-full bg-primary/10 blur-[120px]" />
-          <div className="absolute -right-[10%] bottom-[20%] h-[35%] w-[35%] rounded-full bg-purple-500/5 blur-[100px]" />
+          <div className="absolute -right-[10%] bottom-[20%] h-[35%] w-[35%] rounded-full bg-primary/5 blur-[100px]" />
           <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 py-20 md:py-32">
+        <div className="relative z-10 container mx-auto px-4 pb-20 pt-12 md:pb-32 md:pt-20">
           <motion.div
             initial="hidden"
             animate="visible"

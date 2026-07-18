@@ -56,8 +56,8 @@ export function SubscriptionBadge() {
   }
 
   const planColors = {
-    free: "bg-gray-500",
-    premium: "bg-purple-500",
+    free: "bg-muted-foreground",
+    premium: "bg-primary",
   };
 
   const planColor = planColors[subscription.plan];

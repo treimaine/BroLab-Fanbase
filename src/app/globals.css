@@ -55,6 +55,19 @@
 
     /* Generous radius for rounded-2xl aesthetic */
     --radius: 1rem;
+    /* Oversized radii for glass cards / hubs (design-system tokens) */
+    --radius-card: 2rem;
+    --radius-hub: 2.5rem;
+
+    /* Signature easing curve used across all landing/marketing motion */
+    --ease-signature: cubic-bezier(0.21, 0.47, 0.32, 0.98);
+
+    /* Section rhythm */
+    --section-py: 8rem;
+
+    /* Primary-tinted glow shadows */
+    --shadow-glow: 0 0 40px -10px hsl(var(--primary) / 0.3);
+    --shadow-glow-lg: 0 20px 60px -20px hsl(var(--primary) / 0.35);
 
     /* Font families */
     --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;

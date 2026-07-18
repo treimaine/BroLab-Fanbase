@@ -6,10 +6,14 @@
  *
  * States:
  * - Free: "Upgrade to Premium — $19.99/month" → /api/billing/checkout
- * - Premium (Active): "Manage Subscription" → /api/billing/manage
- * - Premium (Trialing): "Manage Subscription" → /api/billing/manage (with trial badge)
- * - Premium (Canceling): "Reactivate Premium" → /api/billing/manage
- * - Premium (Past Due): "Update Payment Method" → /api/billing/manage
+ * - Premium (Active): "Manage Subscription" → Clerk account modal (Billing tab)
+ * - Premium (Trialing): "Manage Subscription" → Clerk account modal (with trial badge)
+ * - Premium (Canceling): "Reactivate Premium" → Clerk account modal
+ * - Premium (Past Due): "Update Payment Method" → Clerk account modal
+ *
+ * Manage CTAs open Clerk's account management modal (openUserProfile) — the
+ * same UI the header UserButton used to expose — which includes profile,
+ * security and the Billing tab (subscription, payment methods, invoices).
  *
  * Analytics Events (R-ART-SUB-6):
  * - upgrade_click: When user clicks upgrade button
@@ -23,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trackSubscriptionEvent } from "@/lib/analytics";
+import { useClerk } from "@clerk/nextjs";
 import {
   AlertTriangle,
   Calendar,
@@ -67,7 +72,7 @@ function getStatusBadge(plan: SubscriptionPlan, status: SubscriptionStatus) {
     return {
       label: "Free Plan",
       variant: "secondary" as const,
-      className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+      className: "bg-muted text-muted-foreground",
     };
   }
 
@@ -76,7 +81,7 @@ function getStatusBadge(plan: SubscriptionPlan, status: SubscriptionStatus) {
       return {
         label: "Premium",
         variant: "default" as const,
-        className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+        className: "bg-primary/10 text-primary dark:bg-primary/20",
       };
     case "trialing":
       return {
@@ -100,7 +105,7 @@ function getStatusBadge(plan: SubscriptionPlan, status: SubscriptionStatus) {
       return {
         label: "Free Plan",
         variant: "secondary" as const,
-        className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+        className: "bg-muted text-muted-foreground",
       };
   }
 }
@@ -147,7 +152,7 @@ function getIcon(plan: SubscriptionPlan, status: SubscriptionStatus) {
 
   switch (status) {
     case "active":
-      return <Crown className="h-5 w-5 text-purple-500" />;
+      return <Crown className="h-5 w-5 text-primary" />;
     case "trialing":
       return <CheckCircle2 className="h-5 w-5 text-blue-500" />;
     case "canceled":
@@ -166,6 +171,7 @@ export function SubscriptionCard({
   isLoading = false,
 }: Readonly<SubscriptionCardProps>) {
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const { openUserProfile } = useClerk();
 
   /**
    * Handle upgrade button click
@@ -201,8 +207,11 @@ export function SubscriptionCard({
   /**
    * Handle manage button click
    * Requirements: R-ART-SUB-4.2, R-ART-SUB-4.3, R-ART-SUB-4.4, R-ART-SUB-4.5, R-ART-SUB-6.2 - Track manage_click
+   *
+   * Opens Clerk's account management modal (profile, security, Billing tab).
+   * This replaces the header UserButton removed from the marketing navbar.
    */
-  const handleManageClick = useCallback(async () => {
+  const handleManageClick = useCallback(() => {
     // Track manage_click event (R-ART-SUB-6.2)
     trackSubscriptionEvent("manage_click", {
       plan,
@@ -210,16 +219,8 @@ export function SubscriptionCard({
       source: "subscription_card",
     });
 
-    setIsRedirecting(true);
-
-    try {
-      // Redirect to manage API route
-      globalThis.location.href = "/api/billing/manage";
-    } catch (error) {
-      
-      setIsRedirecting(false);
-    }
-  }, [plan, status]);
+    openUserProfile();
+  }, [plan, status, openUserProfile]);
 
   // Loading state
   if (isLoading) {
@@ -294,62 +295,22 @@ export function SubscriptionCard({
           </Button>
         )}
 
-        {/* Premium Active: Manage CTA */}
-        {isPremiumActive && (
+        {/* Premium Active / Trialing: Manage CTA — opens Clerk account modal */}
+        {(isPremiumActive || isPremiumTrialing) && (
           <Button
             variant="outline"
             className="w-full"
             onClick={handleManageClick}
-            disabled={isRedirecting}
           >
-            {isRedirecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Redirecting...
-              </>
-            ) : (
-              "Manage Subscription"
-            )}
-          </Button>
-        )}
-
-        {/* Premium Trialing: Manage CTA */}
-        {isPremiumTrialing && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleManageClick}
-            disabled={isRedirecting}
-          >
-            {isRedirecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Redirecting...
-              </>
-            ) : (
-              "Manage Subscription"
-            )}
+            Manage Subscription
           </Button>
         )}
 
         {/* Premium Canceling: Reactivate CTA */}
         {isPremiumCanceling && (
-          <Button
-            className="w-full"
-            onClick={handleManageClick}
-            disabled={isRedirecting}
-          >
-            {isRedirecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Redirecting...
-              </>
-            ) : (
-              <>
-                <Crown className="mr-2 h-4 w-4" />
-                Reactivate Premium
-              </>
-            )}
+          <Button className="w-full" onClick={handleManageClick}>
+            <Crown className="mr-2 h-4 w-4" />
+            Reactivate Premium
           </Button>
         )}
 
@@ -359,19 +320,9 @@ export function SubscriptionCard({
             variant="destructive"
             className="w-full"
             onClick={handleManageClick}
-            disabled={isRedirecting}
           >
-            {isRedirecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Redirecting...
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Update Payment Method
-              </>
-            )}
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Update Payment Method
           </Button>
         )}
 

@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       clerkUserId: userId,
       role: role as "artist" | "fan",
       displayName: user.fullName || user.username || user.id,
-      usernameSlug: user.username || user.id,
+      // Slug derivation happens server-side in Convex (username > displayName > id)
+      username: user.username || undefined,
       avatarUrl: user.imageUrl,
     });
 

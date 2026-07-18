@@ -46,6 +46,7 @@ const nextConfig = {
     domains: [
       'img.clerk.com',
       'images.clerk.dev',
+      'images.unsplash.com',
       'focused-canary-684.convex.cloud'
     ],
     formats: ['image/webp', 'image/avif']

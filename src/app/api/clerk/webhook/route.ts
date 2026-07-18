@@ -98,7 +98,8 @@ async function handleUserUpsert(evt: WebhookEvent): Promise<Response> {
       clerkUserId: id,
       role,
       displayName: `${first_name || ""} ${last_name || ""}`.trim() || username || id,
-      usernameSlug: username || id,
+      // Slug derivation happens server-side in Convex (username > displayName > id)
+      username: username || undefined,
       avatarUrl: image_url,
       email: primaryEmail,
     });

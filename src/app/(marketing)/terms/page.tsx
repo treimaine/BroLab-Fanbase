@@ -1,17 +1,8 @@
 "use client";
 
-import type { Variants } from "framer-motion";
+import { fadeInUp } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { AlertTriangle, Lock, Mail, MapPin, Shield } from "lucide-react";
-
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] as any },
-  },
-};
 
 export default function TermsPage() {
   return (
@@ -19,7 +10,7 @@ export default function TermsPage() {
       {/* Dynamic Background - matching landing page */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="absolute -left-[10%] top-[10%] h-[40%] w-[40%] rounded-full bg-primary/10 blur-[120px]" />
-        <div className="absolute -right-[10%] bottom-[20%] h-[35%] w-[35%] rounded-full bg-purple-500/5 blur-[100px]" />
+        <div className="absolute -right-[10%] bottom-[20%] h-[35%] w-[35%] rounded-full bg-primary/5 blur-[100px]" />
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay" />
       </div>
 

@@ -27,7 +27,7 @@ export default function DocsPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <section className="border-b">
-        <div className="container mx-auto px-4 py-16 md:py-24">
+        <div className="container mx-auto px-4 pb-16 pt-10 md:pb-24 md:pt-16">
           <div className="max-w-3xl mx-auto text-center">
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-primary" />
             <h1 className="text-4xl md:text-5xl font-bold mb-4">

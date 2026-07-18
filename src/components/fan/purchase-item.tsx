@@ -55,7 +55,7 @@ const statusConfig = {
   },
   delivered: {
     label: "Delivered",
-    className: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+    className: "bg-muted text-muted-foreground border-border",
   },
 } as const;
 

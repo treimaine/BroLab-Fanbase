@@ -46,7 +46,7 @@ export default function RootLayout({
           publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
           appearance={{
             elements: {
-              formFieldInput: "dark:text-white dark:placeholder:text-gray-400",
+              formFieldInput: "text-foreground placeholder:text-muted-foreground",
             },
           }}
           afterSignOutUrl="/"

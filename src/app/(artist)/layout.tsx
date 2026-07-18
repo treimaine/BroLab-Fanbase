@@ -1,8 +1,10 @@
 "use client";
 
+import { api } from "@/../convex/_generated/api";
 import { AppShell } from "@/components/layout/app-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClerk, useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 
 /**
@@ -20,6 +22,8 @@ export default function ArtistLayout({
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
   const router = useRouter();
+  // Convex user record — source of truth for the usernameSlug used in URLs
+  const convexUser = useQuery(api.users.getCurrentUser);
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,7 +54,8 @@ export default function ArtistLayout({
   const userData = {
     name: user.fullName || user.username || "Artist",
     avatar: user.imageUrl,
-    username: user.username || user.id,
+    // Prefer the Convex usernameSlug (e.g. "steve-lemba") over the Clerk id
+    username: convexUser?.usernameSlug || user.username || user.id,
   };
 
   return (

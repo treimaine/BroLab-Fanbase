@@ -19,26 +19,76 @@ import { action, internalMutation, internalQuery, mutation, query } from "./_gen
  * This function is called after Clerk authentication to sync user data to Convex.
  * If user exists (by clerkUserId), updates their data.
  * If user doesn't exist, creates a new record.
- * 
+ *
+ * Slug policy:
+ * - The slug is derived (slugified + uniquified) from the explicit Clerk
+ *   username when one exists, otherwise from the display name
+ *   ("Steve LEMBA" → "steve-lemba"). The raw Clerk user id is only a last
+ *   resort when both are empty.
+ * - Existing users keep their slug stable across webhooks, EXCEPT when it is
+ *   the legacy clerkUserId fallback (healed to a proper slug) or when an
+ *   explicit Clerk username was set/changed (deliberate rename).
+ *
  * @param clerkUserId - Clerk's unique user identifier
  * @param role - User role ("artist" or "fan")
  * @param displayName - User's display name
- * @param usernameSlug - URL-friendly username slug
+ * @param username - Optional explicit Clerk username (raw, not slugified)
  * @param avatarUrl - Optional avatar image URL
  * @param email - User email (for Stripe customer creation)
  * @returns The user's Convex document ID
  */
+
+/** Lowercase, strip accents, non-alphanumerics → "-", collapse, trim. */
+function slugify(input: string): string {
+  return input
+    .normalize("NFD")
+    .replaceAll(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+}
+
+/** Find a slug not used by another user (appends -2, -3… when taken). */
+async function generateUniqueUsernameSlug(
+  ctx: { db: any },
+  baseSlug: string,
+  excludeUserId?: string
+): Promise<string> {
+  let slug = baseSlug;
+  let counter = 2;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const taken = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q: any) => q.eq("usernameSlug", slug))
+      .unique();
+
+    if (!taken || taken._id === excludeUserId) {
+      return slug;
+    }
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
+
 export const upsertFromClerk = mutation({
   args: {
     clerkUserId: v.string(),
     role: v.union(v.literal("artist"), v.literal("fan")),
     displayName: v.string(),
-    usernameSlug: v.string(),
+    username: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { clerkUserId, role, displayName, usernameSlug, avatarUrl } = args;
+    const { clerkUserId, role, displayName, username, avatarUrl } = args;
+
+    // Preferred slug base: explicit Clerk username > display name > clerk id
+    const desiredBase =
+      slugify(username ?? "") ||
+      slugify(displayName) ||
+      clerkUserId.toLowerCase();
 
     // Check if user already exists
     const existingUser = await ctx.db
@@ -50,6 +100,21 @@ export const upsertFromClerk = mutation({
       // Check if role is changing
       const roleChanged = existingUser.role !== role;
       const oldRole = existingUser.role;
+
+      // Keep the slug stable, except:
+      // - legacy fallback (slug === clerkUserId) → heal it, or
+      // - an explicit Clerk username was set/changed → deliberate rename.
+      const isLegacyIdSlug =
+        existingUser.usernameSlug === clerkUserId ||
+        existingUser.usernameSlug === clerkUserId.toLowerCase();
+      const explicitRename =
+        !!slugify(username ?? "") &&
+        slugify(username ?? "") !== existingUser.usernameSlug;
+
+      const usernameSlug =
+        isLegacyIdSlug || explicitRename
+          ? await generateUniqueUsernameSlug(ctx, desiredBase, existingUser._id)
+          : existingUser.usernameSlug;
 
       // Update existing user
       await ctx.db.patch(existingUser._id, {
@@ -73,7 +138,9 @@ export const upsertFromClerk = mutation({
       return existingUser._id;
     }
 
-    // Create new user
+    // Create new user with a unique, human-readable slug
+    const usernameSlug = await generateUniqueUsernameSlug(ctx, desiredBase);
+
     const userId = await ctx.db.insert("users", {
       clerkUserId,
       role,
@@ -84,6 +151,40 @@ export const upsertFromClerk = mutation({
     });
 
     return userId;
+  },
+});
+
+/**
+ * One-shot backfill: heal users whose usernameSlug is the legacy clerkUserId
+ * fallback, deriving a proper unique slug from their display name.
+ *
+ * Run manually: `npx convex run users:backfillUsernameSlugs`
+ */
+export const backfillUsernameSlugs = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    const healed: { clerkUserId: string; from: string; to: string }[] = [];
+
+    for (const user of users) {
+      const isLegacyIdSlug =
+        user.usernameSlug === user.clerkUserId ||
+        user.usernameSlug === user.clerkUserId.toLowerCase();
+      if (!isLegacyIdSlug) continue;
+
+      const base =
+        slugify(user.displayName) || user.clerkUserId.toLowerCase();
+      const slug = await generateUniqueUsernameSlug(ctx, base, user._id);
+
+      await ctx.db.patch(user._id, { usernameSlug: slug });
+      healed.push({
+        clerkUserId: user.clerkUserId,
+        from: user.usernameSlug,
+        to: slug,
+      });
+    }
+
+    return { healedCount: healed.length, healed };
   },
 });
 
