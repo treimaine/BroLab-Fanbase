@@ -422,6 +422,8 @@ export const update = mutation({
     bio: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     avatarStorageId: v.optional(v.id("_storage")),
+    // When true, removes the avatar entirely (clears both url and storage id)
+    clearAvatar: v.optional(v.boolean()),
     coverUrl: v.optional(v.string()),
     coverStorageId: v.optional(v.id("_storage")),
     socials: v.optional(
@@ -488,6 +490,13 @@ export const update = mutation({
 
     // Apply optional field updates
     applyOptionalUpdates(updates, args);
+
+    // Explicit avatar removal: clear both the public URL and the stored file id.
+    // Setting fields to undefined in a patch removes them from the document.
+    if (args.clearAvatar) {
+      updates.avatarUrl = undefined;
+      updates.avatarStorageId = undefined;
+    }
 
     // Apply updates
     await ctx.db.patch(args.artistId, updates);

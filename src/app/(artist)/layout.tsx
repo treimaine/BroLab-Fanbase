@@ -24,6 +24,10 @@ export default function ArtistLayout({
   const router = useRouter();
   // Convex user record — source of truth for the usernameSlug used in URLs
   const convexUser = useQuery(api.users.getCurrentUser);
+  // Artist profile — source of truth for the identity shown across the dashboard
+  // chrome (avatar + display name). Keeps the sidebar/drawer/nav in sync with the
+  // public hub and fan feed, instead of the stale Clerk auth image/name.
+  const artist = useQuery(api.artists.getCurrentArtist);
 
   const handleSignOut = async () => {
     await signOut();
@@ -52,8 +56,10 @@ export default function ArtistLayout({
   }
 
   const userData = {
-    name: user.fullName || user.username || "Artist",
-    avatar: user.imageUrl,
+    // Prefer the artist profile identity so what the artist edits is what they
+    // see everywhere. Fall back to Clerk only until the artist profile loads.
+    name: artist?.displayName || user.fullName || user.username || "Artist",
+    avatar: artist?.avatarUrl || user.imageUrl,
     // Prefer the Convex usernameSlug (e.g. "steve-lemba") over the Clerk id
     username: convexUser?.usernameSlug || user.username || user.id,
   };

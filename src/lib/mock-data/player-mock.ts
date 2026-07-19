@@ -53,6 +53,9 @@ export const mockTracks: Track[] = [
 export const mockFeedPosts: FeedPost[] = [
   {
     id: "post-1",
+    targetType: "product",
+    targetId: "mock-product-1",
+    isLiked: false,
     artist: {
       name: "Luna Nova",
       avatarUrl: "https://picsum.photos/seed/luna/100/100",
@@ -69,6 +72,9 @@ export const mockFeedPosts: FeedPost[] = [
   },
   {
     id: "post-2",
+    targetType: "event",
+    targetId: "mock-event-2",
+    isLiked: false,
     artist: {
       name: "The Neon Collective",
       avatarUrl: "https://picsum.photos/seed/neon/100/100",
@@ -83,6 +89,9 @@ export const mockFeedPosts: FeedPost[] = [
   },
   {
     id: "post-3",
+    targetType: "product",
+    targetId: "mock-product-3",
+    isLiked: false,
     artist: {
       name: "Metro Beats",
       avatarUrl: "https://picsum.photos/seed/metro/100/100",
@@ -97,6 +106,9 @@ export const mockFeedPosts: FeedPost[] = [
   },
   {
     id: "post-4",
+    targetType: "product",
+    targetId: "mock-product-4",
+    isLiked: false,
     artist: {
       name: "Luna Nova",
       avatarUrl: "https://picsum.photos/seed/luna/100/100",
@@ -111,6 +123,9 @@ export const mockFeedPosts: FeedPost[] = [
   },
   {
     id: "post-5",
+    targetType: "product",
+    targetId: "mock-product-5",
+    isLiked: false,
     artist: {
       name: "The Neon Collective",
       avatarUrl: "https://picsum.photos/seed/neon/100/100",

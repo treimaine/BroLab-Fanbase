@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 import { Heart, Loader2, Mic2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type Role = "artist" | "fan";
@@ -22,18 +22,15 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { user, isLoaded } = useUser();
+  const existingRole = user?.publicMetadata?.role as Role | undefined;
 
   // If user already has a role, redirect them
-  if (isLoaded && user?.publicMetadata?.role) {
-    const role = user.publicMetadata.role as Role;
-    if (role === "artist") {
-      router.replace("/dashboard");
-    } else {
-      // /me resolves the fan's Convex usernameSlug and redirects
-      router.replace("/me");
-    }
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoaded || !existingRole) return;
+
+    // /me resolves the fan's Convex usernameSlug and redirects
+    router.replace(existingRole === "artist" ? "/dashboard" : "/me");
+  }, [existingRole, isLoaded, router]);
 
   const handleContinue = async () => {
     if (!selectedRole || !user) return;
@@ -70,7 +67,7 @@ export default function OnboardingPage() {
     }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || existingRole) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

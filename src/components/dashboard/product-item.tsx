@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Eye, EyeOff, Music, Pencil, Trash2, Video } from "lucide-react";
+import { Eye, EyeOff, GripVertical, Music, Pencil, Trash2, Video } from "lucide-react";
 import Image from "next/image";
 
 /**
@@ -51,6 +51,8 @@ interface ProductItemProps {
   readonly onEdit?: (product: ProductItemData) => void;
   readonly onDelete?: (id: string) => void;
   readonly disabled?: boolean;
+  /** Shows a drag handle affordance when the row is draggable. */
+  readonly draggable?: boolean;
 }
 
 /**
@@ -77,6 +79,7 @@ export function ProductItem({
   onEdit,
   onDelete,
   disabled = false,
+  draggable = false,
 }: ProductItemProps) {
   const config = typeConfig[product.type];
   const TypeIcon = config.icon;
@@ -95,6 +98,14 @@ export function ProductItem({
           : "border-border/50 bg-muted/30 opacity-75"
       )}
     >
+      {/* Drag handle */}
+      {draggable && (
+        <GripVertical
+          className="h-5 w-5 shrink-0 cursor-grab text-muted-foreground/60 active:cursor-grabbing"
+          aria-hidden="true"
+        />
+      )}
+
       {/* Cover Image */}
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
         {product.coverImageUrl ? (

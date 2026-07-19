@@ -15,10 +15,12 @@ import {
     Music,
     ShoppingBag,
     User,
+    Users,
     Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
 interface NavItem {
@@ -40,6 +42,7 @@ interface SidebarProps {
 // Navigation items for fan role
 const getFanNavItems = (username: string): NavItem[] => [
   { href: `/me/${username}`, icon: Home, label: "Feed" },
+  { href: `/me/${username}/following`, icon: Users, label: "Following" },
   { href: `/me/${username}/purchases`, icon: ShoppingBag, label: "Purchases" },
   { href: `/me/${username}/billing`, icon: CreditCard, label: "Billing" },
 ];
@@ -72,11 +75,7 @@ export function Sidebar({ role, user, onSignOut }: Readonly<SidebarProps>) {
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 border-r border-border/50 bg-background">
       {/* Brand */}
       <div className="flex h-16 items-center px-6 border-b border-border/50">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="font-serif text-xl font-semibold text-foreground">
-            BroLab Fanbase
-          </span>
-        </Link>
+        <Logo href="/" />
       </div>
 
       {/* Navigation */}

@@ -36,19 +36,17 @@ export function DashboardStats({ artistId }: Readonly<DashboardStatsProps>) {
         <StatsCard
           title="Followers"
           value={followersCount.toString()}
-          change={{ value: 0, type: "neutral" }}
           icon={Users}
         />
       )}
 
-      {/* Revenue stat */}
+      {/* Available balance stat (Stripe balance ready to pay out) */}
       {billingSummary === undefined ? (
         <Skeleton className="h-28 rounded-xl" />
       ) : (
         <StatsCard
-          title="Revenue"
+          title="Available Balance"
           value={formatCurrency(billingSummary.availableBalance)}
-          change={{ value: 0, type: "neutral" }}
           icon={DollarSign}
         />
       )}

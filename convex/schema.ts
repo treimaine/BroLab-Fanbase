@@ -89,6 +89,8 @@ export default defineSchema({
     type: v.string(), // "latest-release", "instagram", "youtube", etc.
     active: v.boolean(),
     order: v.number(),
+    // Total number of fan clicks on this link (from the public hub)
+    clicks: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_artist", ["artistId"]),
 
@@ -127,9 +129,38 @@ export default defineSchema({
     fileStorageId: v.optional(v.id("_storage")),
     contentType: v.optional(v.string()),
     fileSize: v.optional(v.number()),
+    // Manual display order on the public hub ("Latest Drops"). Optional for
+    // backward compatibility; items without an order fall back to createdAt.
+    order: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_artist", ["artistId"]),
+
+  // Fan likes on feed items (products/events)
+  // Requirements: R-FAN-LIKE-1 - Persistent likes on feed items
+  // Polymorphic: a like targets either a product ("release") or an event.
+  likes: defineTable({
+    fanUserId: v.id("users"),
+    targetType: v.union(v.literal("product"), v.literal("event")),
+    targetId: v.string(), // Id<"products"> | Id<"events"> serialized as string
+    createdAt: v.number(),
+  })
+    .index("by_fan", ["fanUserId"])
+    .index("by_target", ["targetType", "targetId"])
+    .index("by_fan_target", ["fanUserId", "targetType", "targetId"]),
+
+  // Fan comments on feed items (products/events)
+  // Requirements: R-FAN-COMMENT-1 - Public comments on feed items
+  // Public: visible to everyone; a fan can delete only their own comments.
+  comments: defineTable({
+    fanUserId: v.id("users"),
+    targetType: v.union(v.literal("product"), v.literal("event")),
+    targetId: v.string(),
+    body: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_fan", ["fanUserId"])
+    .index("by_target", ["targetType", "targetId"]),
 
   // Fan follows
   // Requirements: 3.5 - Follow toggle

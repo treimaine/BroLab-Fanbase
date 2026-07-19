@@ -9,7 +9,44 @@
  */
 
 import { v } from "convex/values";
-import { query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { query, type QueryCtx } from "./_generated/server";
+
+/**
+ * Enrich a page of feed items with social counts (likes/comments) and the
+ * current user's like state. Runs only on the paginated page to bound queries.
+ */
+async function enrichWithSocial<T extends { targetType: "product" | "event"; targetId: string }>(
+  ctx: QueryCtx,
+  items: T[],
+  currentUserId: Doc<"users">["_id"]
+): Promise<Array<T & { likeCount: number; commentCount: number; isLikedByMe: boolean }>> {
+  return await Promise.all(
+    items.map(async (item) => {
+      const [likes, comments] = await Promise.all([
+        ctx.db
+          .query("likes")
+          .withIndex("by_target", (q) =>
+            q.eq("targetType", item.targetType).eq("targetId", item.targetId)
+          )
+          .collect(),
+        ctx.db
+          .query("comments")
+          .withIndex("by_target", (q) =>
+            q.eq("targetType", item.targetType).eq("targetId", item.targetId)
+          )
+          .collect(),
+      ]);
+
+      return {
+        ...item,
+        likeCount: likes.length,
+        commentCount: comments.length,
+        isLikedByMe: likes.some((l) => l.fanUserId === currentUserId),
+      };
+    })
+  );
+}
 
 /**
  * Get feed items from followed artists
@@ -144,48 +181,73 @@ export const getForCurrentUser = query({
 
     // OPTIMIZATION 1: Batch fetch all artists in parallel (eliminates N sequential gets)
     const artistIds = follows.map((f) => f.artistId);
-    const artistsPromises = artistIds.map((id) => ctx.db.get(id));
-    const artistsResults = await Promise.all(artistsPromises);
-    
+    const artistsResults = await Promise.all(artistIds.map((id) => ctx.db.get(id)));
+
     // Create artist lookup map for O(1) access
-    const artistsMap = new Map();
+    const artistsMap = new Map<string, Doc<"artists">>();
     artistsResults.forEach((artist) => {
       if (artist) {
         artistsMap.set(artist._id, artist);
       }
     });
 
-    // OPTIMIZATION 2: Fetch products for all artists in parallel (eliminates N sequential queries)
-    const productsPromises = artistIds.map((artistId) =>
-      ctx.db
-        .query("products")
-        .withIndex("by_artist", (q) => q.eq("artistId", artistId))
-        .collect()
-    );
-    const productsResults = await Promise.all(productsPromises);
+    // OPTIMIZATION 2: Fetch products AND events for all artists in parallel
+    const [productsResults, eventsResults] = await Promise.all([
+      Promise.all(
+        artistIds.map((artistId) =>
+          ctx.db
+            .query("products")
+            .withIndex("by_artist", (q) => q.eq("artistId", artistId))
+            .collect()
+        )
+      ),
+      Promise.all(
+        artistIds.map((artistId) =>
+          ctx.db
+            .query("events")
+            .withIndex("by_artist", (q) => q.eq("artistId", artistId))
+            .collect()
+        )
+      ),
+    ]);
 
-    // OPTIMIZATION 3: Flatten and filter products, then enrich with artist data
-    const feedItems = [];
-    
-    for (let i = 0; i < productsResults.length; i++) {
-      const products = productsResults[i];
-      const artistId = artistIds[i];
-      const artist = artistsMap.get(artistId);
-      
+    const artistSummary = (artist: Doc<"artists">) => ({
+      _id: artist._id,
+      displayName: artist.displayName,
+      artistSlug: artist.artistSlug,
+      avatarUrl: artist.avatarUrl,
+      coverUrl: artist.coverUrl,
+    });
+
+    // OPTIMIZATION 3: Flatten into a unified feed (releases + events)
+    const feedItems: any[] = [];
+
+    for (let i = 0; i < artistIds.length; i++) {
+      const artist = artistsMap.get(artistIds[i]);
       if (!artist) continue;
 
-      // Filter to only public products and add artist info
-      for (const product of products) {
+      // Public product releases
+      for (const product of productsResults[i]) {
         if (product.visibility === "public") {
           feedItems.push({
             ...product,
-            artist: {
-              _id: artist._id,
-              displayName: artist.displayName,
-              artistSlug: artist.artistSlug,
-              avatarUrl: artist.avatarUrl,
-              coverUrl: artist.coverUrl,
-            },
+            feedType: "release" as const,
+            targetType: "product" as const,
+            targetId: product._id,
+            artist: artistSummary(artist),
+          });
+        }
+      }
+
+      // Upcoming events
+      for (const event of eventsResults[i]) {
+        if (event.status !== "past") {
+          feedItems.push({
+            ...event,
+            feedType: "event" as const,
+            targetType: "event" as const,
+            targetId: event._id,
+            artist: artistSummary(artist),
           });
         }
       }
@@ -217,12 +279,15 @@ export const getForCurrentUser = query({
 
     // Calculate next cursor (timestamp of last item in current page)
     // nextCursor is null when we've reached the end of the feed
-    const nextCursor = hasMore && items.length > 0 
-      ? items.at(-1)!.createdAt 
+    const nextCursor = hasMore && items.length > 0
+      ? items.at(-1)!.createdAt
       : null;
 
+    // Enrich only the returned page with social counts + current-user like state
+    const enrichedItems = await enrichWithSocial(ctx, items, user._id);
+
     return {
-      items,
+      items: enrichedItems,
       nextCursor,
     };
   },

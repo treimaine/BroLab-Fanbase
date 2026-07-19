@@ -15,18 +15,62 @@ import { LinkItem, type LinkItemData } from "@/components/dashboard/link-item";
 import { AddLinkDialog, type AddLinkData } from "@/components/forms/add-link-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardSkeleton, SuspenseWrapper } from "@/components/ui/skeleton";
+import { useDragReorder } from "@/lib/hooks/use-drag-reorder";
 import { handleMutationError } from "@/lib/limit-toast";
+import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Link2 } from "lucide-react";
 import Link from "next/link";
+import { useCallback } from "react";
 import { toast } from "sonner";
+
+const SOCIAL_LINK_TYPES = new Set(["instagram", "youtube", "spotify", "apple-music", "video"]);
 
 export default function LinksPage() {
   const links = useQuery(api.links.getCurrentArtistLinks);
   const createLink = useMutation(api.links.create);
   const toggleActive = useMutation(api.links.toggleActive);
+  const reorderLinks = useMutation(api.links.reorder);
 
   const isLoading = links === undefined;
+
+  const linkItems: LinkItemData[] = (links ?? [])
+    .filter((link: { type: string }) => !SOCIAL_LINK_TYPES.has(link.type.toLowerCase()))
+    .map(
+      (link: {
+        _id: string;
+        title: string;
+        url: string;
+        type: string;
+        active: boolean;
+        clicks?: number;
+      }) => ({
+        id: link._id,
+        title: link.title,
+        url: link.url,
+        type: link.type,
+        active: link.active,
+        clicks: link.clicks,
+      })
+    );
+
+  const handleReorder = useCallback(
+    (orderedIds: string[]) => {
+      reorderLinks({
+        linkOrders: orderedIds.map((id, index) => ({
+          linkId: id as Id<"links">,
+          order: index,
+        })),
+      }).catch(() => toast.error("Failed to save new order"));
+    },
+    [reorderLinks]
+  );
+
+  const { ordered, draggingId, getItemProps } = useDragReorder(
+    linkItems,
+    (item) => item.id,
+    handleReorder
+  );
 
   async function handleAddLink(data: AddLinkData): Promise<void> {
     try {
@@ -58,18 +102,6 @@ export default function LinksPage() {
   if (isLoading) {
     return <DashboardSkeleton variant="list" />;
   }
-
-  const SOCIAL_LINK_TYPES = new Set(["instagram", "youtube", "spotify", "apple-music", "video"]);
-
-  const linkItems: LinkItemData[] = (links ?? [])
-    .filter((link: { type: string }) => !SOCIAL_LINK_TYPES.has(link.type.toLowerCase()))
-    .map((link: { _id: string; title: string; url: string; type: string; active: boolean }) => ({
-      id: link._id,
-      title: link.title,
-      url: link.url,
-      type: link.type,
-      active: link.active,
-    }));
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -110,8 +142,17 @@ export default function LinksPage() {
               <EmptyState onAddLink={handleAddLink} />
             ) : (
               <div className="space-y-3">
-                {linkItems.map((link) => (
-                  <LinkItem key={link.id} link={link} onToggleActive={handleToggleActive} />
+                {ordered.map((link, index) => (
+                  <div
+                    key={link.id}
+                    {...getItemProps(index)}
+                    className={cn(
+                      "select-none transition-opacity",
+                      draggingId === link.id && "opacity-50"
+                    )}
+                  >
+                    <LinkItem link={link} onToggleActive={handleToggleActive} draggable />
+                  </div>
                 ))}
               </div>
             )}

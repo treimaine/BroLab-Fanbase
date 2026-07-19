@@ -491,6 +491,29 @@ export const reorder = mutation({
 });
 
 /**
+ * Record a fan click on a public link.
+ * Called from the public hub — no authentication required.
+ *
+ * Silently ignores unknown or inactive links so it can be fired optimistically
+ * on click without leaking whether a link exists.
+ *
+ * @param linkId - ID of the clicked link
+ */
+export const recordClick = mutation({
+  args: {
+    linkId: v.id("links"),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db.get(args.linkId);
+    if (!link || !link.active) {
+      return { ok: false };
+    }
+    await ctx.db.patch(args.linkId, { clicks: (link.clicks ?? 0) + 1 });
+    return { ok: true };
+  },
+});
+
+/**
  * Toggle link active status
  * Requirements: 6.4 - Toggle link visibility
  *

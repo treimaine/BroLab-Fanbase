@@ -18,6 +18,21 @@ import { MutationCtx, QueryCtx, mutation, query } from "./_generated/server";
 import { canCreateProduct, canUploadVideo, enforceLimit } from "./subscriptions";
 
 /**
+ * Sort comparator for the public/dashboard display order of products.
+ * Items with an explicit manual `order` come first (ascending); items without
+ * one fall back to newest-first by createdAt (legacy behavior).
+ */
+function byDisplayOrder(
+  a: { order?: number; createdAt: number },
+  b: { order?: number; createdAt: number }
+): number {
+  if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+  if (a.order !== undefined) return -1;
+  if (b.order !== undefined) return 1;
+  return b.createdAt - a.createdAt;
+}
+
+/**
  * Helper: Get user from authentication identity
  */
 async function getUserFromIdentity(ctx: QueryCtx | MutationCtx) {
@@ -101,8 +116,8 @@ export const getByArtist = query({
       .withIndex("by_artist", (q) => q.eq("artistId", args.artistId))
       .collect();
 
-    // Sort by createdAt descending (newest first)
-    return products.sort((a, b) => b.createdAt - a.createdAt);
+    // Sort by manual display order, falling back to newest-first
+    return products.sort(byDisplayOrder);
   },
 });
 
@@ -126,10 +141,10 @@ export const getPublicByArtist = query({
       .withIndex("by_artist", (q) => q.eq("artistId", args.artistId))
       .collect();
 
-    // Filter to only public products and sort by createdAt descending
+    // Filter to only public products and sort by manual display order
     return products
       .filter((product) => product.visibility === "public")
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .sort(byDisplayOrder);
   },
 });
 
@@ -160,8 +175,8 @@ export const getCurrentArtistProducts = query({
       .withIndex("by_artist", (q) => q.eq("artistId", artist._id))
       .collect();
 
-    // Sort by createdAt descending (newest first)
-    return products.sort((a, b) => b.createdAt - a.createdAt);
+    // Sort by manual display order, falling back to newest-first
+    return products.sort(byDisplayOrder);
   },
 });
 
@@ -272,6 +287,12 @@ export const create = mutation({
       throw new Error("Price cannot be negative");
     }
 
+    // New products go to the top of the manual order (lowest order value)
+    const minOrder = existingProducts.reduce(
+      (min, p) => (p.order !== undefined ? Math.min(min, p.order) : min),
+      0
+    );
+
     // Create the product
     const now = Date.now();
     const productId = await ctx.db.insert("products", {
@@ -286,6 +307,7 @@ export const create = mutation({
       fileStorageId: args.fileStorageId,
       contentType: args.contentType,
       fileSize: args.fileSize,
+      order: minOrder - 1,
       createdAt: now,
       updatedAt: now,
     });
@@ -447,5 +469,49 @@ export const toggleVisibility = mutation({
     });
 
     return newVisibility;
+  },
+});
+
+/**
+ * Reorder products
+ * Updates the manual display order of multiple products at once.
+ * Verifies the authenticated artist owns every product in the batch.
+ *
+ * @param productOrders - Array of { productId, order } objects
+ * @returns true on success
+ * @throws Error if validation fails
+ */
+export const reorder = mutation({
+  args: {
+    productOrders: v.array(
+      v.object({
+        productId: v.id("products"),
+        order: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserFromIdentity(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const artist = await getArtistForUser(ctx, user._id);
+    if (!artist) {
+      throw new Error("Artist profile not found");
+    }
+
+    for (const { productId, order } of args.productOrders) {
+      const product = await ctx.db.get(productId);
+      if (!product) {
+        throw new Error(`Product ${productId} not found`);
+      }
+      if (product.artistId !== artist._id) {
+        throw new Error("Not authorized to reorder this product");
+      }
+      await ctx.db.patch(productId, { order });
+    }
+
+    return true;
   },
 });

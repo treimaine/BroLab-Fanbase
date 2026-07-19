@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,17 +60,7 @@ export function MarketingNavbar() {
         )}
       >
         {/* Brand */}
-        <Link
-          href="/"
-          className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
-            B
-          </div>
-          <span className="font-serif text-xl font-bold tracking-tight text-foreground">
-            BroLab
-          </span>
-        </Link>
+        <Logo href="/" />
 
         {/* Center: Nav (desktop) */}
         <nav

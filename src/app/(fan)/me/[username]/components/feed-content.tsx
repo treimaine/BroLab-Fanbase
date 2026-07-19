@@ -52,36 +52,66 @@ export function FeedContent() {
   const isLoadingMore = cursor !== undefined && feedResult === undefined;
   const hasMore = feedResult?.nextCursor !== null && feedResult?.nextCursor !== undefined;
 
-  // Transform feed items into feed posts
+  // Transform feed items into feed posts (releases + events) using real data
   const feedPosts = useMemo<FeedPost[]>(() => {
     if (!allFeedItems || allFeedItems.length === 0) return [];
 
-    return allFeedItems.map((item: any) => ({
-      id: item._id,
-      artist: {
-        name: item.artist.displayName,
-        avatarUrl: item.artist.avatarUrl,
-        slug: item.artist.artistSlug,
-      },
-      content: `Check out my latest ${item.type === "music" ? "track" : "video"}! ${item.description || ""}`,
-      imageUrl: item.coverImageUrl || item.artist.coverUrl || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80",
-      type: "release" as const,
-      createdAt: new Date(item.createdAt).toISOString(),
-      likes: 0,
-      comments: 0,
-      track: item.fileStorageId
-        ? {
-            id: item._id,
-            title: item.title,
-            artistName: item.artist.displayName,
-            coverImageUrl: item.coverImageUrl || item.artist.coverUrl,
-            fileStorageId: item.fileStorageId as string,
-            type: item.type,
-            duration: 180,
-            productId: item._id,
-          }
-        : undefined,
-    }));
+    return allFeedItems.map((item: any) => {
+      const base = {
+        id: item._id,
+        artist: {
+          name: item.artist.displayName,
+          avatarUrl: item.artist.avatarUrl,
+          slug: item.artist.artistSlug,
+        },
+        createdAt: new Date(item.createdAt).toISOString(),
+        targetType: item.targetType,
+        targetId: item.targetId,
+        isLiked: item.isLikedByMe ?? false,
+        likes: item.likeCount ?? 0,
+        comments: item.commentCount ?? 0,
+      };
+
+      // Event feed item
+      if (item.feedType === "event") {
+        const eventDate = new Date(item.date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+        return {
+          ...base,
+          content: item.title,
+          imageUrl: item.imageUrl || item.artist.coverUrl,
+          type: "event" as const,
+          ticketUrl: item.ticketUrl,
+          eventLocation: `${item.venue} · ${item.city} · ${eventDate}`,
+        };
+      }
+
+      // Release (product) feed item
+      const description = item.description?.trim();
+      return {
+        ...base,
+        content: description
+          ? description
+          : `New ${item.type === "music" ? "track" : "video"}: ${item.title}`,
+        imageUrl: item.coverImageUrl || item.artist.coverUrl,
+        type: "release" as const,
+        track: item.fileStorageId
+          ? {
+              id: item._id,
+              title: item.title,
+              artistName: item.artist.displayName,
+              coverImageUrl: item.coverImageUrl || item.artist.coverUrl,
+              fileStorageId: item.fileStorageId as string,
+              type: item.type,
+              duration: 180,
+              productId: item._id,
+            }
+          : undefined,
+      };
+    });
   }, [allFeedItems]);
 
   const handleLoadMore = useCallback(() => {

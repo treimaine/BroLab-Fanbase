@@ -8,8 +8,10 @@ import {
     ExternalLink,
     FileText,
     Globe,
+    GripVertical,
     Heart,
     Mail,
+    MousePointerClick,
     Music,
     ShoppingBag,
     Ticket,
@@ -76,12 +78,15 @@ export interface LinkItemData {
   url: string;
   type: string;
   active: boolean;
+  clicks?: number;
 }
 
 interface LinkItemProps {
   readonly link: LinkItemData;
   readonly onToggleActive: (id: string, active: boolean) => void;
   readonly disabled?: boolean;
+  /** Shows a drag handle affordance when the row is draggable. */
+  readonly draggable?: boolean;
 }
 
 /**
@@ -127,6 +132,7 @@ export function LinkItem({
   link,
   onToggleActive,
   disabled = false,
+  draggable = false,
 }: LinkItemProps) {
   const typeInfo = getLinkTypeInfo(link.type);
   const Icon = typeInfo.icon;
@@ -140,6 +146,14 @@ export function LinkItem({
           : "border-border/50 bg-muted/30 opacity-75"
       )}
     >
+      {/* Drag handle */}
+      {draggable && (
+        <GripVertical
+          className="h-5 w-5 shrink-0 cursor-grab text-muted-foreground/60 active:cursor-grabbing"
+          aria-hidden="true"
+        />
+      )}
+
       {/* Icon */}
       <div
         className={cn(
@@ -164,10 +178,16 @@ export function LinkItem({
           {link.title}
         </h4>
 
-        {/* URL Preview */}
-        <p className="truncate text-sm text-muted-foreground">
-          {truncateUrl(link.url)}
-        </p>
+        {/* URL Preview + click count */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="truncate">{truncateUrl(link.url)}</span>
+          {link.clicks !== undefined && link.clicks > 0 && (
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs">
+              <MousePointerClick className="h-3 w-3" />
+              {link.clicks}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Type Badge */}

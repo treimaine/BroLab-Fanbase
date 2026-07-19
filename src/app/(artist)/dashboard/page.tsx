@@ -13,6 +13,7 @@
 import { api } from "@/../convex/_generated/api";
 import { CreateContentCard } from "@/components/dashboard/create-content-card";
 import { SetupChecklist } from "@/components/dashboard/setup-checklist";
+import { ShareHub } from "@/components/dashboard/share-hub";
 import { Button } from "@/components/ui/button";
 import { DashboardSkeleton, SuspenseWrapper } from "@/components/ui/skeleton";
 import { useQuery } from "convex/react";
@@ -75,12 +76,15 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mt-1">Here&apos;s what&apos;s happening with your hub</p>
         </div>
         {artist?.artistSlug && (
-          <Link href={`/${artist.artistSlug}`} target="_blank">
-            <Button variant="outline" className="gap-2">
-              <ExternalLink className="h-4 w-4" />
-              View Public Hub
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <ShareHub artistSlug={artist.artistSlug} displayName={artist.displayName} />
+            <Link href={`/${artist.artistSlug}`} target="_blank">
+              <Button variant="outline" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                View Public Hub
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 

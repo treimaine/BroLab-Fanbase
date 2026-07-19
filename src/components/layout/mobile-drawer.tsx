@@ -21,10 +21,12 @@ import {
     Music,
     ShoppingBag,
     User,
+    Users,
     Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
 interface NavItem {
@@ -48,6 +50,7 @@ interface MobileDrawerProps {
 // Navigation items for fan role
 const getFanNavItems = (username: string): NavItem[] => [
   { href: `/me/${username}`, icon: Home, label: "Feed" },
+  { href: `/me/${username}/following`, icon: Users, label: "Following" },
   { href: `/me/${username}/purchases`, icon: ShoppingBag, label: "Purchases" },
   { href: `/me/${username}/billing`, icon: CreditCard, label: "Billing" },
 ];
@@ -92,8 +95,8 @@ export function MobileDrawer({
       <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
         {/* Header with Brand */}
         <SheetHeader className="px-6 py-4 border-b border-border/50">
-          <SheetTitle className="font-serif text-xl font-semibold text-foreground text-left">
-            BroLab Fanbase
+          <SheetTitle className="text-left">
+            <Logo href={null} />
           </SheetTitle>
         </SheetHeader>
 

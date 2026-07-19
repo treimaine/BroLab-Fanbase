@@ -50,14 +50,7 @@ export function PlayerDemo() {
         <h2 className="text-2xl font-serif font-bold mb-4">Feed</h2>
         <div className="space-y-4">
           {mockFeedPosts.map((post) => (
-            <FeedCard
-              key={post.id}
-              post={post}
-              onRequestUrl={getMockPlayableUrl}
-              onLike={() => {}}
-              onComment={() => {}}
-              onShare={() => {}}
-            />
+            <FeedCard key={post.id} post={post} onRequestUrl={getMockPlayableUrl} />
           ))}
         </div>
       </div>

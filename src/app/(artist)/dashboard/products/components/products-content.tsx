@@ -30,11 +30,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useDragReorder } from "@/lib/hooks/use-drag-reorder";
 import { useFileUpload } from "@/lib/hooks/use-file-upload";
 import { handleMutationError } from "@/lib/limit-toast";
+import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Package } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
@@ -85,6 +87,7 @@ export function ProductsContent() {
   const createProduct = useMutation(api.products.create);
   const updateProduct = useMutation(api.products.update);
   const deleteProduct = useMutation(api.products.remove);
+  const reorderProducts = useMutation(api.products.reorder);
 
   const [editingProduct, setEditingProduct] = useState<ProductItemData | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
@@ -248,6 +251,24 @@ export function ProductsContent() {
     visibility: product.visibility,
   }));
 
+  const handleReorder = useCallback(
+    (orderedIds: string[]) => {
+      reorderProducts({
+        productOrders: orderedIds.map((id, index) => ({
+          productId: id as Id<"products">,
+          order: index,
+        })),
+      }).catch(() => toast.error("Failed to save new order"));
+    },
+    [reorderProducts]
+  );
+
+  const { ordered, draggingId, getItemProps } = useDragReorder(
+    productItems,
+    (item) => item.id,
+    handleReorder
+  );
+
   return (
     <>
       <Card>
@@ -270,14 +291,23 @@ export function ProductsContent() {
             <EmptyState onAddProduct={handleAddProduct} />
           ) : (
             <div className="space-y-4">
-              {productItems.map((product) => (
-                <ProductItem
+              {ordered.map((product, index) => (
+                <div
                   key={product.id}
-                  product={product}
-                  onToggleVisibility={handleToggleVisibility}
-                  onEdit={setEditingProduct}
-                  onDelete={setDeletingProductId}
-                />
+                  {...getItemProps(index)}
+                  className={cn(
+                    "select-none transition-opacity",
+                    draggingId === product.id && "opacity-50"
+                  )}
+                >
+                  <ProductItem
+                    product={product}
+                    onToggleVisibility={handleToggleVisibility}
+                    onEdit={setEditingProduct}
+                    onDelete={setDeletingProductId}
+                    draggable
+                  />
+                </div>
               ))}
             </div>
           )}

@@ -2,22 +2,18 @@
 
 /**
  * Profile Content Component
- * 
- * Extracted from ProfilePage to reduce cognitive complexity.
- * Handles profile form and social links management.
- * 
+ *
+ * Thin wrapper around ProfileForm. Profile fields, images and social links are
+ * all edited and saved together by a single "Save Profile" button inside
+ * ProfileForm.
+ *
  * Cognitive Complexity Target: < 10
  */
 
-import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { ProfileForm } from "@/components/forms/profile-form";
-import { SocialLink, SocialLinksList } from "@/components/forms/social-links-list";
-import { Button } from "@/components/ui/button";
-import { useMutation } from "convex/react";
-import { Loader2, Save } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { SocialLink } from "@/components/forms/social-links-list";
+import { useCallback } from "react";
 
 interface ProfileContentProps {
   readonly artist: {
@@ -26,63 +22,21 @@ interface ProfileContentProps {
     artistSlug: string;
     avatarUrl?: string;
     avatarStorageId?: Id<"_storage">;
+    coverUrl?: string;
+    coverStorageId?: Id<"_storage">;
     bio?: string;
     socials?: SocialLink[];
   } | null;
 }
 
 export function ProfileContent({ artist }: Readonly<ProfileContentProps>) {
-  const updateArtist = useMutation(api.artists.update);
-
-  const [socials, setSocials] = useState<SocialLink[]>([]);
-  const [isSavingSocials, setIsSavingSocials] = useState(false);
-  const [hasUnsavedSocials, setHasUnsavedSocials] = useState(false);
-
-  // Initialize socials from artist data
-  useEffect(() => {
-    if (artist?.socials) {
-      setSocials(artist.socials);
-      setHasUnsavedSocials(false);
-    }
-  }, [artist?.socials]);
-
-  const handleSocialsChange = useCallback((newSocials: SocialLink[]) => {
-    setSocials(newSocials);
-    setHasUnsavedSocials(true);
-  }, []);
-
-  const handleSaveSocials = async () => {
-    if (!artist) {
-      toast.error("Please complete your profile first");
-      return;
-    }
-
-    setIsSavingSocials(true);
-    try {
-      const validSocials = socials.filter((s) => s.url.trim() !== "" || s.active);
-
-      await updateArtist({
-        artistId: artist._id,
-        socials: validSocials,
-      });
-
-      toast.success("Social links updated successfully!");
-      setHasUnsavedSocials(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to save social links";
-      toast.error(message);
-    } finally {
-      setIsSavingSocials(false);
-    }
-  };
-
   const handleProfileSuccess = useCallback(() => {
     // Profile saved successfully - toast is handled by ProfileForm
   }, []);
 
   return (
     <>
-      {/* Profile Form */}
+      {/* Profile Form (includes social links + single save button) */}
       <ProfileForm
         artistId={artist?._id}
         initialData={
@@ -90,42 +44,17 @@ export function ProfileContent({ artist }: Readonly<ProfileContentProps>) {
             ? {
                 avatarUrl: artist.avatarUrl ?? "",
                 avatarStorageId: artist.avatarStorageId,
+                coverUrl: artist.coverUrl ?? "",
+                coverStorageId: artist.coverStorageId,
                 displayName: artist.displayName,
                 artistSlug: artist.artistSlug,
                 bio: artist.bio ?? "",
+                socials: artist.socials ?? [],
               }
             : undefined
         }
         onSuccess={handleProfileSuccess}
       />
-
-      {/* Social Links */}
-      <div className="space-y-4">
-        <SocialLinksList socials={socials} onChange={handleSocialsChange} disabled={!artist} />
-
-        {/* Save Social Links Button */}
-        {artist && (
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSaveSocials}
-              disabled={isSavingSocials || !hasUnsavedSocials}
-              className="min-w-[160px] rounded-full"
-            >
-              {isSavingSocials ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Social Links
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
 
       {/* No artist profile notice */}
       {!artist && (

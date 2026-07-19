@@ -4,13 +4,14 @@
  * FeedCard - Post card for fan feed
  * Requirements: 9.3, 9.4 - Feed Card with action buttons and CTAs
  * Requirements: 19.1, 19.3 - Player integration
- * 
+ * Requirements: R-FAN-LIKE-1, R-FAN-COMMENT-1 - Persistent likes + public comments
+ *
  * - Artist avatar, name, timestamp, content, image
- * - Action buttons (like, comment, share)
- * - CTA buttons (Listen, Get Tickets, Shop Now)
- * - "Listen" triggers loadAndPlay(track)
+ * - Action buttons: like (persisted), comment (dialog), share
+ * - CTA buttons: Listen (player), Get Tickets (ticketUrl), Shop Now (artist hub)
  */
 
+import { api } from "@/../convex/_generated/api";
 import { MediaCardOverlay } from "@/components/player";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +20,13 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { usePlayerStore } from "@/lib/stores/player-store";
 import { cn } from "@/lib/utils";
 import type { Track } from "@/types/player";
-import { Heart, MessageCircle, Music, Play, Share2, ShoppingBag, Ticket } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { Heart, MapPin, MessageCircle, Music, Play, Share2, ShoppingBag, Ticket } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
+import { CommentsDialog } from "./comments-dialog";
 
 export interface FeedPost {
   id: string;
@@ -36,6 +41,13 @@ export interface FeedPost {
   createdAt: string;
   likes: number;
   comments: number;
+  // Social state (from Convex enrichment)
+  targetType: "product" | "event";
+  targetId: string;
+  isLiked: boolean;
+  // Event-specific CTA
+  ticketUrl?: string;
+  eventLocation?: string;
   // For music/video releases
   track?: Track;
   playableUrl?: string;
@@ -43,9 +55,6 @@ export interface FeedPost {
 
 interface FeedCardProps {
   readonly post: FeedPost;
-  readonly onLike?: () => void;
-  readonly onComment?: () => void;
-  readonly onShare?: () => void;
   readonly onRequestUrl?: (track: Track) => Promise<string | null>;
   readonly className?: string;
 }
@@ -57,17 +66,19 @@ const typeConfig = {
   update: { label: "Update", icon: MessageCircle, color: "bg-blue-500/10 text-blue-600" },
 };
 
-export function FeedCard({
-  post,
-  onLike,
-  onComment,
-  onShare,
-  onRequestUrl,
-  className,
-}: FeedCardProps) {
-  const [isLiked, setIsLiked] = useState(false);
+export function FeedCard({ post, onRequestUrl, className }: FeedCardProps) {
+  const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likes);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const loadAndPlay = usePlayerStore((state) => state.loadAndPlay);
+  const toggleLike = useMutation(api.likes.toggle);
+
+  // Live comment count — falls back to the server-seeded value while loading
+  const liveCommentCount = useQuery(api.comments.getCount, {
+    targetType: post.targetType,
+    targetId: post.targetId,
+  });
+  const commentsCount = liveCommentCount ?? post.comments;
 
   const config = typeConfig[post.type];
   const TypeIcon = config.icon;
@@ -75,8 +86,7 @@ export function FeedCard({
   // Format relative time
   const formatRelativeTime = (dateString: string): string => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = Date.now() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
@@ -88,12 +98,42 @@ export function FeedCard({
     return date.toLocaleDateString();
   };
 
-  // Handle like
-  const handleLike = useCallback(() => {
-    setIsLiked((prev) => !prev);
-    setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
-    onLike?.();
-  }, [isLiked, onLike]);
+  // Handle like — optimistic UI, persisted server-side
+  const handleLike = useCallback(async () => {
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setLikesCount((prev) => (nextLiked ? prev + 1 : prev - 1));
+
+    try {
+      const result = await toggleLike({
+        targetType: post.targetType,
+        targetId: post.targetId,
+      });
+      // Reconcile with the authoritative count from the server
+      setIsLiked(result.liked);
+      setLikesCount(result.count);
+    } catch (error) {
+      // Revert on failure
+      setIsLiked(!nextLiked);
+      setLikesCount((prev) => (nextLiked ? prev - 1 : prev + 1));
+      toast.error(error instanceof Error ? error.message : "Failed to update like");
+    }
+  }, [isLiked, toggleLike, post.targetType, post.targetId]);
+
+  // Handle share — Web Share API with clipboard fallback
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/${post.artist.slug}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post.artist.name, text: post.content, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      }
+    } catch {
+      // User cancelled the share sheet — no-op
+    }
+  }, [post.artist.slug, post.artist.name, post.content]);
 
   // Handle Listen CTA - triggers loadAndPlay
   const handleListen = useCallback(async () => {
@@ -101,7 +141,7 @@ export function FeedCard({
 
     let url = post.playableUrl;
     if (!url && onRequestUrl) {
-      url = await onRequestUrl(post.track) ?? undefined;
+      url = (await onRequestUrl(post.track)) ?? undefined;
     }
 
     if (url) {
@@ -114,28 +154,34 @@ export function FeedCard({
     switch (post.type) {
       case "release":
         return post.track ? (
-          <Button
-            variant="default"
-            size="sm"
-            className="rounded-full gap-2"
-            onClick={handleListen}
-          >
+          <Button variant="default" size="sm" className="rounded-full gap-2" onClick={handleListen}>
             <Play className="w-4 h-4 fill-current" />
             Listen
           </Button>
         ) : null;
       case "event":
-        return (
-          <Button variant="default" size="sm" className="rounded-full gap-2">
-            <Ticket className="w-4 h-4" />
-            Get Tickets
+        return post.ticketUrl ? (
+          <Button asChild variant="default" size="sm" className="rounded-full gap-2">
+            <a href={post.ticketUrl} target="_blank" rel="noopener noreferrer">
+              <Ticket className="w-4 h-4" />
+              Get Tickets
+            </a>
+          </Button>
+        ) : (
+          <Button asChild variant="default" size="sm" className="rounded-full gap-2">
+            <Link href={`/${post.artist.slug}`}>
+              <Ticket className="w-4 h-4" />
+              View Event
+            </Link>
           </Button>
         );
       case "merch":
         return (
-          <Button variant="default" size="sm" className="rounded-full gap-2">
-            <ShoppingBag className="w-4 h-4" />
-            Shop Now
+          <Button asChild variant="default" size="sm" className="rounded-full gap-2">
+            <Link href={`/${post.artist.slug}`}>
+              <ShoppingBag className="w-4 h-4" />
+              Shop Now
+            </Link>
           </Button>
         );
       default:
@@ -147,18 +193,16 @@ export function FeedCard({
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+          <Link href={`/${post.artist.slug}`} className="flex items-center gap-3 group">
             <Avatar className="w-10 h-10">
               <AvatarImage src={post.artist.avatarUrl} alt={post.artist.name} />
               <AvatarFallback>{post.artist.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold text-sm">{post.artist.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatRelativeTime(post.createdAt)}
-              </p>
+              <p className="font-semibold text-sm group-hover:underline">{post.artist.name}</p>
+              <p className="text-xs text-muted-foreground">{formatRelativeTime(post.createdAt)}</p>
             </div>
-          </div>
+          </Link>
           <Badge variant="secondary" className={cn("gap-1", config.color)}>
             <TypeIcon className="w-3 h-3" />
             {config.label}
@@ -168,6 +212,13 @@ export function FeedCard({
 
       <CardContent className="pb-3">
         <p className="text-sm text-foreground mb-3">{post.content}</p>
+
+        {post.eventLocation && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+            <MapPin className="w-3.5 h-3.5" />
+            {post.eventLocation}
+          </p>
+        )}
 
         {/* Media content */}
         {post.imageUrl && (
@@ -211,6 +262,8 @@ export function FeedCard({
               isLiked && "text-red-500 hover:text-red-600"
             )}
             onClick={handleLike}
+            aria-pressed={isLiked}
+            aria-label="Like"
           >
             <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
             <span className="text-xs">{likesCount}</span>
@@ -219,16 +272,18 @@ export function FeedCard({
             variant="ghost"
             size="sm"
             className="gap-1.5 text-muted-foreground hover:text-foreground"
-            onClick={onComment}
+            onClick={() => setCommentsOpen(true)}
+            aria-label="Comments"
           >
             <MessageCircle className="w-4 h-4" />
-            <span className="text-xs">{post.comments}</span>
+            <span className="text-xs">{commentsCount}</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-foreground"
-            onClick={onShare}
+            onClick={handleShare}
+            aria-label="Share"
           >
             <Share2 className="w-4 h-4" />
           </Button>
@@ -237,6 +292,14 @@ export function FeedCard({
         {/* CTA button */}
         {renderCTA()}
       </CardFooter>
+
+      <CommentsDialog
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+        targetType={post.targetType}
+        targetId={post.targetId}
+        title={post.artist.name}
+      />
     </Card>
   );
 }

@@ -43,3 +43,20 @@ export function formatCurrency(cents: number): string {
     currency: 'USD',
   }).format(cents / 100);
 }
+
+/**
+ * Derive up-to-2 uppercase initials from a display name, used as the avatar
+ * fallback across the app so the same name always yields the same initials.
+ * @param name - Display name (e.g., "Steve Lemba")
+ * @returns Initials (e.g., "SL"); "?" when the name is empty
+ */
+export function getInitials(name: string): string {
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+  return initials || "?";
+}

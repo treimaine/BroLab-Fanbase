@@ -1,3 +1,4 @@
+import { Logo } from "@/components/layout/logo";
 import Link from "next/link";
 
 const FOOTER_COLUMNS = [
@@ -41,17 +42,7 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand — mirrors the navbar mark */}
           <div className="space-y-4">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 transition-opacity hover:opacity-80"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
-                B
-              </span>
-              <span className="font-serif text-xl font-bold tracking-tight text-foreground">
-                BroLab
-              </span>
-            </Link>
+            <Logo href="/" className="inline-flex" />
             <p className="max-w-xs text-sm leading-relaxed">
               Empowering artists to own their connections and monetize their
               creativity without limits.

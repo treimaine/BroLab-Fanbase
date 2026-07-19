@@ -161,14 +161,27 @@ export function HubHeader({
       {/* Cover Image with Gradient Overlay */}
       <div className="relative h-48 w-full overflow-hidden sm:h-56 md:h-64 lg:h-72">
         {coverUrl ? (
-          <Image
-            src={coverUrl}
-            alt={`${displayName} cover`}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
+          <>
+            {/* Blurred fill: same image scaled to cover, fills empty space */}
+            <Image
+              src={coverUrl}
+              alt=""
+              aria-hidden="true"
+              fill
+              className="scale-110 object-cover blur-2xl"
+              priority
+              sizes="100vw"
+            />
+            {/* Sharp image, fully visible (never cropped) */}
+            <Image
+              src={coverUrl}
+              alt={`${displayName} cover`}
+              fill
+              className="object-contain"
+              priority
+              sizes="100vw"
+            />
+          </>
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/30 via-primary/20 to-accent" />
         )}

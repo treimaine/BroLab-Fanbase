@@ -10,6 +10,7 @@
 
 import type * as artistBilling from "../artistBilling.js";
 import type * as artists from "../artists.js";
+import type * as comments from "../comments.js";
 import type * as downloads from "../downloads.js";
 import type * as downloads_helpers from "../downloads_helpers.js";
 import type * as emails from "../emails.js";
@@ -18,6 +19,7 @@ import type * as events from "../events.js";
 import type * as feed from "../feed.js";
 import type * as files from "../files.js";
 import type * as follows from "../follows.js";
+import type * as likes from "../likes.js";
 import type * as links from "../links.js";
 import type * as orders from "../orders.js";
 import type * as paymentMethods from "../paymentMethods.js";
@@ -40,6 +42,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   artistBilling: typeof artistBilling;
   artists: typeof artists;
+  comments: typeof comments;
   downloads: typeof downloads;
   downloads_helpers: typeof downloads_helpers;
   emails: typeof emails;
@@ -48,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   feed: typeof feed;
   files: typeof files;
   follows: typeof follows;
+  likes: typeof likes;
   links: typeof links;
   orders: typeof orders;
   paymentMethods: typeof paymentMethods;

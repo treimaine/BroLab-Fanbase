@@ -14,6 +14,7 @@ import type { Id } from "@/../convex/_generated/dataModel";
 import { DropsList, EventsList } from "@/components/hub";
 import type { Drop } from "@/components/hub/drops-list";
 import type { Event } from "@/components/hub/events-list";
+import { HubLinks } from "@/components/hub/hub-links";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { Track } from "@/types/player";
@@ -75,6 +76,11 @@ export function HubContent({ artistId, artistName, artistSlug }: Readonly<HubCon
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
+      {/* Custom links (link-in-bio) */}
+      <div className="mb-8">
+        <HubLinks artistId={artistId} />
+      </div>
+
       <Tabs defaultValue="drops" className="w-full">
         <TabsList
           className={cn("mx-auto grid w-full max-w-md grid-cols-2", "bg-muted/50 p-1 rounded-xl")}

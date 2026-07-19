@@ -46,6 +46,8 @@ export function AppShell({
         showBurger
         onBurgerClick={() => setDrawerOpen(true)}
         actions={<ThemeToggle />}
+        user={role === "artist" ? user : undefined}
+        profileHref={role === "artist" ? "/dashboard/profile" : undefined}
       />
 
       {/* Mobile Drawer (Sheet) */}
@@ -65,7 +67,7 @@ export function AppShell({
       </main>
 
       {/* Mobile Bottom Navigation - visible on mobile, hidden on lg+ */}
-      <BottomNav role={role} username={user.username} />
+      <BottomNav role={role} username={user.username} user={user} />
     </div>
   );
 }
