@@ -2,6 +2,7 @@
 
 import { api } from "@/../convex/_generated/api";
 import { AppShell } from "@/components/layout/app-shell";
+import { SubscriptionReconciler } from "@/components/dashboard/subscription-reconciler";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
@@ -66,6 +67,8 @@ export default function ArtistLayout({
 
   return (
     <AppShell role="artist" user={userData} onSignOut={handleSignOut}>
+      {/* Pull-based subscription sync on each dashboard load (ngrok-free). */}
+      <SubscriptionReconciler />
       {children}
     </AppShell>
   );

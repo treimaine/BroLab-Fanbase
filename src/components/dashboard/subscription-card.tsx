@@ -188,7 +188,7 @@ export function SubscriptionCard({
 
     try {
       // Get the Premium plan ID from environment variable
-      const premiumPlanId = process.env.NEXT_PUBLIC_CLERK_PREMIUM_PLAN_ID;
+      const premiumPlanId = process.env.NEXT_PUBLIC_CLERK_PLAN_PREMIUM_ID;
       
       // Redirect to checkout API route with plan ID
       const checkoutUrl = new URL("/api/billing/checkout", globalThis.location.origin);

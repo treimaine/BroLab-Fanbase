@@ -189,6 +189,160 @@ export const backfillUsernameSlugs = internalMutation({
 });
 
 /**
+ * Update a user's subscription mirror from a Clerk Billing webhook.
+ * Requirements: R-CLERK-SUB-1.1 (Clerk Billing = source of truth),
+ * R-CLERK-SUB-1.2 (server-side gating), 18.5 (webhook idempotency).
+ *
+ * Clerk Billing stays the source of truth; this mutation reflects the current
+ * subscription onto the Convex `users` row so server-side mutations can enforce
+ * plan limits without depending on the (unrefreshed) session JWT.
+ *
+ * Premium is decided HERE (not in the webhook route) by comparing the active
+ * plan ids from the payload against CLERK_PLAN_PREMIUM_ID — keeping the plan-id
+ * authority next to the enforcement code.
+ *
+ * Idempotent: a given Clerk event id (svix message id) is applied at most once.
+ *
+ * @param clerkUserId - Clerk user id of the payer
+ * @param activePlanIds - Plan ids (cplan_...) of the currently-active subscription items
+ * @param rawStatus - Raw Clerk subscription status (e.g. "active", "past_due")
+ * @param currentPeriodEnd - Optional period-end timestamp (ms)
+ * @param eventId - Clerk webhook event id (svix-id) for idempotency
+ * @returns Whether the event was applied (false if already processed / user missing)
+ */
+export const updateSubscriptionFromClerk = mutation({
+  args: {
+    clerkUserId: v.string(),
+    activePlanIds: v.array(v.string()),
+    rawStatus: v.optional(v.string()),
+    currentPeriodEnd: v.optional(v.number()),
+    eventId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Idempotency: skip if this Clerk event was already processed.
+    const already = await ctx.db
+      .query("processedEvents")
+      .withIndex("by_event", (q) =>
+        q.eq("provider", "clerk").eq("eventId", args.eventId)
+      )
+      .unique();
+    if (already) {
+      return { applied: false, reason: "duplicate" as const };
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .unique();
+
+    // Record the event even if the user isn't synced yet, so retries are stable.
+    await ctx.db.insert("processedEvents", {
+      provider: "clerk",
+      eventId: args.eventId,
+      processedAt: Date.now(),
+    });
+
+    if (!user) {
+      return { applied: false, reason: "user_not_found" as const };
+    }
+
+    // Premium iff an active item matches the configured premium plan id.
+    const premiumPlanId = process.env.CLERK_PLAN_PREMIUM_ID;
+    const plan: "free" | "premium" =
+      premiumPlanId && args.activePlanIds.includes(premiumPlanId)
+        ? "premium"
+        : "free";
+
+    // Map Clerk's raw status onto our narrow status union.
+    const status = mapClerkSubscriptionStatus(args.rawStatus);
+
+    await ctx.db.patch(user._id, {
+      subscriptionPlan: plan,
+      subscriptionStatus: status,
+      subscriptionCurrentPeriodEnd: args.currentPeriodEnd,
+      subscriptionUpdatedAt: Date.now(),
+    });
+
+    return { applied: true, plan, status };
+  },
+});
+
+/**
+ * Reconcile a user's plan from a trusted server caller (pull-based sync).
+ * Requirements: R-CLERK-SUB-1.1, R-CLERK-SUB-1.2.
+ *
+ * Called by the Next.js route /api/billing/reconcile, which determines the
+ * plan server-side from Clerk (auth().has()) — no webhook / ngrok required.
+ * Because this mutation is publicly reachable, it is guarded by a shared secret
+ * (CONVEX_SYNC_SECRET) so a client cannot self-grant Premium.
+ *
+ * @param clerkUserId - Clerk user id to reconcile
+ * @param plan - Plan resolved by the trusted caller ("free" | "premium")
+ * @param secret - Shared secret; must equal CONVEX_SYNC_SECRET
+ * @returns Whether the row was updated
+ */
+export const reconcileSubscriptionPlan = mutation({
+  args: {
+    clerkUserId: v.string(),
+    plan: v.union(v.literal("free"), v.literal("premium")),
+    secret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const expected = process.env.CONVEX_SYNC_SECRET;
+    if (!expected || args.secret !== expected) {
+      throw new Error("Unauthorized reconcile request");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .unique();
+
+    if (!user) {
+      return { updated: false, reason: "user_not_found" as const };
+    }
+
+    const status = args.plan === "premium" ? "active" : "none";
+
+    // Skip a no-op write to avoid needless reactivity churn.
+    if (
+      user.subscriptionPlan === args.plan &&
+      user.subscriptionStatus === status
+    ) {
+      return { updated: false, reason: "unchanged" as const };
+    }
+
+    await ctx.db.patch(user._id, {
+      subscriptionPlan: args.plan,
+      subscriptionStatus: status,
+      subscriptionUpdatedAt: Date.now(),
+    });
+
+    return { updated: true, plan: args.plan };
+  },
+});
+
+/** Map a raw Clerk Billing subscription status to our internal union. */
+function mapClerkSubscriptionStatus(
+  raw: string | undefined
+): "active" | "canceled" | "past_due" | "trialing" | "none" {
+  switch (raw) {
+    case "active":
+      return "active";
+    case "past_due":
+      return "past_due";
+    case "trialing":
+      return "trialing";
+    case "canceled":
+    case "ended":
+    case "cancelled":
+      return "canceled";
+    default:
+      return "none";
+  }
+}
+
+/**
  * Get user by Clerk user ID (internal query)
  * Requirements: 15.2 - Retrieve Convex user record by Clerk ID
  * 

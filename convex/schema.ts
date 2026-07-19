@@ -31,6 +31,23 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
     createdAt: v.number(),
+    // Subscription mirror synced from Clerk Billing via clerk/webhook.
+    // Clerk Billing is the source of truth; these fields are a server-readable
+    // reflection so Convex mutations can enforce plan limits (see subscriptions.ts).
+    subscriptionPlan: v.optional(
+      v.union(v.literal("free"), v.literal("premium"))
+    ),
+    subscriptionStatus: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("canceled"),
+        v.literal("past_due"),
+        v.literal("trialing"),
+        v.literal("none")
+      )
+    ),
+    subscriptionCurrentPeriodEnd: v.optional(v.number()),
+    subscriptionUpdatedAt: v.optional(v.number()),
   })
     .index("by_clerk_id", ["clerkUserId"])
     .index("by_username", ["usernameSlug"]),
@@ -202,10 +219,10 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_order", ["orderId"]),
 
-  // Stripe webhook idempotency
+  // Webhook idempotency (Stripe + Clerk Billing)
   // Requirements: 18.5 - Webhook idempotency
   processedEvents: defineTable({
-    provider: v.literal("stripe"),
+    provider: v.union(v.literal("stripe"), v.literal("clerk")),
     eventId: v.string(),
     processedAt: v.number(),
   }).index("by_event", ["provider", "eventId"]),

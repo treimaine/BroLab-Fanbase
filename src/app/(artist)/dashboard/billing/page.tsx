@@ -1,6 +1,7 @@
 "use client";
 
 import { SubscriptionCard } from "@/components/dashboard/subscription-card";
+import { reconcileSubscriptionNow } from "@/components/dashboard/subscription-reconciler";
 import { UsageStatsCard } from "@/components/dashboard/usage-stats-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +34,11 @@ function ReturnUrlHandler() {
 
     if (success === "true") {
       hasHandledReturnUrl.current = true;
-      
+
+      // Immediately reconcile the server-side plan mirror so enforcement
+      // reflects the new Premium plan without waiting for a page reload.
+      reconcileSubscriptionNow();
+
       // Show success toast
       toast.success("Subscription upgraded successfully!", {
         description: "Your new plan is now active. Thank you for upgrading!",

@@ -172,6 +172,84 @@ async function createArtistProfile(userId: Id<"users">, clerkUserId: string): Pr
 }
 
 /**
+ * Normalize a Clerk timestamp (seconds, milliseconds, or ISO string) to ms.
+ */
+function toMillis(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    // Heuristic: values below ~1e12 are seconds, convert to ms.
+    return value < 1e12 ? value * 1000 : value;
+  }
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}
+
+/**
+ * Handle Clerk Billing subscription events.
+ * Events: subscription.created | subscription.active | subscription.updated | subscription.pastDue
+ *
+ * Clerk Billing is the source of truth; here we mirror the current subscription
+ * onto the Convex `users` row so server-side mutations can enforce plan limits.
+ * The premium/free decision is made in Convex (comparing plan ids to
+ * CLERK_PLAN_PREMIUM_ID); this handler only extracts and forwards the raw facts.
+ */
+async function handleSubscriptionEvent(
+  evt: WebhookEvent,
+  eventId: string
+): Promise<Response> {
+  const data = evt.data as any;
+
+  // Payer's Clerk user id — tolerate the few shapes Clerk has shipped.
+  const clerkUserId: string | undefined =
+    data?.payer?.user_id ?? data?.user_id ?? data?.payer_id;
+
+  if (!clerkUserId) {
+    // Organization-payer subscriptions have no user_id; nothing to mirror.
+    return new Response("OK - No user payer", { status: 200 });
+  }
+
+  // Active subscription items → their plan ids (cplan_...).
+  const items: any[] = data?.subscription_items ?? data?.items ?? [];
+  const activeItems = items.filter(
+    (it) => it?.status === "active" || it?.status === "trialing"
+  );
+  const activePlanIds: string[] = activeItems
+    .map((it) => it?.plan?.id ?? it?.plan_id)
+    .filter((id: unknown): id is string => typeof id === "string");
+
+  // Period end: prefer an active item's period_end, else the subscription's.
+  const rawPeriodEnd =
+    activeItems[0]?.period_end ??
+    data?.next_payment?.date ??
+    data?.current_period_end ??
+    data?.period_end;
+  const currentPeriodEnd = toMillis(rawPeriodEnd);
+
+  try {
+    await fetchMutation(api.users.updateSubscriptionFromClerk, {
+      clerkUserId,
+      activePlanIds,
+      rawStatus: typeof data?.status === "string" ? data.status : undefined,
+      currentPeriodEnd,
+      eventId,
+    });
+    return new Response("OK", { status: 200 });
+  } catch (error) {
+    await logSecurityEvent({
+      type: "clerk_subscription_sync_failed",
+      error,
+      timestamp: Date.now(),
+      metadata: { clerkUserId, eventType: evt.type },
+    });
+    return new Response(GENERIC_ERROR_MESSAGES.WEBHOOK_PROCESSING_FAILED, {
+      status: 500,
+    });
+  }
+}
+
+/**
  * Handle user deleted events
  */
 async function handleUserDeletion(evt: WebhookEvent): Promise<Response> {
@@ -210,8 +288,8 @@ export async function POST(req: Request) {
     return evt;
   }
 
-  const eventType = evt.type;
-  
+  // Cast to string: Clerk's WebhookEvent union may not include Billing events.
+  const eventType: string = evt.type;
 
   if (eventType === "user.created" || eventType === "user.updated") {
     return handleUserUpsert(evt);
@@ -221,6 +299,17 @@ export async function POST(req: Request) {
     return handleUserDeletion(evt);
   }
 
-  
+  // Clerk Billing subscription lifecycle → mirror plan onto Convex users row.
+  if (
+    eventType === "subscription.created" ||
+    eventType === "subscription.active" ||
+    eventType === "subscription.updated" ||
+    eventType === "subscription.pastDue"
+  ) {
+    // svix-id is the unique webhook message id — use it for idempotency.
+    const eventId = (await headers()).get("svix-id") ?? `${eventType}-${Date.now()}`;
+    return handleSubscriptionEvent(evt, eventId);
+  }
+
   return new Response("OK", { status: 200 });
 }

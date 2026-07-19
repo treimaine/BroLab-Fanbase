@@ -8,9 +8,12 @@
  * Premium features are gated server-side (backend) to prevent bypass.
  * 
  * ## How It Works
- * 
- * 1. Subscription data is stored in Clerk's publicMetadata.subscription
- * 2. The subscription object contains: { plan, status, currentPeriodEnd }
+ *
+ * 1. Clerk Billing is the source of truth. Its subscription webhooks
+ *    (subscription.created/active/updated/pastDue) are received by
+ *    src/app/api/clerk/webhook and mirrored onto the Convex `users` row via
+ *    users.updateSubscriptionFromClerk. This module reads that mirror.
+ * 2. The mirror contains: { subscriptionPlan, subscriptionStatus, subscriptionCurrentPeriodEnd }
  * 3. Plans: "free", "premium"
  * 4. Status: "active", "canceled", "past_due", "trialing", "none"
  * 
@@ -94,12 +97,19 @@ export const PLAN_LIMITS = {
 } as const;
 
 /**
- * Get subscription status from Clerk user identity
+ * Get subscription status for the authenticated user
  * Requirements: R-CLERK-SUB-1.1 - Clerk Billing as source of truth
- * 
- * Reads subscription data from Clerk's publicMetadata.
- * Falls back to "free" plan if no subscription data found.
- * 
+ *
+ * Clerk Billing remains the source of truth; the current subscription is
+ * mirrored onto the Convex `users` row by `clerk/webhook` →
+ * `users.updateSubscriptionFromClerk`. We read that mirror here instead of the
+ * session JWT's publicMetadata, because the JWT is not refreshed immediately
+ * after an upgrade (and the "convex" JWT template does not include metadata).
+ * Reading from the DB is also fully reactive — queries update the moment the
+ * webhook writes.
+ *
+ * Falls back to the "free" plan when no subscription mirror exists yet.
+ *
  * @param ctx - Query or Mutation context
  * @returns Subscription status or null if not authenticated
  */
@@ -107,33 +117,28 @@ export async function getSubscriptionStatus(
   ctx: QueryCtx | MutationCtx
 ): Promise<SubscriptionStatus | null> {
   const identity = await ctx.auth.getUserIdentity();
-  
+
   if (!identity) {
     return null;
   }
 
-  // Get subscription data from Clerk publicMetadata
-  // Clerk Billing stores subscription info in publicMetadata.subscription
-  const metadata = identity.publicMetadata as Record<string, unknown>;
-  const subscription = metadata?.subscription as Record<string, unknown> | undefined;
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", identity.subject))
+    .unique();
 
-  if (!subscription) {
-    // No subscription data = free plan
+  if (!user || !user.subscriptionPlan) {
+    // No subscription mirror yet = free plan
     return {
       plan: "free",
       status: "none",
     };
   }
 
-  // Parse subscription data
-  const plan = (subscription.plan as SubscriptionPlan) || "free";
-  const status = (subscription.status as SubscriptionStatus["status"]) || "none";
-  const currentPeriodEnd = subscription.currentPeriodEnd as number | undefined;
-
   return {
-    plan,
-    status,
-    currentPeriodEnd,
+    plan: user.subscriptionPlan,
+    status: user.subscriptionStatus ?? "none",
+    currentPeriodEnd: user.subscriptionCurrentPeriodEnd,
   };
 }
 
